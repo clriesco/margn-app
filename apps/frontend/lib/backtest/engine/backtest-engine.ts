@@ -29,24 +29,60 @@ export function generateRollingWindows(
 }
 
 /**
- * Convert PriceData (symbol -> {date: price}) to aligned arrays
+ * Convert PriceData (symbol -> {date: price}) to aligned arrays.
+ *
+ * If including all symbols produces fewer common dates than required
+ * (`minCommonDays`), iteratively removes the symbol with the fewest
+ * dates until the common date count is acceptable or only one symbol remains.
  */
 export function alignPrices(
   priceData: PriceData,
-  symbols: string[]
-): { prices: Record<string, number[]>; dates: string[] } {
-  // Get intersection of all dates
-  const dateSets = symbols.map((s) => new Set(Object.keys(priceData[s] || {})));
-  const commonDates = [...dateSets[0]].filter((d) =>
-    dateSets.every((set) => set.has(d))
-  ).sort();
+  symbols: string[],
+  minCommonDays: number = 0
+): { prices: Record<string, number[]>; dates: string[]; excludedSymbols: string[] } {
+  const excluded: string[] = [];
+  let kept = [...symbols];
+
+  function computeCommonDates(syms: string[]): string[] {
+    const dateSets = syms.map((s) => new Set(Object.keys(priceData[s] || {})));
+    return [...dateSets[0]].filter((d) => dateSets.every((set) => set.has(d))).sort();
+  }
+
+  let commonDates = computeCommonDates(kept);
+
+  // Iteratively drop the symbol with fewest dates if common dates are below threshold
+  while (commonDates.length < minCommonDays && kept.length > 1) {
+    // Find which symbol has fewest raw dates
+    let worstIdx = 0;
+    let worstCount = Object.keys(priceData[kept[0]] || {}).length;
+    for (let i = 1; i < kept.length; i++) {
+      const count = Object.keys(priceData[kept[i]] || {}).length;
+      if (count < worstCount) {
+        worstCount = count;
+        worstIdx = i;
+      }
+    }
+
+    const removed = kept.splice(worstIdx, 1)[0];
+    const newCommon = computeCommonDates(kept);
+
+    // Only accept removal if it actually improves common dates
+    if (newCommon.length > commonDates.length) {
+      excluded.push(removed);
+      commonDates = newCommon;
+    } else {
+      // Put it back — removing didn't help
+      kept.splice(worstIdx, 0, removed);
+      break;
+    }
+  }
 
   const prices: Record<string, number[]> = {};
-  for (const symbol of symbols) {
+  for (const symbol of kept) {
     prices[symbol] = commonDates.map((d) => priceData[symbol][d]);
   }
 
-  return { prices, dates: commonDates };
+  return { prices, dates: commonDates, excludedSymbols: excluded };
 }
 
 /**
@@ -75,13 +111,24 @@ export function runBacktest(
     );
   }
 
-  // 1b. Align prices to common dates
-  const { prices, dates } = alignPrices(priceData, symbols);
+  // 1b. Align prices to common dates, dropping assets with insufficient history
+  const windowDays = Math.round(config.windowMonths * 21);
+  const { prices, dates, excludedSymbols } = alignPrices(priceData, symbols, windowDays);
+
+  if (excludedSymbols.length > 0) {
+    // Remove excluded symbols from the working set
+    symbols = symbols.filter((s) => !excludedSymbols.includes(s));
+    console.warn(
+      `[Backtest] Activos excluidos por fechas insuficientes: ${excludedSymbols.join(', ')}`
+    );
+  }
+
   const totalDays = dates.length;
 
   // If alignment results in insufficient data, give a detailed diagnostic
   if (totalDays === 0) {
-    const ranges = symbols.map((s) => {
+    const allSymbols = [...symbols, ...excludedSymbols];
+    const ranges = allSymbols.map((s) => {
       const d = Object.keys(priceData[s] || {}).sort();
       return `${s}: ${d.length} días (${d[0] || '—'} a ${d[d.length - 1] || '—'})`;
     });
@@ -92,11 +139,19 @@ export function runBacktest(
     );
   }
 
-  // 2. Determine weights
+  // 2. Determine weights (only for kept symbols; renormalize if some were excluded)
   let weightsUsed: Record<string, number>;
 
   if (config.weightMode === 'manual' && config.manualWeights) {
-    weightsUsed = config.manualWeights;
+    // Keep only weights for surviving symbols and renormalize
+    const kept: Record<string, number> = {};
+    let sum = 0;
+    for (const s of symbols) {
+      kept[s] = config.manualWeights[s] ?? 0;
+      sum += kept[s];
+    }
+    weightsUsed = {};
+    for (const s of symbols) weightsUsed[s] = sum > 0 ? kept[s] / sum : 1 / symbols.length;
   } else if (config.weightMode === 'equal') {
     weightsUsed = {};
     for (const s of symbols) weightsUsed[s] = 1 / symbols.length;
@@ -128,7 +183,6 @@ export function runBacktest(
   }
 
   // 3. Generate rolling windows
-  const windowDays = Math.round(config.windowMonths * 21); // ~21 trading days per month
   const windows = generateRollingWindows(totalDays, windowDays);
 
   if (windows.length === 0) {
@@ -270,5 +324,6 @@ export function runBacktest(
     totalWindows: allMetrics.length,
     marginCallCount,
     trajectories: allTrajectories,
+    excludedSymbols: excludedSymbols.length > 0 ? excludedSymbols : undefined,
   };
 }

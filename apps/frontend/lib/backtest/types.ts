@@ -101,6 +101,8 @@ export interface BacktestResult {
   totalWindows: number;
   marginCallCount: number;
   trajectories: WindowTrajectory[];
+  /** Symbols excluded from the backtest due to insufficient date coverage */
+  excludedSymbols?: string[];
 }
 
 export interface BacktestProgress {
