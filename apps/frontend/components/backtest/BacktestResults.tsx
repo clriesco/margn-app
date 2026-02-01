@@ -192,7 +192,8 @@ export default function BacktestResults({ result }: Props) {
               <MetricRow idx={3} label="Sharpe" p10={p10.sharpe} p50={p50.sharpe} p90={p90.sharpe} format={fmtNum} coloring="neutral" />
               <MetricRow idx={4} label="Max Drawdown" p10={p10.maxDrawdownEquity} p50={p50.maxDrawdownEquity} p90={p90.maxDrawdownEquity} format={fmtPct} coloring="red" />
               <MetricRow idx={5} label="Recovery (días)" p10={p10.recoveryDays} p50={p50.recoveryDays} p90={p90.recoveryDays} format={fmtDays} coloring="neutral" />
-              <MetricRow idx={6} label="Leverage Final" p10={p10.finalLeverage} p50={p50.finalLeverage} p90={p90.finalLeverage} format={fmtNum} coloring="neutral" />
+              <MetricRow idx={6} label="Días bajo el agua" p10={p10.underwaterDays} p50={p50.underwaterDays} p90={p90.underwaterDays} format={fmtDays} coloring="neutral" />
+              <MetricRow idx={7} label="Leverage Final" p10={p10.finalLeverage} p50={p50.finalLeverage} p90={p90.finalLeverage} format={fmtNum} coloring="neutral" />
             </tbody>
           </table>
         </div>
