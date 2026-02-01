@@ -24,9 +24,9 @@ export default function App({ Component, pageProps }: AppProps) {
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
               Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--bg-body, #0a0e27);
+            background: var(--bg-body, #f8fafc);
             min-height: 100vh;
-            color: var(--text-secondary, #e2e8f0);
+            color: var(--text-secondary, #475569);
             overflow-x: hidden;
             transition: background 0.2s, color 0.2s;
           }
@@ -72,7 +72,7 @@ export default function App({ Component, pageProps }: AppProps) {
             }
 
             .table-container::-webkit-scrollbar-track {
-              background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+              background: var(--hover-bg, rgba(0, 0, 0, 0.04));
             }
 
             .table-container::-webkit-scrollbar-thumb {
