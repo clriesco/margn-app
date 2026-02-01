@@ -30,7 +30,7 @@ const DEFAULT_CONFIG: BacktestConfigType = {
   riskFreeRate: 0.02,
   maintenanceMarginRatio: 0.05,
   maxWeight: 0.4,
-  minWeight: 0.05,
+  minWeight: 0,
 };
 
 // ---------------------------------------------------------------------------
@@ -312,7 +312,7 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
             <div>
               <Label text="Peso Mín. (%)" tooltip={TIPS.pesoMin} />
               <NumberInput value={config.minWeight * 100} onChange={(v) => update('minWeight', v / 100)}
-                min={1} max={50} step={1} decimals={0} style={inputStyle} />
+                min={0} max={50} step={1} decimals={0} style={inputStyle} />
             </div>
             <div>
               <Label text="Peso Máx. (%)" tooltip={TIPS.pesoMax} />

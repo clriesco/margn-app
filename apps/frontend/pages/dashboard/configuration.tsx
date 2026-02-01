@@ -781,7 +781,7 @@ export default function Configuration() {
                           handleInputChange("minWeight", v / 100)
                         }
                         type="number"
-                        min={1}
+                        min={0}
                         max={50}
                         step={1}
                         suffix="%"

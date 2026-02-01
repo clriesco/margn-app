@@ -160,13 +160,14 @@ export function optimizeSharpeNelderMead(
       }
     }
 
+    const clampLo = Math.max(minWeight, 0);
     const reflected = centroid.map((c, j) => c + alpha * (c - simplex[n].point[j]));
-    for (let j = 0; j < n; j++) reflected[j] = Math.max(0.01, Math.min(0.99, reflected[j]));
+    for (let j = 0; j < n; j++) reflected[j] = Math.max(clampLo, Math.min(0.99, reflected[j]));
     const reflectedValue = negSharpe(reflected);
 
     if (reflectedValue < simplex[0].value) {
       const expanded = centroid.map((c, j) => c + gamma * (reflected[j] - c));
-      for (let j = 0; j < n; j++) expanded[j] = Math.max(0.01, Math.min(0.99, expanded[j]));
+      for (let j = 0; j < n; j++) expanded[j] = Math.max(clampLo, Math.min(0.99, expanded[j]));
       const expandedValue = negSharpe(expanded);
       simplex[n] = expandedValue < reflectedValue
         ? { point: expanded, value: expandedValue }
