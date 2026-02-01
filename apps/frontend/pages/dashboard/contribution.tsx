@@ -137,7 +137,7 @@ export default function Contribution() {
             minHeight: "100vh",
           }}
         >
-          <p style={{ color: "white", fontSize: "1.2rem" }}>Cargando...</p>
+          <p style={{ color: "var(--text-primary)", fontSize: "1.2rem" }}>Cargando...</p>
         </div>
       </>
     );
@@ -192,14 +192,14 @@ export default function Contribution() {
               style={{
                 marginBottom: "2rem",
                 paddingBottom: "1.5rem",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
               }}
             >
               <h1
                 style={{
                   fontSize: "1.875rem",
                   fontWeight: "700",
-                  color: "#f1f5f9",
+                  color: "var(--text-primary)",
                   marginBottom: "0.25rem",
                   letterSpacing: "-0.025em",
                 }}
@@ -208,7 +208,7 @@ export default function Contribution() {
                   ? "Aportación Extra"
                   : "Aportación Mensual"}
               </h1>
-              <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                 {isExtraContribution
                   ? "Registra una aportación extra para reducir tu leverage y llevarlo de vuelta al rango."
                   : "Registra tu aportación mensual. Después de esto, puedes rebalancear tu portfolio."}
@@ -218,7 +218,7 @@ export default function Contribution() {
             <form onSubmit={handleSubmit}>
               <div
                 style={{
-                  background: "rgba(255, 255, 255, 0.1)",
+                  background: "var(--input-bg)",
                   borderRadius: "16px",
                   padding: "2rem",
                   backdropFilter: "blur(10px)",
@@ -230,7 +230,7 @@ export default function Contribution() {
                       display: "block",
                       fontWeight: "500",
                       marginBottom: "0.5rem",
-                      color: "rgba(255, 255, 255, 0.9)",
+                      color: "var(--text-on-glass)",
                     }}
                   >
                     Cantidad de Aportación (USD)
@@ -245,9 +245,9 @@ export default function Contribution() {
                     style={{
                       width: "100%",
                       padding: "0.75rem 1rem",
-                      background: "rgba(255, 255, 255, 0.1)",
-                      color: "white",
-                      border: "2px solid rgba(255, 255, 255, 0.2)",
+                      background: "var(--input-bg)",
+                      color: "var(--input-color)",
+                      border: "2px solid var(--input-border)",
                       borderRadius: "8px",
                       fontSize: "1.25rem",
                       boxSizing: "border-box",
@@ -262,7 +262,7 @@ export default function Contribution() {
                       display: "block",
                       fontWeight: "500",
                       marginBottom: "0.5rem",
-                      color: "rgba(255, 255, 255, 0.9)",
+                      color: "var(--text-on-glass)",
                     }}
                   >
                     Nota (opcional)
@@ -276,9 +276,9 @@ export default function Contribution() {
                     style={{
                       width: "100%",
                       padding: "0.75rem 1rem",
-                      background: "rgba(255, 255, 255, 0.1)",
-                      color: "white",
-                      border: "2px solid rgba(255, 255, 255, 0.2)",
+                      background: "var(--input-bg)",
+                      color: "var(--input-color)",
+                      border: "2px solid var(--input-border)",
                       borderRadius: "8px",
                       fontSize: "1rem",
                       boxSizing: "border-box",
@@ -301,15 +301,15 @@ export default function Contribution() {
                       padding: "0.875rem 2rem",
                       background:
                         isSubmitting || !portfolioId
-                          ? "rgba(255, 255, 255, 0.1)"
+                          ? "var(--disabled-bg)"
                           : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                       color:
                         isSubmitting || !portfolioId
-                          ? "rgba(255, 255, 255, 0.5)"
+                          ? "var(--disabled-color)"
                           : "white",
                       border:
                         isSubmitting || !portfolioId
-                          ? "1px solid rgba(255, 255, 255, 0.1)"
+                          ? "1px solid var(--disabled-border)"
                           : "none",
                       borderRadius: "6px",
                       fontSize: "0.95rem",

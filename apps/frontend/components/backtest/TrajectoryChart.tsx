@@ -157,34 +157,34 @@ export default function TrajectoryChart({ result }: Props) {
 
   return (
     <div style={{
-      background: '#131b2e', border: '1px solid #1e293b', borderRadius: '8px',
+      background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
       padding: '1.5rem', marginBottom: '1.5rem',
     }}>
       {/* ── Info panel ── */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap',
         padding: '0.625rem 1rem', marginBottom: '1rem',
-        background: 'rgba(255,255,255,0.03)', border: '1px solid #1e293b', borderRadius: '6px',
+        background: 'var(--hover-bg)', border: '1px solid var(--border)', borderRadius: '6px',
         minHeight: '40px', fontSize: '0.8125rem',
       }}>
         {/* Month */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: '#64748b', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
-          <span style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '0.9375rem' }}>{display.month}</span>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.9375rem' }}>{display.month}</span>
         </div>
 
         {/* Separator */}
-        <div style={{ width: '1px', height: '28px', background: '#1e293b' }} />
+        <div style={{ width: '1px', height: '28px', background: 'var(--border)' }} />
 
         {/* P10 / P50 / P90 */}
         {panelItems.map((item) => (
           <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: '100px' }}>
-            <span style={{ color: '#64748b', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: item.color, marginRight: '4px', verticalAlign: 'middle' }} />
               {item.label}
             </span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-              <span style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '0.9375rem' }}>{fmtUsd(item.equity)}</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.9375rem' }}>{fmtUsd(item.equity)}</span>
               <span style={{ color: item.ret >= 0 ? '#34d399' : '#f87171', fontSize: '0.75rem', fontWeight: '500' }}>{fmtPct(item.ret)}</span>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function TrajectoryChart({ result }: Props) {
         {!hover && (
           <>
             <div style={{ flex: 1 }} />
-            <span style={{ color: '#475569', fontSize: '0.75rem', fontStyle: 'italic' }}>Pasa el ratón por el gráfico</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic' }}>Pasa el ratón por el gráfico</span>
           </>
         )}
       </div>
@@ -219,11 +219,11 @@ export default function TrajectoryChart({ result }: Props) {
             <line
               x1={padding.left} x2={chartWidth - padding.right}
               y1={scaleY(tick)} y2={scaleY(tick)}
-              stroke="#1e293b" strokeWidth="1"
+              stroke="var(--border)" strokeWidth="1"
             />
             <text
               x={padding.left - 10} y={scaleY(tick) + 4}
-              fill="#475569" fontSize="10" textAnchor="end" fontFamily="monospace"
+              fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="monospace"
             >
               ${formatNumberES(tick / 1000, { maximumFractionDigits: 0 })}K
             </text>
@@ -236,11 +236,11 @@ export default function TrajectoryChart({ result }: Props) {
             <line
               x1={scaleX(month)} x2={scaleX(month)}
               y1={padding.top} y2={chartHeight - padding.bottom}
-              stroke="#1e293b" strokeWidth="1"
+              stroke="var(--border)" strokeWidth="1"
             />
             <text
               x={scaleX(month)} y={chartHeight - 12}
-              fill="#475569" fontSize="10" textAnchor="middle" fontFamily="monospace"
+              fill="var(--text-secondary)" fontSize="10" textAnchor="middle" fontFamily="monospace"
             >
               {month === 0 ? '0' : `${month / 12}a`}
             </text>
@@ -266,18 +266,18 @@ export default function TrajectoryChart({ result }: Props) {
             <line
               x1={hover.svgX} x2={hover.svgX}
               y1={padding.top} y2={chartHeight - padding.bottom}
-              stroke="#334155" strokeWidth="1"
+              stroke="var(--border-light)" strokeWidth="1"
             />
             {/* Dots on P10/P50/P90 */}
-            <circle cx={hover.svgX} cy={scaleY(hover.p10Equity)} r="3.5" fill="#f87171" stroke="#0f172a" strokeWidth="1.5" />
-            <circle cx={hover.svgX} cy={scaleY(hover.p90Equity)} r="3.5" fill="#34d399" stroke="#0f172a" strokeWidth="1.5" />
-            <circle cx={hover.svgX} cy={scaleY(hover.p50Equity)} r="4.5" fill="#60a5fa" stroke="#0f172a" strokeWidth="1.5" />
+            <circle cx={hover.svgX} cy={scaleY(hover.p10Equity)} r="3.5" fill="#f87171" stroke="var(--bg-body)" strokeWidth="1.5" />
+            <circle cx={hover.svgX} cy={scaleY(hover.p90Equity)} r="3.5" fill="#34d399" stroke="var(--bg-body)" strokeWidth="1.5" />
+            <circle cx={hover.svgX} cy={scaleY(hover.p50Equity)} r="4.5" fill="#60a5fa" stroke="var(--bg-body)" strokeWidth="1.5" />
           </g>
         )}
 
         {/* Axis border lines */}
-        <line x1={padding.left} x2={padding.left} y1={padding.top} y2={chartHeight - padding.bottom} stroke="#1e293b" strokeWidth="1" />
-        <line x1={padding.left} x2={chartWidth - padding.right} y1={chartHeight - padding.bottom} y2={chartHeight - padding.bottom} stroke="#1e293b" strokeWidth="1" />
+        <line x1={padding.left} x2={padding.left} y1={padding.top} y2={chartHeight - padding.bottom} stroke="var(--border)" strokeWidth="1" />
+        <line x1={padding.left} x2={chartWidth - padding.right} y1={chartHeight - padding.bottom} y2={chartHeight - padding.bottom} stroke="var(--border)" strokeWidth="1" />
       </svg>
     </div>
   );

@@ -69,8 +69,8 @@ function Tooltip({ text }: { text: string }) {
         <span style={{
           position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
           width: '280px', padding: '0.625rem 0.75rem',
-          background: '#1e293b', border: '1px solid #334155', borderRadius: '6px',
-          color: '#cbd5e1', fontSize: '0.75rem', lineHeight: '1.5',
+          background: 'var(--border)', border: '1px solid var(--input-border)', borderRadius: '6px',
+          color: 'var(--text-secondary)', fontSize: '0.75rem', lineHeight: '1.5',
           boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 100, pointerEvents: 'none',
           whiteSpace: 'pre-wrap',
         }}>
@@ -80,7 +80,7 @@ function Tooltip({ text }: { text: string }) {
             position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
             width: 0, height: 0,
             borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
-            borderTop: '6px solid #334155',
+            borderTop: '6px solid var(--input-border)',
           }} />
         </span>
       )}
@@ -96,7 +96,7 @@ function Label({ text, tooltip }: { text: string; tooltip?: string }) {
     <label style={{
       display: 'flex', alignItems: 'center',
       fontWeight: '500', marginBottom: '0.5rem',
-      color: '#cbd5e1', fontSize: '0.875rem',
+      color: 'var(--text-secondary)', fontSize: '0.875rem',
     }}>
       {text}
       {tooltip && <Tooltip text={tooltip} />}
@@ -223,18 +223,18 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
   // Shared styles
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '0.625rem 0.875rem',
-    background: 'rgba(255,255,255,0.05)', color: 'white',
-    border: '1px solid #334155', borderRadius: '6px', fontSize: '0.95rem',
+    background: 'var(--input-bg)', color: 'var(--input-color)',
+    border: '1px solid var(--input-border)', borderRadius: '6px', fontSize: '0.95rem',
   };
   const gridStyle: React.CSSProperties = {
     display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem',
   };
   const sectionStyle: React.CSSProperties = {
-    background: '#131b2e', border: '1px solid #1e293b', borderRadius: '8px',
+    background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
     padding: '1.5rem', marginBottom: '1.5rem',
   };
   const sectionTitleStyle: React.CSSProperties = {
-    fontSize: '1.125rem', fontWeight: '600', color: '#f1f5f9', marginBottom: '1.25rem',
+    fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '1.25rem',
   };
 
   return (
@@ -249,8 +249,8 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
           <div
             style={{
               display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem',
-              padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.05)',
-              border: '1px solid #334155', borderRadius: '6px', cursor: 'text', minHeight: '44px',
+              padding: '0.5rem 0.75rem', background: 'var(--input-bg)',
+              border: '1px solid var(--input-border)', borderRadius: '6px', cursor: 'text', minHeight: '44px',
             }}
             onClick={() => inputRef.current?.focus()}
           >
@@ -259,13 +259,13 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
                 display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
                 padding: '0.25rem 0.5rem 0.25rem 0.625rem',
                 background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)',
-                borderRadius: '4px', color: '#93c5fd', fontSize: '0.8125rem',
+                borderRadius: '4px', color: 'var(--accent-blue-light)', fontSize: '0.8125rem',
                 fontWeight: '600', letterSpacing: '0.025em',
               }}>
                 {symbol}
                 <button type="button" onClick={(e) => { e.stopPropagation(); removeSymbol(symbol); }}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0', lineHeight: 1 }}
+                    background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '0', lineHeight: 1 }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; }}
                 ><X size={14} /></button>
@@ -278,15 +278,15 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
               onBlur={() => { setTimeout(() => setShowDropdown(false), 200); }}
               placeholder={config.symbols.length === 0 ? 'Buscar ticker (ej: SPY, AAPL, BTC-USD)' : 'Buscar...'}
               style={{ flex: 1, minWidth: '120px', background: 'transparent', border: 'none',
-                outline: 'none', color: 'white', fontSize: '0.9rem', padding: '0.125rem 0' }}
+                outline: 'none', color: 'var(--input-color)', fontSize: '0.9rem', padding: '0.125rem 0' }}
             />
-            {isSearching && <span style={{ color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Buscando...</span>}
+            {isSearching && <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Buscando...</span>}
           </div>
 
           {showDropdown && searchResults.length > 0 && (
             <div ref={dropdownRef} style={{
               position: 'absolute', top: '100%', left: 0, right: 0,
-              background: '#1e293b', border: '1px solid #334155', borderRadius: '8px',
+              background: 'var(--border)', border: '1px solid var(--input-border)', borderRadius: '8px',
               marginTop: '0.25rem', maxHeight: '300px', overflowY: 'auto', zIndex: 1000,
               boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             }}>
@@ -295,16 +295,16 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
                   onClick={() => handleSelectResult(result)}
                   onMouseDown={(e) => e.preventDefault()}
                   style={{ padding: '0.75rem 1rem', cursor: 'pointer',
-                    borderBottom: idx < searchResults.length - 1 ? '1px solid #334155' : 'none',
+                    borderBottom: idx < searchResults.length - 1 ? '1px solid var(--input-border)' : 'none',
                     background: 'transparent', transition: 'background 0.15s' }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <div style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '0.95rem' }}>{result.symbol}</div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.8125rem', marginTop: '0.125rem' }}>{result.name}</div>
-                      {result.exchange && <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.125rem' }}>{result.exchange}</div>}
+                      <div style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.95rem' }}>{result.symbol}</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', marginTop: '0.125rem' }}>{result.name}</div>
+                      {result.exchange && <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginTop: '0.125rem' }}>{result.exchange}</div>}
                     </div>
                     {result.price !== null && (
                       <div style={{ color: '#22c55e', fontWeight: '600', fontSize: '0.95rem' }}>${result.price.toFixed(2)}</div>
@@ -315,7 +315,7 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
             </div>
           )}
 
-          <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.35rem' }}>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginTop: '0.35rem' }}>
             {config.symbols.length} activo{config.symbols.length !== 1 ? 's' : ''} seleccionado{config.symbols.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -333,13 +333,13 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
             <label key={mode} style={{
               display: 'flex', alignItems: 'center', gap: '0.5rem',
               padding: '0.75rem 1rem', flex: 1, cursor: 'pointer', minWidth: '140px',
-              background: config.weightMode === mode ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.05)',
-              border: config.weightMode === mode ? '1px solid #3b82f6' : '1px solid #334155',
+              background: config.weightMode === mode ? 'rgba(59,130,246,0.2)' : 'var(--input-bg)',
+              border: config.weightMode === mode ? '1px solid #3b82f6' : '1px solid var(--input-border)',
               borderRadius: '8px',
             }}>
               <input type="radio" name="weightMode" checked={config.weightMode === mode}
                 onChange={() => update('weightMode', mode)} style={{ accentColor: '#3b82f6' }} />
-              <span style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '0.875rem' }}>{label}</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.875rem' }}>{label}</span>
               <Tooltip text={tip} />
             </label>
           ))}
@@ -349,12 +349,12 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
           <div>
             {config.symbols.map((symbol) => (
               <div key={symbol} style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                <span style={{ color: '#f1f5f9', fontWeight: '600', minWidth: '80px' }}>{symbol}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: '600', minWidth: '80px' }}>{symbol}</span>
                 <input type="range" min={0} max={100}
                   value={(manualWeights[symbol] || 0) * 100}
                   onChange={(e) => setManualWeights((prev) => ({ ...prev, [symbol]: parseFloat(e.target.value) / 100 }))}
                   style={{ flex: 1, accentColor: '#3b82f6' }} />
-                <span style={{ color: '#94a3b8', minWidth: '50px', textAlign: 'right' }}>
+                <span style={{ color: 'var(--text-muted)', minWidth: '50px', textAlign: 'right' }}>
                   {((manualWeights[symbol] || 0) * 100).toFixed(1)}%
                 </span>
               </div>
@@ -446,8 +446,8 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
       <button type="submit" disabled={loading || config.symbols.length === 0}
         style={{
           width: '100%', padding: '1rem',
-          background: loading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          color: loading ? 'rgba(255,255,255,0.5)' : 'white',
+          background: loading ? 'var(--disabled-bg)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          color: loading ? 'var(--disabled-color)' : 'white',
           border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600',
           cursor: loading ? 'not-allowed' : 'pointer',
         }}>

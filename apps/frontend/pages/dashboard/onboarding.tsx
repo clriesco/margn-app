@@ -382,7 +382,7 @@ export default function Onboarding() {
   if (loading || portfoliosLoading) {
     return (
       <div style={containerStyle}>
-        <p style={{ color: "#94a3b8" }}>Cargando...</p>
+        <p style={{ color: "var(--text-muted)" }}>Cargando...</p>
       </div>
     );
   }
@@ -395,7 +395,7 @@ export default function Onboarding() {
   if (portfolios.length > 0) {
     return (
       <div style={containerStyle}>
-        <p style={{ color: "#94a3b8" }}>Redirigiendo al dashboard...</p>
+        <p style={{ color: "var(--text-muted)" }}>Redirigiendo al dashboard...</p>
       </div>
     );
   }
@@ -421,7 +421,7 @@ export default function Onboarding() {
               <Rocket size={28} />
               Configura tu Portfolio
             </h1>
-            <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
               Vamos a configurar tu portfolio de inversión apalancada
             </p>
           </div>
@@ -433,7 +433,7 @@ export default function Onboarding() {
                 <div
                   style={{
                     ...progressDotStyle,
-                    background: step <= currentStep ? "#3b82f6" : "#334155",
+                    background: step <= currentStep ? "#3b82f6" : "var(--input-border)",
                   }}
                 >
                   {step}
@@ -442,7 +442,7 @@ export default function Onboarding() {
                   <div
                     style={{
                       ...progressLineStyle,
-                      background: step < currentStep ? "#3b82f6" : "#334155",
+                      background: step < currentStep ? "#3b82f6" : "var(--input-border)",
                     }}
                   />
                 )}
@@ -453,7 +453,7 @@ export default function Onboarding() {
           <div
             style={{
               fontSize: "0.8rem",
-              color: "#64748b",
+              color: "var(--text-dim)",
               textAlign: "center",
               marginBottom: "1.5rem",
             }}
@@ -507,7 +507,7 @@ export default function Onboarding() {
                 <h2 style={stepTitleStyle}>Selecciona tus Activos</h2>
                 <p
                   style={{
-                    color: "#94a3b8",
+                    color: "var(--text-muted)",
                     marginBottom: "1rem",
                     fontSize: "0.9rem",
                   }}
@@ -541,7 +541,7 @@ export default function Onboarding() {
                         position: "absolute",
                         right: "12px",
                         top: "12px",
-                        color: "#64748b",
+                        color: "var(--text-dim)",
                       }}
                     >
                       Buscando...
@@ -557,8 +557,8 @@ export default function Onboarding() {
                         top: "100%",
                         left: 0,
                         right: 0,
-                        background: "#1e293b",
-                        border: "1px solid #334155",
+                        background: "var(--border)",
+                        border: "1px solid var(--input-border)",
                         borderRadius: "8px",
                         marginTop: "0.25rem",
                         maxHeight: "300px",
@@ -577,7 +577,7 @@ export default function Onboarding() {
                             cursor: "pointer",
                             borderBottom:
                               resultIdx < searchResults.length - 1
-                                ? "1px solid #334155"
+                                ? "1px solid var(--input-border)"
                                 : "none",
                             background: "transparent",
                             transition: "background 0.2s",
@@ -600,7 +600,7 @@ export default function Onboarding() {
                             <div>
                               <div
                                 style={{
-                                  color: "#f1f5f9",
+                                  color: "var(--text-primary)",
                                   fontWeight: "600",
                                   fontSize: "0.95rem",
                                 }}
@@ -609,7 +609,7 @@ export default function Onboarding() {
                               </div>
                               <div
                                 style={{
-                                  color: "#94a3b8",
+                                  color: "var(--text-muted)",
                                   fontSize: "0.875rem",
                                   marginTop: "0.25rem",
                                 }}
@@ -619,7 +619,7 @@ export default function Onboarding() {
                               {result.exchange && (
                                 <div
                                   style={{
-                                    color: "#64748b",
+                                    color: "var(--text-dim)",
                                     fontSize: "0.75rem",
                                     marginTop: "0.125rem",
                                   }}
@@ -657,7 +657,7 @@ export default function Onboarding() {
                   {assets.length === 0 ? (
                     <p
                       style={{
-                        color: "#64748b",
+                        color: "var(--text-dim)",
                         fontStyle: "italic",
                         padding: "1rem",
                       }}
@@ -676,13 +676,13 @@ export default function Onboarding() {
                         <div key={asset.symbol} style={assetItemStyle}>
                           <div>
                             <span
-                              style={{ fontWeight: "600", color: "#f1f5f9" }}
+                              style={{ fontWeight: "600", color: "var(--text-primary)" }}
                             >
                               {asset.symbol}
                             </span>
                             <span
                               style={{
-                                color: "#94a3b8",
+                                color: "var(--text-muted)",
                                 marginLeft: "0.5rem",
                                 fontSize: "0.85rem",
                               }}
@@ -728,7 +728,7 @@ export default function Onboarding() {
                 <h2 style={stepTitleStyle}>Asignación de Pesos</h2>
                 <p
                   style={{
-                    color: "#94a3b8",
+                    color: "var(--text-muted)",
                     marginBottom: "1.5rem",
                     fontSize: "0.9rem",
                   }}
@@ -749,7 +749,7 @@ export default function Onboarding() {
                     style={{
                       ...methodOptionStyle,
                       borderColor:
-                        weightMethod === "sharpe" ? "#3b82f6" : "#334155",
+                        weightMethod === "sharpe" ? "#3b82f6" : "var(--input-border)",
                       background:
                         weightMethod === "sharpe"
                           ? "rgba(59, 130, 246, 0.1)"
@@ -770,7 +770,7 @@ export default function Onboarding() {
                           alignItems: "center",
                           gap: "0.5rem",
                           fontWeight: "600",
-                          color: "#f1f5f9",
+                          color: "var(--text-primary)",
                         }}
                       >
                         <TrendingUp size={16} />
@@ -778,7 +778,7 @@ export default function Onboarding() {
                       </div>
                       <div
                         style={{
-                          color: "#94a3b8",
+                          color: "var(--text-muted)",
                           fontSize: "0.8rem",
                           marginTop: "0.25rem",
                         }}
@@ -793,7 +793,7 @@ export default function Onboarding() {
                     style={{
                       ...methodOptionStyle,
                       borderColor:
-                        weightMethod === "equal" ? "#3b82f6" : "#334155",
+                        weightMethod === "equal" ? "#3b82f6" : "var(--input-border)",
                       background:
                         weightMethod === "equal"
                           ? "rgba(59, 130, 246, 0.1)"
@@ -808,7 +808,7 @@ export default function Onboarding() {
                       style={{ accentColor: "#3b82f6" }}
                     />
                     <div style={{ marginLeft: "0.75rem" }}>
-                      <div style={{ fontWeight: "600", color: "#f1f5f9" }}>
+                      <div style={{ fontWeight: "600", color: "var(--text-primary)" }}>
                         <div
                           style={{
                             display: "flex",
@@ -822,7 +822,7 @@ export default function Onboarding() {
                       </div>
                       <div
                         style={{
-                          color: "#94a3b8",
+                          color: "var(--text-muted)",
                           fontSize: "0.8rem",
                           marginTop: "0.25rem",
                         }}
@@ -841,7 +841,7 @@ export default function Onboarding() {
                     style={{
                       ...methodOptionStyle,
                       borderColor:
-                        weightMethod === "manual" ? "#3b82f6" : "#334155",
+                        weightMethod === "manual" ? "#3b82f6" : "var(--input-border)",
                       background:
                         weightMethod === "manual"
                           ? "rgba(59, 130, 246, 0.1)"
@@ -856,7 +856,7 @@ export default function Onboarding() {
                       style={{ accentColor: "#3b82f6" }}
                     />
                     <div style={{ marginLeft: "0.75rem" }}>
-                      <div style={{ fontWeight: "600", color: "#f1f5f9" }}>
+                      <div style={{ fontWeight: "600", color: "var(--text-primary)" }}>
                         <div
                           style={{
                             display: "flex",
@@ -870,7 +870,7 @@ export default function Onboarding() {
                       </div>
                       <div
                         style={{
-                          color: "#94a3b8",
+                          color: "var(--text-muted)",
                           fontSize: "0.8rem",
                           marginTop: "0.25rem",
                         }}
@@ -897,7 +897,7 @@ export default function Onboarding() {
                             style={{
                               minWidth: "100px",
                               fontWeight: "600",
-                              color: "#f1f5f9",
+                              color: "var(--text-primary)",
                             }}
                           >
                             {asset.symbol}
@@ -932,7 +932,7 @@ export default function Onboarding() {
                               textAlign: "right",
                             }}
                           />
-                          <span style={{ color: "#94a3b8" }}>%</span>
+                          <span style={{ color: "var(--text-muted)" }}>%</span>
                         </div>
                       ))}
                     </div>
@@ -995,7 +995,7 @@ export default function Onboarding() {
                   >
                     <p
                       style={{
-                        color: "#94a3b8",
+                        color: "var(--text-muted)",
                         margin: 0,
                         fontSize: "0.9rem",
                       }}
@@ -1017,7 +1017,7 @@ export default function Onboarding() {
                 <h2 style={stepTitleStyle}>Configuración Adicional</h2>
                 <p
                   style={{
-                    color: "#94a3b8",
+                    color: "var(--text-muted)",
                     marginBottom: "1.5rem",
                     fontSize: "0.9rem",
                   }}
@@ -1066,7 +1066,7 @@ export default function Onboarding() {
                           decimals={1}
                           style={inputStyle}
                         />
-                        <span style={{ color: "#94a3b8" }}>x</span>
+                        <span style={{ color: "var(--text-muted)" }}>x</span>
                       </div>
                     </div>
                     <div>
@@ -1089,7 +1089,7 @@ export default function Onboarding() {
                           decimals={1}
                           style={inputStyle}
                         />
-                        <span style={{ color: "#94a3b8" }}>x</span>
+                        <span style={{ color: "var(--text-muted)" }}>x</span>
                       </div>
                     </div>
                     <div>
@@ -1112,7 +1112,7 @@ export default function Onboarding() {
                           decimals={1}
                           style={inputStyle}
                         />
-                        <span style={{ color: "#94a3b8" }}>x</span>
+                        <span style={{ color: "var(--text-muted)" }}>x</span>
                       </div>
                     </div>
                   </div>
@@ -1221,7 +1221,7 @@ export default function Onboarding() {
                 <h2 style={stepTitleStyle}>Resumen</h2>
                 <p
                   style={{
-                    color: "#94a3b8",
+                    color: "var(--text-muted)",
                     marginBottom: "1.5rem",
                     fontSize: "0.9rem",
                   }}
@@ -1240,7 +1240,7 @@ export default function Onboarding() {
                   <div style={summaryCardStyle}>
                     <h4
                       style={{
-                        color: "#94a3b8",
+                        color: "var(--text-muted)",
                         margin: "0 0 0.5rem 0",
                         fontSize: "0.8rem",
                       }}
@@ -1248,7 +1248,7 @@ export default function Onboarding() {
                       PORTFOLIO
                     </h4>
                     <p
-                      style={{ color: "#f1f5f9", fontWeight: "600", margin: 0 }}
+                      style={{ color: "var(--text-primary)", fontWeight: "600", margin: 0 }}
                     >
                       {portfolioName}
                     </p>
@@ -1260,7 +1260,7 @@ export default function Onboarding() {
                   <div style={summaryCardStyle}>
                     <h4
                       style={{
-                        color: "#94a3b8",
+                        color: "var(--text-muted)",
                         margin: "0 0 0.5rem 0",
                         fontSize: "0.8rem",
                       }}
@@ -1294,14 +1294,14 @@ export default function Onboarding() {
                   <div style={summaryCardStyle}>
                     <h4
                       style={{
-                        color: "#94a3b8",
+                        color: "var(--text-muted)",
                         margin: "0 0 0.5rem 0",
                         fontSize: "0.8rem",
                       }}
                     >
                       ASIGNACIÓN DE PESOS
                     </h4>
-                    <p style={{ color: "#f1f5f9", margin: 0 }}>
+                    <p style={{ color: "var(--text-primary)", margin: 0 }}>
                       {weightMethod === "sharpe" && (
                         <div
                           style={{
@@ -1344,14 +1344,14 @@ export default function Onboarding() {
                   <div style={summaryCardStyle}>
                     <h4
                       style={{
-                        color: "#94a3b8",
+                        color: "var(--text-muted)",
                         margin: "0 0 0.5rem 0",
                         fontSize: "0.8rem",
                       }}
                     >
                       LEVERAGE
                     </h4>
-                    <p style={{ color: "#f1f5f9", margin: 0 }}>
+                    <p style={{ color: "var(--text-primary)", margin: 0 }}>
                       {leverageMin}x - {leverageMax}x (objetivo:{" "}
                       {leverageTarget}x)
                     </p>
@@ -1360,14 +1360,14 @@ export default function Onboarding() {
                   <div style={summaryCardStyle}>
                     <h4
                       style={{
-                        color: "#94a3b8",
+                        color: "var(--text-muted)",
                         margin: "0 0 0.5rem 0",
                         fontSize: "0.8rem",
                       }}
                     >
                       APORTACIONES
                     </h4>
-                    <p style={{ color: "#f1f5f9", margin: 0 }}>
+                    <p style={{ color: "var(--text-primary)", margin: 0 }}>
                       {formatCurrencyES(monthlyContribution)}{" "}
                       {contributionFrequency === "weekly" && "semanales"}
                       {contributionFrequency === "biweekly" && "bisemanales"}
@@ -1517,12 +1517,12 @@ const containerStyle: React.CSSProperties = {
   justifyContent: "center",
   alignItems: "center",
   padding: "2rem",
-  background: "#0a0e27",
+  background: "var(--bg-body)",
 };
 
 const cardStyle: React.CSSProperties = {
-  background: "#131b2e",
-  border: "1px solid #1e293b",
+  background: "var(--bg-card)",
+  border: "1px solid var(--border)",
   borderRadius: "12px",
   padding: "2rem",
   maxWidth: "700px",
@@ -1532,7 +1532,7 @@ const cardStyle: React.CSSProperties = {
 const titleStyle: React.CSSProperties = {
   fontSize: "1.75rem",
   fontWeight: "700",
-  color: "#f1f5f9",
+  color: "var(--text-primary)",
   marginBottom: "0.5rem",
 };
 
@@ -1568,7 +1568,7 @@ const stepContentStyle: React.CSSProperties = {
 const stepTitleStyle: React.CSSProperties = {
   fontSize: "1.25rem",
   fontWeight: "600",
-  color: "#f1f5f9",
+  color: "var(--text-primary)",
   marginBottom: "1rem",
 };
 
@@ -1579,7 +1579,7 @@ const fieldStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   display: "block",
   fontWeight: "500",
-  color: "#cbd5e1",
+  color: "var(--text-secondary)",
   marginBottom: "0.5rem",
   fontSize: "0.9rem",
 };
@@ -1588,14 +1588,14 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "0.75rem 1rem",
   background: "rgba(255, 255, 255, 0.05)",
-  border: "1px solid #334155",
+  border: "1px solid var(--input-border)",
   borderRadius: "6px",
-  color: "#f1f5f9",
+  color: "var(--text-primary)",
   fontSize: "0.95rem",
 };
 
 const helpStyle: React.CSSProperties = {
-  color: "#64748b",
+  color: "var(--text-dim)",
   fontSize: "0.8rem",
   marginTop: "0.5rem",
 };
@@ -1607,7 +1607,7 @@ const assetItemStyle: React.CSSProperties = {
   padding: "0.75rem 1rem",
   background: "rgba(255, 255, 255, 0.03)",
   borderRadius: "8px",
-  border: "1px solid #334155",
+  border: "1px solid var(--input-border)",
 };
 
 const removeButtonStyle: React.CSSProperties = {
@@ -1625,7 +1625,7 @@ const methodOptionStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "flex-start",
   padding: "1rem",
-  border: "1px solid #334155",
+  border: "1px solid var(--input-border)",
   borderRadius: "8px",
   cursor: "pointer",
 };
@@ -1644,13 +1644,13 @@ const sectionStyle: React.CSSProperties = {
   padding: "1rem",
   background: "rgba(255, 255, 255, 0.02)",
   borderRadius: "8px",
-  border: "1px solid #1e293b",
+  border: "1px solid var(--border)",
 };
 
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: "1rem",
   fontWeight: "600",
-  color: "#f1f5f9",
+  color: "var(--text-primary)",
   marginBottom: "1rem",
 };
 
@@ -1658,7 +1658,7 @@ const summaryCardStyle: React.CSSProperties = {
   padding: "1rem",
   background: "rgba(255, 255, 255, 0.03)",
   borderRadius: "8px",
-  border: "1px solid #1e293b",
+  border: "1px solid var(--border)",
 };
 
 const navigationStyle: React.CSSProperties = {
@@ -1667,7 +1667,7 @@ const navigationStyle: React.CSSProperties = {
   alignItems: "center",
   marginTop: "2rem",
   paddingTop: "1.5rem",
-  borderTop: "1px solid #1e293b",
+  borderTop: "1px solid var(--border)",
 };
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -1684,8 +1684,8 @@ const primaryButtonStyle: React.CSSProperties = {
 const secondaryButtonStyle: React.CSSProperties = {
   padding: "0.75rem 1.5rem",
   background: "transparent",
-  color: "#94a3b8",
-  border: "1px solid #334155",
+  color: "var(--text-muted)",
+  border: "1px solid var(--input-border)",
   borderRadius: "6px",
   fontSize: "0.95rem",
   fontWeight: "500",

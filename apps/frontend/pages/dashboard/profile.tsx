@@ -131,7 +131,7 @@ export default function Profile() {
             minHeight: "100vh",
           }}
         >
-          <p style={{ color: "#94a3b8", fontSize: "1rem" }}>Cargando...</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>Cargando...</p>
         </div>
       </>
     );
@@ -154,21 +154,21 @@ export default function Profile() {
               style={{
                 marginBottom: "2rem",
                 paddingBottom: "1.5rem",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
               }}
             >
               <h1
                 style={{
                   fontSize: "1.875rem",
                   fontWeight: "700",
-                  color: "#f1f5f9",
+                  color: "var(--text-primary)",
                   marginBottom: "0.25rem",
                   letterSpacing: "-0.025em",
                 }}
               >
                 Mi Perfil
               </h1>
-              <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                 Gestiona tu información personal y preferencias de notificaciones
               </p>
             </div>
@@ -209,8 +209,8 @@ export default function Profile() {
               {/* Personal Information */}
               <div
                 style={{
-                  background: "#131b2e",
-                  border: "1px solid #1e293b",
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                   padding: "1.5rem",
                   marginBottom: "1.5rem",
@@ -220,7 +220,7 @@ export default function Profile() {
                   style={{
                     fontSize: "1.125rem",
                     fontWeight: "600",
-                    color: "#f1f5f9",
+                    color: "var(--text-primary)",
                     marginBottom: "1rem",
                   }}
                 >
@@ -234,7 +234,7 @@ export default function Profile() {
                   <label
                     style={{
                       display: "block",
-                      color: "#94a3b8",
+                      color: "var(--text-muted)",
                       fontSize: "0.875rem",
                       marginBottom: "0.5rem",
                       fontWeight: "500",
@@ -249,9 +249,9 @@ export default function Profile() {
                     style={{
                       width: "100%",
                       padding: "0.75rem 1rem",
-                      background: "rgba(255, 255, 255, 0.05)",
-                      color: "rgba(255, 255, 255, 0.5)",
-                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      background: "var(--disabled-bg)",
+                      color: "var(--disabled-color)",
+                      border: "1px solid var(--disabled-border)",
                       borderRadius: "6px",
                       fontSize: "0.9375rem",
                       cursor: "not-allowed",
@@ -259,7 +259,7 @@ export default function Profile() {
                   />
                   <p
                     style={{
-                      color: "#64748b",
+                      color: "var(--text-dim)",
                       fontSize: "0.75rem",
                       marginTop: "0.25rem",
                       margin: 0,
@@ -273,7 +273,7 @@ export default function Profile() {
                   <label
                     style={{
                       display: "block",
-                      color: "#cbd5e1",
+                      color: "var(--text-secondary)",
                       fontSize: "0.875rem",
                       marginBottom: "0.5rem",
                       fontWeight: "500",
@@ -290,9 +290,9 @@ export default function Profile() {
                     style={{
                       width: "100%",
                       padding: "0.75rem 1rem",
-                      background: "rgba(255, 255, 255, 0.1)",
-                      color: "white",
-                      border: "2px solid rgba(255, 255, 255, 0.2)",
+                      background: "var(--input-bg)",
+                      color: "var(--input-color)",
+                      border: "2px solid var(--input-border)",
                       borderRadius: "6px",
                       fontSize: "0.9375rem",
                       boxSizing: "border-box",
@@ -304,8 +304,8 @@ export default function Profile() {
               {/* Notification Preferences */}
               <div
                 style={{
-                  background: "#131b2e",
-                  border: "1px solid #1e293b",
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                   padding: "1.5rem",
                   marginBottom: "1.5rem",
@@ -315,7 +315,7 @@ export default function Profile() {
                   style={{
                     fontSize: "1.125rem",
                     fontWeight: "600",
-                    color: "#f1f5f9",
+                    color: "var(--text-primary)",
                     marginBottom: "1rem",
                   }}
                 >
@@ -348,12 +348,12 @@ export default function Profile() {
                       }}
                     />
                     <div>
-                      <div style={{ color: "#cbd5e1", fontWeight: "500" }}>
+                      <div style={{ color: "var(--text-secondary)", fontWeight: "500" }}>
                         Notificaciones de Recomendaciones
                       </div>
                       <div
                         style={{
-                          color: "#64748b",
+                          color: "var(--text-dim)",
                           fontSize: "0.8125rem",
                           marginTop: "0.25rem",
                         }}
@@ -385,12 +385,12 @@ export default function Profile() {
                       }}
                     />
                     <div>
-                      <div style={{ color: "#cbd5e1", fontWeight: "500" }}>
+                      <div style={{ color: "var(--text-secondary)", fontWeight: "500" }}>
                         Recordatorios de Aportaciones
                       </div>
                       <div
                         style={{
-                          color: "#64748b",
+                          color: "var(--text-dim)",
                           fontSize: "0.8125rem",
                           marginTop: "0.25rem",
                         }}
@@ -422,12 +422,12 @@ export default function Profile() {
                       }}
                     />
                     <div>
-                      <div style={{ color: "#cbd5e1", fontWeight: "500" }}>
+                      <div style={{ color: "var(--text-secondary)", fontWeight: "500" }}>
                         Alertas de Leverage
                       </div>
                       <div
                         style={{
-                          color: "#64748b",
+                          color: "var(--text-dim)",
                           fontSize: "0.8125rem",
                           marginTop: "0.25rem",
                         }}
@@ -459,12 +459,12 @@ export default function Profile() {
                       }}
                     />
                     <div>
-                      <div style={{ color: "#cbd5e1", fontWeight: "500" }}>
+                      <div style={{ color: "var(--text-secondary)", fontWeight: "500" }}>
                         Notificaciones de Rebalance
                       </div>
                       <div
                         style={{
-                          color: "#64748b",
+                          color: "var(--text-dim)",
                           fontSize: "0.8125rem",
                           marginTop: "0.25rem",
                         }}
@@ -484,9 +484,9 @@ export default function Profile() {
                   style={{
                     padding: "0.75rem 2rem",
                     background: isSubmitting
-                      ? "rgba(255, 255, 255, 0.1)"
+                      ? "var(--disabled-bg)"
                       : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    color: "white",
+                    color: "var(--input-color)",
                     border: "none",
                     borderRadius: "6px",
                     fontSize: "0.9375rem",

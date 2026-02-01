@@ -193,7 +193,7 @@ export default function Configuration() {
             minHeight: "100vh",
           }}
         >
-          <p style={{ color: "#94a3b8", fontSize: "1rem" }}>Cargando...</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>Cargando...</p>
         </div>
       </>
     );
@@ -247,14 +247,14 @@ export default function Configuration() {
               style={{
                 marginBottom: "2rem",
                 paddingBottom: "1.5rem",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
               }}
             >
               <h1
                 style={{
                   fontSize: "1.875rem",
                   fontWeight: "700",
-                  color: "#f1f5f9",
+                  color: "var(--text-primary)",
                   marginBottom: "0.25rem",
                   letterSpacing: "-0.025em",
                 }}
@@ -270,7 +270,7 @@ export default function Configuration() {
                   Configuración del Portfolio
                 </div>
               </h1>
-              <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                 Personaliza los parámetros de la estrategia DCA apalancada
               </p>
             </div>
@@ -308,7 +308,7 @@ export default function Configuration() {
                         display: "block",
                         fontWeight: "500",
                         marginBottom: "0.5rem",
-                        color: "#cbd5e1",
+                        color: "var(--text-secondary)",
                         fontSize: "0.875rem",
                       }}
                     >
@@ -329,9 +329,9 @@ export default function Configuration() {
                       style={{
                         width: "100%",
                         padding: "0.625rem 0.875rem",
-                        background: "rgba(255,255,255,0.05)",
-                        color: "white",
-                        border: "1px solid #334155",
+                        background: "var(--input-bg)",
+                        color: "var(--input-color)",
+                        border: "1px solid var(--input-border)",
                         borderRadius: "6px",
                         fontSize: "0.95rem",
                       }}
@@ -350,7 +350,7 @@ export default function Configuration() {
                           display: "block",
                           fontWeight: "500",
                           marginBottom: "0.5rem",
-                          color: "#cbd5e1",
+                          color: "var(--text-secondary)",
                           fontSize: "0.875rem",
                         }}
                       >
@@ -367,9 +367,9 @@ export default function Configuration() {
                         style={{
                           width: "100%",
                           padding: "0.625rem 0.875rem",
-                          background: "rgba(255,255,255,0.05)",
-                          color: "white",
-                          border: "1px solid #334155",
+                          background: "var(--input-bg)",
+                          color: "var(--input-color)",
+                          border: "1px solid var(--input-border)",
                           borderRadius: "6px",
                           fontSize: "0.95rem",
                         }}
@@ -484,7 +484,7 @@ export default function Configuration() {
                       display: "block",
                       fontWeight: "500",
                       marginBottom: "0.75rem",
-                      color: "#cbd5e1",
+                      color: "var(--text-secondary)",
                       fontSize: "0.875rem",
                     }}
                   >
@@ -506,10 +506,10 @@ export default function Configuration() {
                         padding: "0.75rem 1rem",
                         background: formData.useDynamicSharpeRebalance
                           ? "rgba(59, 130, 246, 0.2)"
-                          : "rgba(255,255,255,0.05)",
+                          : "var(--input-bg)",
                         border: formData.useDynamicSharpeRebalance
                           ? "1px solid #3b82f6"
-                          : "1px solid #334155",
+                          : "1px solid var(--input-border)",
                         borderRadius: "8px",
                         flex: 1,
                       }}
@@ -532,7 +532,7 @@ export default function Configuration() {
                             display: "flex",
                             alignItems: "center",
                             gap: "0.5rem",
-                            color: "#f1f5f9",
+                            color: "var(--text-primary)",
                             fontWeight: "600",
                           }}
                         >
@@ -541,7 +541,7 @@ export default function Configuration() {
                         </div>
                         <div
                           style={{
-                            color: "#94a3b8",
+                            color: "var(--text-muted)",
                             fontSize: "0.75rem",
                             marginTop: "0.25rem",
                           }}
@@ -560,10 +560,10 @@ export default function Configuration() {
                         padding: "0.75rem 1rem",
                         background: !formData.useDynamicSharpeRebalance
                           ? "rgba(59, 130, 246, 0.2)"
-                          : "rgba(255,255,255,0.05)",
+                          : "var(--input-bg)",
                         border: !formData.useDynamicSharpeRebalance
                           ? "1px solid #3b82f6"
-                          : "1px solid #334155",
+                          : "1px solid var(--input-border)",
                         borderRadius: "8px",
                         flex: 1,
                       }}
@@ -581,7 +581,7 @@ export default function Configuration() {
                         style={{ accentColor: "#3b82f6" }}
                       />
                       <div>
-                        <div style={{ color: "#f1f5f9", fontWeight: "600" }}>
+                        <div style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                           <div
                             style={{
                               display: "flex",
@@ -595,7 +595,7 @@ export default function Configuration() {
                         </div>
                         <div
                           style={{
-                            color: "#94a3b8",
+                            color: "var(--text-muted)",
                             fontSize: "0.75rem",
                             marginTop: "0.25rem",
                           }}
@@ -621,13 +621,13 @@ export default function Configuration() {
                             gap: "1rem",
                             marginBottom: "0.75rem",
                             padding: "0.75rem",
-                            background: "rgba(255,255,255,0.03)",
+                            background: "var(--hover-bg)",
                             borderRadius: "8px",
                           }}
                         >
                           <span
                             style={{
-                              color: "#f1f5f9",
+                              color: "var(--text-primary)",
                               fontWeight: "600",
                               minWidth: "100px",
                             }}
@@ -665,15 +665,15 @@ export default function Configuration() {
                             style={{
                               width: "70px",
                               padding: "0.5rem",
-                              background: "rgba(255,255,255,0.1)",
-                              color: "white",
-                              border: "1px solid #334155",
+                              background: "var(--bg-glass)",
+                              color: "var(--input-color)",
+                              border: "1px solid var(--input-border)",
                               borderRadius: "4px",
                               fontSize: "0.9rem",
                               textAlign: "right",
                             }}
                           />
-                          <span style={{ color: "#94a3b8" }}>%</span>
+                          <span style={{ color: "var(--text-muted)" }}>%</span>
                         </div>
                       ))}
                     </div>
@@ -723,7 +723,7 @@ export default function Configuration() {
                       background: "rgba(59, 130, 246, 0.1)",
                       border: "1px solid rgba(59, 130, 246, 0.3)",
                       borderRadius: "8px",
-                      color: "#cbd5e1",
+                      color: "var(--text-secondary)",
                     }}
                   >
                     <p style={{ margin: 0 }}>
@@ -732,7 +732,7 @@ export default function Configuration() {
                     </p>
                   </div>
                 ) : (
-                  <p style={{ color: "#94a3b8", fontStyle: "italic" }}>
+                  <p style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
                     No hay activos configurados. Actualiza las posiciones del
                     portfolio primero.
                   </p>
@@ -753,7 +753,7 @@ export default function Configuration() {
                         style={{
                           fontSize: "1rem",
                           fontWeight: "600",
-                          color: "#f1f5f9",
+                          color: "var(--text-primary)",
                           margin: 0,
                         }}
                       >
@@ -914,10 +914,10 @@ export default function Configuration() {
                     padding: "0.875rem 2rem",
                     background:
                       isSaving || !weightsValid
-                        ? "rgba(255, 255, 255, 0.1)"
+                        ? "var(--disabled-bg)"
                         : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    color: isSaving || !weightsValid ? "rgba(255, 255, 255, 0.5)" : "white",
-                    border: isSaving || !weightsValid ? "1px solid rgba(255, 255, 255, 0.1)" : "none",
+                    color: isSaving || !weightsValid ? "var(--disabled-color)" : "white",
+                    border: isSaving || !weightsValid ? "1px solid var(--disabled-border)" : "none",
                     borderRadius: "6px",
                     fontSize: "0.95rem",
                     fontWeight: "600",
@@ -976,7 +976,7 @@ const gridStyle: React.CSSProperties = {
 };
 
 const helpTextStyle: React.CSSProperties = {
-  color: "#64748b",
+  color: "var(--text-dim)",
   fontSize: "0.8125rem",
   marginTop: "0.75rem",
   fontStyle: "italic",
@@ -993,8 +993,8 @@ function ConfigSection({
   return (
     <div
       style={{
-        background: "#131b2e",
-        border: "1px solid #1e293b",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border)",
         borderRadius: "8px",
         padding: "1.5rem",
         marginBottom: "1.5rem",
@@ -1004,7 +1004,7 @@ function ConfigSection({
         style={{
           fontSize: "1.125rem",
           fontWeight: "600",
-          color: "#f1f5f9",
+          color: "var(--text-primary)",
           marginBottom: "1.25rem",
         }}
       >
@@ -1055,7 +1055,7 @@ function InputField({
           display: "block",
           fontWeight: "500",
           marginBottom: "0.5rem",
-          color: "#cbd5e1",
+          color: "var(--text-secondary)",
           fontSize: "0.875rem",
         }}
       >
@@ -1073,9 +1073,9 @@ function InputField({
             style={{
               flex: 1,
               padding: "0.625rem 0.875rem",
-              background: "rgba(255,255,255,0.05)",
-              color: "white",
-              border: "1px solid #334155",
+              background: "var(--input-bg)",
+              color: "var(--input-color)",
+              border: "1px solid var(--input-border)",
               borderRadius: "6px",
               fontSize: "0.95rem",
             }}
@@ -1088,9 +1088,9 @@ function InputField({
             style={{
               flex: 1,
               padding: "0.625rem 0.875rem",
-              background: "rgba(255,255,255,0.05)",
-              color: "white",
-              border: "1px solid #334155",
+              background: "var(--input-bg)",
+              color: "var(--input-color)",
+              border: "1px solid var(--input-border)",
               borderRadius: "6px",
               fontSize: "0.95rem",
             }}
@@ -1098,7 +1098,7 @@ function InputField({
         )}
         {suffix && (
           <span
-            style={{ color: "#94a3b8", fontSize: "0.9rem", minWidth: "30px" }}
+            style={{ color: "var(--text-muted)", fontSize: "0.9rem", minWidth: "30px" }}
           >
             {suffix}
           </span>
@@ -1107,7 +1107,7 @@ function InputField({
       {help && (
         <p
           style={{
-            color: "#64748b",
+            color: "var(--text-dim)",
             fontSize: "0.75rem",
             marginTop: "0.35rem",
           }}
@@ -1150,7 +1150,7 @@ function CheckboxField({
       />
       <label
         style={{
-          color: "#cbd5e1",
+          color: "var(--text-secondary)",
           fontSize: "0.9rem",
           cursor: "pointer",
         }}

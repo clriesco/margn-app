@@ -17,13 +17,13 @@ const stageLabels: Record<string, string> = {
 export default function BacktestProgress({ progress, onCancel }: Props) {
   return (
     <div style={{
-      background: '#131b2e',
-      border: '1px solid #1e293b',
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
       borderRadius: '8px',
       padding: '2rem',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h3 style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '1.125rem', margin: 0 }}>
+        <h3 style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '1.125rem', margin: 0 }}>
           {stageLabels[progress.stage] || progress.stage}
         </h3>
         <button
@@ -46,7 +46,7 @@ export default function BacktestProgress({ progress, onCancel }: Props) {
       <div style={{
         width: '100%',
         height: '8px',
-        background: 'rgba(255,255,255,0.1)',
+        background: 'var(--bg-glass)',
         borderRadius: '4px',
         overflow: 'hidden',
         marginBottom: '1rem',
@@ -60,7 +60,7 @@ export default function BacktestProgress({ progress, onCancel }: Props) {
         }} />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.875rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
         <span>
           Ventana {progress.windowsCompleted} de {progress.totalWindows}
         </span>
@@ -76,19 +76,19 @@ export default function BacktestProgress({ progress, onCancel }: Props) {
           border: '1px solid rgba(59,130,246,0.2)',
           borderRadius: '6px',
         }}>
-          <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
             P50 parcial (actualizado)
           </p>
           <div style={{ display: 'flex', gap: '2rem' }}>
             <div>
-              <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Capital Final</span>
-              <p style={{ color: '#f1f5f9', fontWeight: '600', margin: '0.25rem 0 0' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>Capital Final</span>
+              <p style={{ color: 'var(--text-primary)', fontWeight: '600', margin: '0.25rem 0 0' }}>
                 ${formatNumberES(progress.partialP50.finalCapital, { maximumFractionDigits: 0 })}
               </p>
             </div>
             <div>
-              <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Sharpe</span>
-              <p style={{ color: '#f1f5f9', fontWeight: '600', margin: '0.25rem 0 0' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>Sharpe</span>
+              <p style={{ color: 'var(--text-primary)', fontWeight: '600', margin: '0.25rem 0 0' }}>
                 {progress.partialP50.sharpe.toFixed(2)}
               </p>
             </div>

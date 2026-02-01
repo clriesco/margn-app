@@ -390,7 +390,7 @@ export default function ManualUpdate() {
             minHeight: "100vh",
           }}
         >
-          <p style={{ color: "white", fontSize: "1.2rem" }}>Cargando...</p>
+          <p style={{ color: "var(--text-primary)", fontSize: "1.2rem" }}>Cargando...</p>
         </div>
       </>
     );
@@ -413,21 +413,21 @@ export default function ManualUpdate() {
               style={{
                 marginBottom: "2rem",
                 paddingBottom: "1.5rem",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
               }}
             >
               <h1
                 style={{
                   fontSize: "1.875rem",
                   fontWeight: "700",
-                  color: "#f1f5f9",
+                  color: "var(--text-primary)",
                   marginBottom: "0.25rem",
                   letterSpacing: "-0.025em",
                 }}
               >
                 Actualización Manual del Portfolio
               </h1>
-              <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                 Registra el estado real actual de tu portfolio (desde tu
                 broker).
               </p>
@@ -437,7 +437,7 @@ export default function ManualUpdate() {
               {/* Equity */}
               <div
                 style={{
-                  background: "rgba(255, 255, 255, 0.1)",
+                  background: "var(--bg-glass)",
                   borderRadius: "16px",
                   padding: "2rem",
                   backdropFilter: "blur(10px)",
@@ -448,7 +448,7 @@ export default function ManualUpdate() {
                   style={{
                     fontSize: "1.25rem",
                     fontWeight: "bold",
-                    color: "white",
+                    color: "var(--text-primary)",
                     marginBottom: "1rem",
                   }}
                 >
@@ -465,9 +465,9 @@ export default function ManualUpdate() {
                   style={{
                     width: "100%",
                     padding: "0.75rem 1rem",
-                    background: "rgba(255, 255, 255, 0.1)",
-                    color: "white",
-                    border: "2px solid rgba(255, 255, 255, 0.2)",
+                    background: "var(--bg-glass)",
+                    color: "var(--text-primary)",
+                    border: "2px solid var(--input-border)",
                     borderRadius: "8px",
                     fontSize: "1.25rem",
                     boxSizing: "border-box",
@@ -475,7 +475,7 @@ export default function ManualUpdate() {
                 />
                 <p
                   style={{
-                    color: "rgba(255, 255, 255, 0.5)",
+                    color: "var(--text-on-glass-muted)",
                     fontSize: "0.875rem",
                     marginTop: "0.5rem",
                   }}
@@ -487,7 +487,7 @@ export default function ManualUpdate() {
               {/* Positions */}
               <div
                 style={{
-                  background: "rgba(255, 255, 255, 0.1)",
+                  background: "var(--bg-glass)",
                   borderRadius: "16px",
                   padding: "2rem",
                   backdropFilter: "blur(10px)",
@@ -506,7 +506,7 @@ export default function ManualUpdate() {
                     style={{
                       fontSize: "1.25rem",
                       fontWeight: "bold",
-                      color: "white",
+                      color: "var(--text-primary)",
                       margin: 0,
                     }}
                   >
@@ -532,7 +532,7 @@ export default function ManualUpdate() {
                 </div>
 
                 {positions.length === 0 ? (
-                  <p style={{ color: "rgba(255, 255, 255, 0.5)" }}>
+                  <p style={{ color: "var(--text-on-glass-muted)" }}>
                     No hay posiciones. Haz clic en "Añadir Activo" para
                     comenzar.
                   </p>
@@ -578,7 +578,7 @@ export default function ManualUpdate() {
                                 : "0",
                             borderBottom:
                               sortedIdx < sortedPositions.length - 1
-                                ? "1px solid rgba(255, 255, 255, 0.1)"
+                                ? "1px solid var(--border)"
                                 : "none",
                           }}
                         >
@@ -586,7 +586,7 @@ export default function ManualUpdate() {
                             style={{
                               display: "block",
                               fontWeight: "500",
-                              color: "rgba(255, 255, 255, 0.9)",
+                              color: "var(--text-on-glass)",
                               marginBottom: "0.5rem",
                             }}
                           >
@@ -640,8 +640,8 @@ export default function ManualUpdate() {
                                   style={{
                                     flex: 1,
                                     padding: "0.75rem 1rem",
-                                    background: "rgba(255, 255, 255, 0.1)",
-                                    color: "white",
+                                    background: "var(--bg-glass)",
+                                    color: "var(--text-primary)",
                                     border: "2px solid rgba(59, 130, 246, 0.4)",
                                     borderRadius: "8px",
                                     fontSize: "1rem",
@@ -695,8 +695,8 @@ export default function ManualUpdate() {
                                       top: "100%",
                                       left: 0,
                                       right: 0,
-                                      background: "#1e293b",
-                                      border: "1px solid #334155",
+                                      background: "var(--border)",
+                                      border: "1px solid var(--input-border)",
                                       borderRadius: "8px",
                                       marginTop: "0.25rem",
                                       maxHeight: "300px",
@@ -750,7 +750,7 @@ export default function ManualUpdate() {
                                             <div>
                                               <div
                                                 style={{
-                                                  color: "#f1f5f9",
+                                                  color: "var(--text-primary)",
                                                   fontWeight: "600",
                                                   fontSize: "0.95rem",
                                                 }}
@@ -759,7 +759,7 @@ export default function ManualUpdate() {
                                               </div>
                                               <div
                                                 style={{
-                                                  color: "#94a3b8",
+                                                  color: "var(--text-muted)",
                                                   fontSize: "0.875rem",
                                                   marginTop: "0.25rem",
                                                 }}
@@ -769,7 +769,7 @@ export default function ManualUpdate() {
                                               {result.exchange && (
                                                 <div
                                                   style={{
-                                                    color: "#64748b",
+                                                    color: "var(--text-dim)",
                                                     fontSize: "0.75rem",
                                                     marginTop: "0.125rem",
                                                   }}
@@ -845,15 +845,15 @@ export default function ManualUpdate() {
                                     background:
                                       (parseNumberES(pos.quantity) || 0) === 0
                                         ? "rgba(239, 68, 68, 0.1)"
-                                        : "rgba(255, 255, 255, 0.1)",
+                                        : "var(--bg-glass)",
                                     color:
                                       (parseNumberES(pos.quantity) || 0) === 0
-                                        ? "rgba(255, 255, 255, 0.5)"
-                                        : "white",
+                                        ? "var(--text-on-glass-muted)"
+                                        : "var(--text-primary)",
                                     border:
                                       (parseNumberES(pos.quantity) || 0) === 0
                                         ? "2px solid rgba(239, 68, 68, 0.4)"
-                                        : "2px solid rgba(255, 255, 255, 0.2)",
+                                        : "2px solid var(--input-border)",
                                     borderRadius: "8px",
                                     fontSize: "1rem",
                                     boxSizing: "border-box",
@@ -926,7 +926,7 @@ export default function ManualUpdate() {
                             >
                               <p
                                 style={{
-                                  color: "rgba(255, 255, 255, 0.8)",
+                                  color: "var(--text-on-glass)",
                                   fontSize: "0.875rem",
                                   margin: 0,
                                 }}
@@ -941,7 +941,7 @@ export default function ManualUpdate() {
                           {pos.currentQuantity > 0 && (
                             <p
                               style={{
-                                color: "rgba(255, 255, 255, 0.4)",
+                                color: "var(--text-dim)",
                                 fontSize: "0.8rem",
                                 marginTop: "0.25rem",
                               }}
@@ -975,7 +975,7 @@ export default function ManualUpdate() {
                     padding: "0.875rem 2rem",
                     background:
                       "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    color: "white",
+                    color: "var(--text-primary)",
                     border: "none",
                     borderRadius: "6px",
                     fontSize: "0.95rem",

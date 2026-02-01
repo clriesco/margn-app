@@ -132,7 +132,7 @@ export default function BacktestPage() {
   if (authLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <p style={{ color: '#94a3b8' }}>Cargando...</p>
+        <p style={{ color: 'var(--text-muted)' }}>Cargando...</p>
       </div>
     );
   }
@@ -156,11 +156,11 @@ export default function BacktestPage() {
         <div style={{ padding: '2rem', paddingTop: '4rem' }} className="backtest-wrapper">
           <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             {/* Header */}
-            <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid #1e293b' }}>
-              <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: '#f1f5f9', marginBottom: '0.25rem' }}>
+            <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+              <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
                 Backtest Historico
               </h1>
-              <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                 Simula la estrategia DCA apalancada con datos historicos reales
               </p>
             </div>
@@ -196,16 +196,16 @@ export default function BacktestPage() {
 
             {stage === 'loading-prices' && (
               <div style={{
-                background: '#131b2e', border: '1px solid #1e293b', borderRadius: '8px',
+                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
                 padding: '2rem',
               }}>
-                <h3 style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '1.125rem', marginBottom: '1.25rem' }}>
+                <h3 style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '1.125rem', marginBottom: '1.25rem' }}>
                   Descargando precios historicos...
                 </h3>
 
                 {/* Progress bar */}
                 <div style={{
-                  width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)',
+                  width: '100%', height: '8px', background: 'var(--bg-glass)',
                   borderRadius: '4px', overflow: 'hidden', marginBottom: '1rem',
                 }}>
                   <div style={{
@@ -217,7 +217,7 @@ export default function BacktestPage() {
                   }} />
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem', color: '#94a3b8', fontSize: '0.875rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                   <span>{downloadProgress.done.length} de {downloadProgress.total} tickers</span>
                   <span>{downloadProgress.total > 0 ? Math.round((downloadProgress.done.length / downloadProgress.total) * 100) : 0}%</span>
                 </div>
@@ -244,7 +244,7 @@ export default function BacktestPage() {
                   )}
                 </div>
 
-                <p style={{ color: '#64748b', fontSize: '0.8125rem', marginTop: '1rem' }}>
+                <p style={{ color: 'var(--text-dim)', fontSize: '0.8125rem', marginTop: '1rem' }}>
                   La primera descarga de un ticker puede tardar mas. Las siguientes usan cache.
                 </p>
               </div>
@@ -262,8 +262,8 @@ export default function BacktestPage() {
                   onClick={() => { setStage('config'); setResult(null); setProgress(null); }}
                   style={{
                     width: '100%', padding: '0.875rem',
-                    background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
-                    border: '1px solid #1e293b', borderRadius: '8px',
+                    background: 'var(--hover-bg)', color: 'var(--text-muted)',
+                    border: '1px solid var(--border)', borderRadius: '8px',
                     cursor: 'pointer', fontSize: '0.9375rem', marginTop: '1rem',
                   }}
                 >

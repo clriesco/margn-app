@@ -287,7 +287,7 @@ function Dashboard() {
             minHeight: "100vh",
           }}
         >
-          <p style={{ color: "#94a3b8", fontSize: "1rem" }}>Cargando...</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>Cargando...</p>
         </div>
       </>
     );
@@ -315,7 +315,7 @@ function Dashboard() {
             padding: "2rem",
           }}
         >
-          <p style={{ color: "#94a3b8", fontSize: "1rem" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>
             Redirigiendo al asistente de configuración...
           </p>
         </div>
@@ -380,7 +380,7 @@ function Dashboard() {
             display: none;
           }
           .position-card {
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--hover-bg);
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 12px;
             padding: 1rem;
@@ -401,12 +401,12 @@ function Dashboard() {
             margin-bottom: 0.5rem;
           }
           .position-card-label {
-            color: #94a3b8;
+            color: var(--text-muted);
             font-size: 0.8125rem;
             font-weight: 500;
           }
           .position-card-value {
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-size: 0.9375rem;
             font-weight: 600;
             text-align: right;
@@ -415,7 +415,7 @@ function Dashboard() {
             display: none;
           }
           .history-card {
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--hover-bg);
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 12px;
             padding: 1rem;
@@ -436,12 +436,12 @@ function Dashboard() {
             margin-bottom: 0.5rem;
           }
           .history-card-label {
-            color: #94a3b8;
+            color: var(--text-muted);
             font-size: 0.8125rem;
             font-weight: 500;
           }
           .history-card-value {
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-size: 0.9375rem;
             font-weight: 600;
             text-align: right;
@@ -453,11 +453,11 @@ function Dashboard() {
             margin-top: 0.5rem;
           }
           .composition-tag {
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid var(--border-light);
             border-radius: 999px;
             padding: 0.2rem 0.55rem;
             font-size: 0.75rem;
-            color: #cbd5e1;
+            color: var(--text-secondary);
           }
         `,
           }}
@@ -477,7 +477,7 @@ function Dashboard() {
               style={{
                 marginBottom: "2rem",
                 paddingBottom: "1.5rem",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-start",
@@ -491,14 +491,14 @@ function Dashboard() {
                   style={{
                     fontSize: "1.875rem",
                     fontWeight: "700",
-                    color: "#f1f5f9",
+                    color: "var(--text-primary)",
                     marginBottom: "0.25rem",
                     letterSpacing: "-0.025em",
                   }}
                 >
                   Mi portfolio
                 </h1>
-                <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                   {userProfile?.fullName && userProfile.fullName.trim() !== ""
                     ? userProfile.fullName
                     : user.email}
@@ -522,8 +522,8 @@ function Dashboard() {
                     <div
                       key={i}
                       style={{
-                        background: "#131b2e",
-                        border: "1px solid #1e293b",
+                        background: "var(--bg-card)",
+                        border: "1px solid var(--border)",
                         borderRadius: "8px",
                         padding: "1.5rem",
                       }}
@@ -531,7 +531,7 @@ function Dashboard() {
                       <div
                         style={{
                           height: "0.875rem",
-                          background: "rgba(255, 255, 255, 0.1)",
+                          background: "var(--bg-glass)",
                           borderRadius: "4px",
                           marginBottom: "0.75rem",
                           width: "60%",
@@ -541,7 +541,7 @@ function Dashboard() {
                       <div
                         style={{
                           height: "1.75rem",
-                          background: "rgba(255, 255, 255, 0.1)",
+                          background: "var(--bg-glass)",
                           borderRadius: "4px",
                           width: "80%",
                           animation: "pulse 1.5s ease-in-out infinite",
@@ -554,8 +554,8 @@ function Dashboard() {
                 {/* Recommendations Skeleton */}
                 <div
                   style={{
-                    background: "#131b2e",
-                    border: "1px solid #1e293b",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                     padding: "1.5rem",
                     marginBottom: "2rem",
@@ -564,7 +564,7 @@ function Dashboard() {
                   <div
                     style={{
                       height: "1.25rem",
-                      background: "rgba(255, 255, 255, 0.1)",
+                      background: "var(--bg-glass)",
                       borderRadius: "4px",
                       marginBottom: "1rem",
                       width: "40%",
@@ -574,7 +574,7 @@ function Dashboard() {
                   <div
                     style={{
                       height: "4rem",
-                      background: "rgba(255, 255, 255, 0.05)",
+                      background: "var(--hover-bg)",
                       borderRadius: "8px",
                       animation: "pulse 1.5s ease-in-out infinite",
                     }}
@@ -584,8 +584,8 @@ function Dashboard() {
                 {/* Chart Skeleton */}
                 <div
                   style={{
-                    background: "#131b2e",
-                    border: "1px solid #1e293b",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                     padding: "1.5rem",
                     marginBottom: "2rem",
@@ -594,7 +594,7 @@ function Dashboard() {
                   <div
                     style={{
                       height: "1.25rem",
-                      background: "rgba(255, 255, 255, 0.1)",
+                      background: "var(--bg-glass)",
                       borderRadius: "4px",
                       marginBottom: "1rem",
                       width: "30%",
@@ -604,7 +604,7 @@ function Dashboard() {
                   <div
                     style={{
                       height: "220px",
-                      background: "rgba(255, 255, 255, 0.05)",
+                      background: "var(--hover-bg)",
                       borderRadius: "8px",
                       animation: "pulse 1.5s ease-in-out infinite",
                     }}
@@ -624,8 +624,8 @@ function Dashboard() {
                     <div
                       key={i}
                       style={{
-                        background: "#131b2e",
-                        border: "1px solid #1e293b",
+                        background: "var(--bg-card)",
+                        border: "1px solid var(--border)",
                         borderRadius: "8px",
                         padding: "1rem",
                       }}
@@ -633,7 +633,7 @@ function Dashboard() {
                       <div
                         style={{
                           height: "0.75rem",
-                          background: "rgba(255, 255, 255, 0.1)",
+                          background: "var(--bg-glass)",
                           borderRadius: "4px",
                           marginBottom: "0.5rem",
                           width: "70%",
@@ -643,7 +643,7 @@ function Dashboard() {
                       <div
                         style={{
                           height: "1.5rem",
-                          background: "rgba(255, 255, 255, 0.1)",
+                          background: "var(--bg-glass)",
                           borderRadius: "4px",
                           width: "50%",
                           animation: "pulse 1.5s ease-in-out infinite",
@@ -656,8 +656,8 @@ function Dashboard() {
                 {/* History Table Skeleton */}
                 <div
                   style={{
-                    background: "#131b2e",
-                    border: "1px solid #1e293b",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                     padding: "1.5rem",
                     marginBottom: "2rem",
@@ -666,7 +666,7 @@ function Dashboard() {
                   <div
                     style={{
                       height: "1.25rem",
-                      background: "rgba(255, 255, 255, 0.1)",
+                      background: "var(--bg-glass)",
                       borderRadius: "4px",
                       marginBottom: "1rem",
                       width: "25%",
@@ -690,7 +690,7 @@ function Dashboard() {
                               <div
                                 style={{
                                   height: "0.875rem",
-                                  background: "rgba(255, 255, 255, 0.1)",
+                                  background: "var(--bg-glass)",
                                   borderRadius: "4px",
                                   animation: "pulse 1.5s ease-in-out infinite",
                                 }}
@@ -712,7 +712,7 @@ function Dashboard() {
                                 <div
                                   style={{
                                     height: "1rem",
-                                    background: "rgba(255, 255, 255, 0.05)",
+                                    background: "var(--hover-bg)",
                                     borderRadius: "4px",
                                     animation:
                                       "pulse 1.5s ease-in-out infinite",
@@ -730,8 +730,8 @@ function Dashboard() {
                 {/* Positions Table Skeleton */}
                 <div
                   style={{
-                    background: "#131b2e",
-                    border: "1px solid #1e293b",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                     padding: "1.5rem",
                     marginBottom: "2rem",
@@ -740,7 +740,7 @@ function Dashboard() {
                   <div
                     style={{
                       height: "1.25rem",
-                      background: "rgba(255, 255, 255, 0.1)",
+                      background: "var(--bg-glass)",
                       borderRadius: "4px",
                       marginBottom: "1rem",
                       width: "25%",
@@ -764,7 +764,7 @@ function Dashboard() {
                               <div
                                 style={{
                                   height: "0.875rem",
-                                  background: "rgba(255, 255, 255, 0.1)",
+                                  background: "var(--bg-glass)",
                                   borderRadius: "4px",
                                   animation: "pulse 1.5s ease-in-out infinite",
                                 }}
@@ -786,7 +786,7 @@ function Dashboard() {
                                 <div
                                   style={{
                                     height: "1rem",
-                                    background: "rgba(255, 255, 255, 0.05)",
+                                    background: "var(--hover-bg)",
                                     borderRadius: "4px",
                                     animation:
                                       "pulse 1.5s ease-in-out infinite",
@@ -864,8 +864,8 @@ function Dashboard() {
                   recommendations.recommendations.length > 0 && (
                     <div
                       style={{
-                        background: "#131b2e",
-                        border: "1px solid #1e293b",
+                        background: "var(--bg-card)",
+                        border: "1px solid var(--border)",
                         borderRadius: "8px",
                         padding: "1.5rem",
                         marginBottom: "2rem",
@@ -875,7 +875,7 @@ function Dashboard() {
                         style={{
                           fontSize: "1.125rem",
                           fontWeight: "600",
-                          color: "#f1f5f9",
+                          color: "var(--text-primary)",
                           marginBottom: "1.25rem",
                         }}
                       >
@@ -914,8 +914,8 @@ function Dashboard() {
                 {analyticsStats && (
                   <div
                     style={{
-                      background: "#131b2e",
-                      border: "1px solid #1e293b",
+                      background: "var(--bg-card)",
+                      border: "1px solid var(--border)",
                       borderRadius: "8px",
                       padding: "1.5rem",
                       marginBottom: "2rem",
@@ -925,7 +925,7 @@ function Dashboard() {
                       style={{
                         fontSize: "1.125rem",
                         fontWeight: "600",
-                        color: "#f1f5f9",
+                        color: "var(--text-primary)",
                         marginBottom: "1rem",
                       }}
                     >
@@ -1069,8 +1069,8 @@ function Dashboard() {
                 {metricsHistory.length > 0 && (
                   <div
                     style={{
-                      background: "#131b2e",
-                      border: "1px solid #1e293b",
+                      background: "var(--bg-card)",
+                      border: "1px solid var(--border)",
                       borderRadius: "8px",
                       padding: "1.5rem",
                       marginBottom: "2rem",
@@ -1080,7 +1080,7 @@ function Dashboard() {
                       style={{
                         fontSize: "1.125rem",
                         fontWeight: "600",
-                        color: "#f1f5f9",
+                        color: "var(--text-primary)",
                         marginBottom: "1rem",
                       }}
                     >
@@ -1093,8 +1093,8 @@ function Dashboard() {
                 {/* Summary Info */}
                 <div
                   style={{
-                    background: "#131b2e",
-                    border: "1px solid #1e293b",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                     padding: "1.5rem",
                     marginBottom: "2rem",
@@ -1104,7 +1104,7 @@ function Dashboard() {
                     style={{
                       fontSize: "1.125rem",
                       fontWeight: "600",
-                      color: "#f1f5f9",
+                      color: "var(--text-primary)",
                       marginBottom: "1rem",
                     }}
                   >
@@ -1121,7 +1121,7 @@ function Dashboard() {
                     <div>
                       <p
                         style={{
-                          color: "#64748b",
+                          color: "var(--text-dim)",
                           fontSize: "0.8rem",
                           marginBottom: "0.25rem",
                         }}
@@ -1130,7 +1130,7 @@ function Dashboard() {
                       </p>
                       <p
                         style={{
-                          color: "#f1f5f9",
+                          color: "var(--text-primary)",
                           fontSize: "1.1rem",
                           fontWeight: "600",
                         }}
@@ -1141,7 +1141,7 @@ function Dashboard() {
                     <div>
                       <p
                         style={{
-                          color: "#64748b",
+                          color: "var(--text-dim)",
                           fontSize: "0.8rem",
                           marginBottom: "0.25rem",
                         }}
@@ -1150,7 +1150,7 @@ function Dashboard() {
                       </p>
                       <p
                         style={{
-                          color: "#f1f5f9",
+                          color: "var(--text-primary)",
                           fontSize: "1.1rem",
                           fontWeight: "600",
                         }}
@@ -1165,7 +1165,7 @@ function Dashboard() {
                     <div>
                       <p
                         style={{
-                          color: "#64748b",
+                          color: "var(--text-dim)",
                           fontSize: "0.8rem",
                           marginBottom: "0.25rem",
                         }}
@@ -1174,7 +1174,7 @@ function Dashboard() {
                       </p>
                       <p
                         style={{
-                          color: "#f1f5f9",
+                          color: "var(--text-primary)",
                           fontSize: "1.1rem",
                           fontWeight: "600",
                         }}
@@ -1192,8 +1192,8 @@ function Dashboard() {
                 {/* Historical Records */}
                 <div
                   style={{
-                    background: "#131b2e",
-                    border: "1px solid #1e293b",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                     padding: "1.5rem",
                     marginBottom: "2rem",
@@ -1203,7 +1203,7 @@ function Dashboard() {
                     style={{
                       fontSize: "1.125rem",
                       fontWeight: "600",
-                      color: "#f1f5f9",
+                      color: "var(--text-primary)",
                       marginBottom: "1rem",
                     }}
                   >
@@ -1225,7 +1225,7 @@ function Dashboard() {
                       }}
                     >
                       <thead>
-                        <tr style={{ borderBottom: "1px solid #1e293b" }}>
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
                           <th style={tableHeaderStyle}>Fecha</th>
                           <th style={tableHeaderStyle}>Equity</th>
                           <th style={tableHeaderStyle}>Exposición</th>
@@ -1241,7 +1241,7 @@ function Dashboard() {
                             style={{
                               borderBottom:
                                 idx < paginatedHistory.length - 1
-                                  ? "1px solid #0f172a"
+                                  ? "1px solid var(--bg-body)"
                                   : "none",
                             }}
                           >
@@ -1281,11 +1281,11 @@ function Dashboard() {
                                       key={`${asset.symbol}-${asset.weight}`}
                                       style={{
                                         border:
-                                          "1px solid rgba(255,255,255,0.2)",
+                                          "1px solid var(--border-light)",
                                         borderRadius: "999px",
                                         padding: "0.2rem 0.55rem",
                                         fontSize: "0.75rem",
-                                        color: "#cbd5e1",
+                                        color: "var(--text-secondary)",
                                       }}
                                     >
                                       {asset.symbol}{" "}
@@ -1300,7 +1300,7 @@ function Dashboard() {
                               ) : (
                                 <span
                                   style={{
-                                    color: "#94a3b8",
+                                    color: "var(--text-muted)",
                                     fontSize: "0.8rem",
                                   }}
                                 >
@@ -1335,7 +1335,7 @@ function Dashboard() {
                             <div
                               style={{
                                 fontWeight: "600",
-                                color: "#f1f5f9",
+                                color: "var(--text-primary)",
                                 fontSize: "1rem",
                               }}
                             >
@@ -1427,7 +1427,7 @@ function Dashboard() {
                         alignItems: "center",
                         marginTop: "1.5rem",
                         paddingTop: "1.5rem",
-                        borderTop: "1px solid #1e293b",
+                        borderTop: "1px solid var(--border)",
                       }}
                     >
                       <button
@@ -1439,10 +1439,10 @@ function Dashboard() {
                           padding: "0.5rem 1rem",
                           background:
                             historyPage === 1
-                              ? "rgba(255, 255, 255, 0.05)"
-                              : "#131b2e",
-                          color: historyPage === 1 ? "#64748b" : "#cbd5e1",
-                          border: "1px solid #334155",
+                              ? "var(--hover-bg)"
+                              : "var(--bg-card)",
+                          color: historyPage === 1 ? "var(--text-dim)" : "var(--text-secondary)",
+                          border: "1px solid var(--input-border)",
                           borderRadius: "6px",
                           fontSize: "0.875rem",
                           fontWeight: "500",
@@ -1454,7 +1454,7 @@ function Dashboard() {
                       </button>
                       <span
                         style={{
-                          color: "#94a3b8",
+                          color: "var(--text-muted)",
                           fontSize: "0.875rem",
                         }}
                       >
@@ -1470,11 +1470,11 @@ function Dashboard() {
                           padding: "0.5rem 1rem",
                           background:
                             historyPage === totalPages
-                              ? "rgba(255, 255, 255, 0.05)"
-                              : "#131b2e",
+                              ? "var(--hover-bg)"
+                              : "var(--bg-card)",
                           color:
-                            historyPage === totalPages ? "#64748b" : "#cbd5e1",
-                          border: "1px solid #334155",
+                            historyPage === totalPages ? "var(--text-dim)" : "var(--text-secondary)",
+                          border: "1px solid var(--input-border)",
                           borderRadius: "6px",
                           fontSize: "0.875rem",
                           fontWeight: "500",
@@ -1494,8 +1494,8 @@ function Dashboard() {
                 {/* Positions Table */}
                 <div
                   style={{
-                    background: "#131b2e",
-                    border: "1px solid #1e293b",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                     padding: "1.5rem",
                     marginBottom: "2rem",
@@ -1513,7 +1513,7 @@ function Dashboard() {
                       style={{
                         fontSize: "1.125rem",
                         fontWeight: "600",
-                        color: "#f1f5f9",
+                        color: "var(--text-primary)",
                         margin: 0,
                       }}
                     >
@@ -1606,7 +1606,7 @@ function Dashboard() {
                       }}
                     >
                       <thead>
-                        <tr style={{ borderBottom: "1px solid #1e293b" }}>
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
                           <th style={tableHeaderStyle}>Activo</th>
                           <th style={tableHeaderStyle}>Peso</th>
                           <th style={tableHeaderStyle}>Cantidad</th>
@@ -1623,7 +1623,7 @@ function Dashboard() {
                             style={{
                               borderBottom:
                                 idx < summary.positions.length - 1
-                                  ? "1px solid #0f172a"
+                                  ? "1px solid var(--bg-body)"
                                   : "none",
                             }}
                           >
@@ -1632,7 +1632,7 @@ function Dashboard() {
                                 {pos.asset.name}
                               </div>
                               <div
-                                style={{ color: "#64748b", fontSize: "0.8rem" }}
+                                style={{ color: "var(--text-dim)", fontSize: "0.8rem" }}
                               >
                                 {pos.asset.symbol}
                               </div>
@@ -1704,7 +1704,7 @@ function Dashboard() {
                             <div
                               style={{
                                 fontWeight: "600",
-                                color: "#f1f5f9",
+                                color: "var(--text-primary)",
                                 fontSize: "1rem",
                                 marginBottom: "0.25rem",
                               }}
@@ -1713,7 +1713,7 @@ function Dashboard() {
                             </div>
                             <div
                               style={{
-                                color: "#64748b",
+                                color: "var(--text-dim)",
                                 fontSize: "0.8125rem",
                               }}
                             >
@@ -1874,10 +1874,10 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
   const fmtPct = (v: number) => (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
 
   const panelLabelStyle: React.CSSProperties = {
-    color: "#64748b", fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: "0.5px",
+    color: "var(--text-dim)", fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: "0.5px",
   };
   const panelValueStyle: React.CSSProperties = {
-    color: "#f1f5f9", fontWeight: "600", fontSize: "0.9375rem",
+    color: "var(--text-primary)", fontWeight: "600", fontSize: "0.9375rem",
   };
 
   return (
@@ -1886,7 +1886,7 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
       <div style={{
         display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap",
         padding: "0.625rem 1rem", marginBottom: "0.75rem",
-        background: "rgba(255,255,255,0.03)", border: "1px solid #1e293b", borderRadius: "6px",
+        background: "var(--hover-bg)", border: "1px solid var(--border)", borderRadius: "6px",
         minHeight: "40px", fontSize: "0.8125rem",
       }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
@@ -1895,7 +1895,7 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
             {new Date(dp.date).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
           </span>
         </div>
-        <div style={{ width: "1px", height: "28px", background: "#1e293b" }} />
+        <div style={{ width: "1px", height: "28px", background: "var(--border)" }} />
         <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
           <span style={panelLabelStyle}>Equity</span>
           <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
@@ -1903,17 +1903,17 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
             <span style={{ color: dpReturn >= 0 ? "#34d399" : "#f87171", fontSize: "0.75rem", fontWeight: "500" }}>{fmtPct(dpReturn)}</span>
           </div>
         </div>
-        <div style={{ width: "1px", height: "28px", background: "#1e293b" }} />
+        <div style={{ width: "1px", height: "28px", background: "var(--border)" }} />
         <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
           <span style={panelLabelStyle}>Leverage</span>
           <span style={panelValueStyle}>{dp.leverage.toFixed(2)}x</span>
         </div>
         {dp.drawdown != null && (
           <>
-            <div style={{ width: "1px", height: "28px", background: "#1e293b" }} />
+            <div style={{ width: "1px", height: "28px", background: "var(--border)" }} />
             <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
               <span style={panelLabelStyle}>Drawdown</span>
-              <span style={{ ...panelValueStyle, color: dp.drawdown < -0.05 ? "#f87171" : "#cbd5e1" }}>
+              <span style={{ ...panelValueStyle, color: dp.drawdown < -0.05 ? "#f87171" : "var(--text-secondary)" }}>
                 {(dp.drawdown * 100).toFixed(1)}%
               </span>
             </div>
@@ -1921,7 +1921,7 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
         )}
         {dp.pnl != null && (
           <>
-            <div style={{ width: "1px", height: "28px", background: "#1e293b" }} />
+            <div style={{ width: "1px", height: "28px", background: "var(--border)" }} />
             <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
               <span style={panelLabelStyle}>PnL día</span>
               <span style={{ ...panelValueStyle, color: dp.pnl >= 0 ? "#34d399" : "#f87171" }}>
@@ -1933,7 +1933,7 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
         {hoverIndex === null && (
           <>
             <div style={{ flex: 1 }} />
-            <span style={{ color: "#475569", fontSize: "0.75rem", fontStyle: "italic" }}>
+            <span style={{ color: "var(--text-dim)", fontSize: "0.75rem", fontStyle: "italic" }}>
               Pasa el ratón por el gráfico
             </span>
           </>
@@ -1958,8 +1958,8 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
         {/* Horizontal grid + Y labels */}
         {yTicks.map((t) => (
           <g key={t}>
-            <line x1={pad.left} x2={chartWidth - pad.right} y1={sy(t)} y2={sy(t)} stroke="#1e293b" strokeWidth="1" />
-            <text x={pad.left - 8} y={sy(t) + 4} fill="#475569" fontSize="10" textAnchor="end" fontFamily="monospace">
+            <line x1={pad.left} x2={chartWidth - pad.right} y1={sy(t)} y2={sy(t)} stroke="var(--border)" strokeWidth="1" />
+            <text x={pad.left - 8} y={sy(t) + 4} fill="var(--text-dim)" fontSize="10" textAnchor="end" fontFamily="monospace">
               {formatNumberES(t / 1000, { maximumFractionDigits: 0 })}k
             </text>
           </g>
@@ -1967,7 +1967,7 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
 
         {/* X labels */}
         {tickIndices.map((idx) => (
-          <text key={idx} x={sx(idx)} y={chartHeight - 8} fill="#475569" fontSize="10" textAnchor="middle" fontFamily="monospace">
+          <text key={idx} x={sx(idx)} y={chartHeight - 8} fill="var(--text-dim)" fontSize="10" textAnchor="middle" fontFamily="monospace">
             {new Date(data[idx].date).toLocaleDateString("es-ES", { month: "short", year: "2-digit" })}
           </text>
         ))}
@@ -1981,14 +1981,14 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
         {/* Hover crosshair + dot */}
         {hoverIndex !== null && (
           <g>
-            <line x1={sx(hoverIndex)} x2={sx(hoverIndex)} y1={pad.top} y2={chartHeight - pad.bottom} stroke="#334155" strokeWidth="1" />
-            <circle cx={sx(hoverIndex)} cy={sy(data[hoverIndex].equity)} r="4" fill={lineColor} stroke="#0f172a" strokeWidth="1.5" />
+            <line x1={sx(hoverIndex)} x2={sx(hoverIndex)} y1={pad.top} y2={chartHeight - pad.bottom} stroke="var(--border-light)" strokeWidth="1" />
+            <circle cx={sx(hoverIndex)} cy={sy(data[hoverIndex].equity)} r="4" fill={lineColor} stroke="var(--bg-body)" strokeWidth="1.5" />
           </g>
         )}
 
         {/* Axis borders */}
-        <line x1={pad.left} x2={pad.left} y1={pad.top} y2={chartHeight - pad.bottom} stroke="#1e293b" strokeWidth="1" />
-        <line x1={pad.left} x2={chartWidth - pad.right} y1={chartHeight - pad.bottom} y2={chartHeight - pad.bottom} stroke="#1e293b" strokeWidth="1" />
+        <line x1={pad.left} x2={pad.left} y1={pad.top} y2={chartHeight - pad.bottom} stroke="var(--border)" strokeWidth="1" />
+        <line x1={pad.left} x2={chartWidth - pad.right} y1={chartHeight - pad.bottom} y2={chartHeight - pad.bottom} stroke="var(--border)" strokeWidth="1" />
       </svg>
     </div>
   );
@@ -2008,7 +2008,7 @@ function AnalyticsCard({
   return (
     <div
       style={{
-        background: "rgba(255, 255, 255, 0.04)",
+        background: "var(--hover-bg)",
         border: "1px solid rgba(148, 163, 184, 0.2)",
         borderRadius: "12px",
         padding: "1rem",
@@ -2025,7 +2025,7 @@ function AnalyticsCard({
       >
         <p
           style={{
-            color: "#94a3b8",
+            color: "var(--text-muted)",
             fontSize: "0.75rem",
             margin: 0,
             textTransform: "uppercase",
@@ -2050,7 +2050,7 @@ function AnalyticsCard({
               strokeLinecap="round"
               strokeLinejoin="round"
               style={{
-                color: "#64748b",
+                color: "var(--text-dim)",
                 cursor: "help",
                 flexShrink: 0,
               }}
@@ -2067,11 +2067,11 @@ function AnalyticsCard({
                   left: "50%",
                   transform: "translateX(-50%)",
                   marginBottom: "0.5rem",
-                  background: "rgba(15, 23, 42, 0.98)",
+                  background: "var(--bg-card)",
                   border: "1px solid rgba(148, 163, 184, 0.3)",
                   borderRadius: "8px",
                   padding: "0.75rem",
-                  color: "#cbd5e1",
+                  color: "var(--text-secondary)",
                   fontSize: "0.8125rem",
                   width: "280px",
                   zIndex: 1100,
@@ -2100,7 +2100,7 @@ function AnalyticsCard({
       </div>
       <p
         style={{
-          color: "#f1f5f9",
+          color: "var(--text-primary)",
           fontSize: "1.1rem",
           fontWeight: "600",
           margin: 0,
@@ -2131,15 +2131,15 @@ function MetricCard({
   return (
     <div
       style={{
-        background: "#131b2e",
-        border: "1px solid #1e293b",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border)",
         borderRadius: "8px",
         padding: "1.25rem",
       }}
     >
       <p
         style={{
-          color: "#94a3b8",
+          color: "var(--text-muted)",
           fontSize: "0.8125rem",
           marginBottom: "0.5rem",
           fontWeight: "500",
@@ -2158,19 +2158,19 @@ function MetricCard({
               ? positive
                 ? "#22c55e"
                 : "#ef4444"
-              : "#f1f5f9",
+              : "var(--text-primary)",
           marginBottom: "0.25rem",
         }}
       >
         {value}
       </p>
-      <p style={{ color: "#64748b", fontSize: "0.75rem" }}>{subtitle}</p>
+      <p style={{ color: "var(--text-dim)", fontSize: "0.75rem" }}>{subtitle}</p>
     </div>
   );
 }
 
 const tableHeaderStyle: React.CSSProperties = {
-  color: "#94a3b8",
+  color: "var(--text-muted)",
   fontWeight: "600",
   textAlign: "left",
   padding: "0.875rem 1rem",
@@ -2180,7 +2180,7 @@ const tableHeaderStyle: React.CSSProperties = {
 };
 
 const tableCellStyle: React.CSSProperties = {
-  color: "#cbd5e1",
+  color: "var(--text-secondary)",
   padding: "1rem",
   fontSize: "0.9375rem",
 };
@@ -2271,7 +2271,7 @@ function DashboardRecommendationCard({
           <div>
             <h3
               style={{
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 fontSize: "1.1rem",
                 fontWeight: "600",
                 margin: 0,
@@ -2296,7 +2296,7 @@ function DashboardRecommendationCard({
       </div>
 
       {/* Description */}
-      <p style={{ color: "#cbd5e1", marginBottom: "1rem", lineHeight: "1.5" }}>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1rem", lineHeight: "1.5" }}>
         {recommendation.description}
       </p>
 
@@ -2313,7 +2313,7 @@ function DashboardRecommendationCard({
           >
             <p
               style={{
-                color: "#94a3b8",
+                color: "var(--text-muted)",
                 fontSize: "0.8rem",
                 marginBottom: "0.5rem",
                 fontWeight: "600",
@@ -2324,7 +2324,7 @@ function DashboardRecommendationCard({
             </p>
             <p
               style={{
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 fontSize: "0.9rem",
                 fontWeight: "600",
               }}
@@ -2364,7 +2364,7 @@ function DashboardRecommendationCard({
           </p>
           <p
             style={{
-              color: "#f1f5f9",
+              color: "var(--text-primary)",
               fontSize: "1.25rem",
               fontWeight: "700",
             }}
@@ -2397,7 +2397,7 @@ function DashboardRecommendationCard({
           </p>
           <p
             style={{
-              color: "#f1f5f9",
+              color: "var(--text-primary)",
               fontSize: "1.25rem",
               fontWeight: "700",
             }}

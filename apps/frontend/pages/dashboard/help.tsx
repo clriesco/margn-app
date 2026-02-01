@@ -47,7 +47,7 @@ export default function Help() {
             minHeight: "100vh",
           }}
         >
-          <p style={{ color: "#94a3b8", fontSize: "1rem" }}>Cargando...</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>Cargando...</p>
         </div>
       </>
     );
@@ -69,7 +69,7 @@ export default function Help() {
             style={{
               marginBottom: "2rem",
               paddingBottom: "1.5rem",
-              borderBottom: "1px solid #1e293b",
+              borderBottom: "1px solid var(--border)",
             }}
           >
             <div
@@ -85,14 +85,14 @@ export default function Help() {
                 style={{
                   fontSize: "2rem",
                   fontWeight: "700",
-                  color: "#f1f5f9",
+                  color: "var(--text-primary)",
                   margin: 0,
                 }}
               >
                 Guía de Ayuda
               </h1>
             </div>
-            <p style={{ color: "#94a3b8", fontSize: "1rem" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>
               Aprende a usar la aplicación y gestiona tu portfolio de forma
               eficiente
             </p>
@@ -101,8 +101,8 @@ export default function Help() {
           {/* Table of Contents */}
           <div
             style={{
-              background: "#131b2e",
-              border: "1px solid #1e293b",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
               borderRadius: "12px",
               padding: "1.5rem",
               marginBottom: "2rem",
@@ -112,7 +112,7 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginBottom: "1rem",
               }}
             >
@@ -164,7 +164,7 @@ export default function Help() {
             title="1. Configuración Inicial"
             icon={PlayCircle}
           >
-            <p style={{ color: "#cbd5e1", marginBottom: "1.5rem" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
               Cuando creas tu cuenta por primera vez, necesitas configurar tu
               portfolio. Este proceso solo se hace una vez.
             </p>
@@ -223,7 +223,7 @@ export default function Help() {
             title="2. Operativa Mensual"
             icon={Calendar}
           >
-            <p style={{ color: "#cbd5e1", marginBottom: "1.5rem" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
               La operativa mensual sigue un flujo específico diseñado para
               mantener tu portfolio optimizado. Aquí está el diagrama del proceso:
             </p>
@@ -231,8 +231,8 @@ export default function Help() {
             {/* Workflow Diagram */}
             <div
               style={{
-                background: "#0f172a",
-                border: "1px solid #1e293b",
+                background: "var(--bg-sidebar)",
+                border: "1px solid var(--border)",
                 borderRadius: "12px",
                 padding: "2rem",
                 marginBottom: "2rem",
@@ -269,7 +269,7 @@ export default function Help() {
                   >
                     Importante
                   </p>
-                  <p style={{ color: "#cbd5e1", fontSize: "0.9375rem" }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
                     Las contribuciones se registran pero{" "}
                     <strong>no se despliegan automáticamente</strong>. El
                     sistema evalúa señales de mercado (drawdown, desviación de
@@ -287,7 +287,7 @@ export default function Help() {
             title="3. Contribuciones Mensuales"
             icon={DollarSign}
           >
-            <p style={{ color: "#cbd5e1", marginBottom: "1.5rem" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
               Las contribuciones son el dinero que añades periódicamente a tu
               portfolio. El sistema las registra pero las despliega
               condicionalmente.
@@ -297,7 +297,7 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginTop: "1.5rem",
                 marginBottom: "0.75rem",
               }}
@@ -323,14 +323,14 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginTop: "1.5rem",
                 marginBottom: "0.75rem",
               }}
             >
               ¿Cuándo se despliegan las contribuciones?
             </h3>
-            <p style={{ color: "#cbd5e1", marginBottom: "1rem" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
               Las contribuciones se despliegan cuando se activa una de estas
               señales:
             </p>
@@ -364,7 +364,7 @@ export default function Help() {
                 <div
                   key={idx}
                   style={{
-                    background: "rgba(255, 255, 255, 0.04)",
+                    background: "var(--hover-bg)",
                     border: "1px solid rgba(148, 163, 184, 0.2)",
                     borderRadius: "8px",
                     padding: "1rem",
@@ -386,11 +386,11 @@ export default function Help() {
                         background: signal.color,
                       }}
                     />
-                    <strong style={{ color: "#f1f5f9" }}>{signal.title}</strong>
+                    <strong style={{ color: "var(--text-primary)" }}>{signal.title}</strong>
                   </div>
                   <p
                     style={{
-                      color: "#cbd5e1",
+                      color: "var(--text-secondary)",
                       fontSize: "0.875rem",
                       margin: 0,
                     }}
@@ -427,7 +427,7 @@ export default function Help() {
                   >
                     Aportación Extra
                   </p>
-                  <p style={{ color: "#cbd5e1", fontSize: "0.9375rem" }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
                     Si el leverage está por encima del máximo (4.0x), el sistema
                     puede recomendar una aportación extra. Esta aportación se usa
                     como colateral adicional sin aumentar la exposición, reduciendo
@@ -440,7 +440,7 @@ export default function Help() {
 
           {/* Section 4: Updates */}
           <Section id="updates" title="4. Actualizaciones Manuales" icon={Edit}>
-            <p style={{ color: "#cbd5e1", marginBottom: "1.5rem" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
               Las actualizaciones manuales registran el estado real de tu
               portfolio después de ejecutar operaciones en tu broker.
             </p>
@@ -449,7 +449,7 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginTop: "1.5rem",
                 marginBottom: "0.75rem",
               }}
@@ -458,7 +458,7 @@ export default function Help() {
             </h3>
             <ul
               style={{
-                color: "#cbd5e1",
+                color: "var(--text-secondary)",
                 paddingLeft: "1.5rem",
                 marginBottom: "1.5rem",
               }}
@@ -485,7 +485,7 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginTop: "1.5rem",
                 marginBottom: "0.75rem",
               }}
@@ -548,7 +548,7 @@ export default function Help() {
                   >
                     Precio Medio Automático
                   </p>
-                  <p style={{ color: "#cbd5e1", fontSize: "0.9375rem" }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
                     Si el precio medio es 0 o no lo cambias, el sistema usará el
                     precio actual del activo. Para activos nuevos, esto es útil.
                     Para posiciones existentes, mantén el precio medio real para
@@ -565,7 +565,7 @@ export default function Help() {
             title="5. Rebalanceo del Portfolio"
             icon={Scale}
           >
-            <p style={{ color: "#cbd5e1", marginBottom: "1.5rem" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
               El rebalanceo ajusta las posiciones para mantener los pesos
               objetivo y el leverage dentro del rango deseado.
             </p>
@@ -574,7 +574,7 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginTop: "1.5rem",
                 marginBottom: "0.75rem",
               }}
@@ -631,7 +631,7 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginTop: "1.5rem",
                 marginBottom: "0.75rem",
               }}
@@ -640,20 +640,20 @@ export default function Help() {
             </h3>
             <div
               style={{
-                background: "rgba(255, 255, 255, 0.04)",
+                background: "var(--hover-bg)",
                 border: "1px solid rgba(148, 163, 184, 0.2)",
                 borderRadius: "8px",
                 padding: "1rem",
                 marginBottom: "1.5rem",
               }}
             >
-              <p style={{ color: "#cbd5e1", fontSize: "0.9375rem" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
                 Puedes elegir entre dos modos de optimización en la{" "}
                 <strong>Configuración</strong>:
               </p>
               <ul
                 style={{
-                  color: "#cbd5e1",
+                  color: "var(--text-secondary)",
                   fontSize: "0.9375rem",
                   paddingLeft: "1.5rem",
                   marginTop: "0.75rem",
@@ -707,7 +707,7 @@ export default function Help() {
                   >
                     Recomendación
                   </p>
-                  <p style={{ color: "#cbd5e1", fontSize: "0.9375rem" }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
                     Se recomienda usar la optimización Sharpe desde el principio.
                     Una vez que el algoritmo sugiera los pesos optimizados, puedes
                     copiarlos manualmente a los pesos objetivo estáticos si prefieres
@@ -724,7 +724,7 @@ export default function Help() {
             title="6. Añadir un Activo Nuevo"
             icon={Plus}
           >
-            <p style={{ color: "#cbd5e1", marginBottom: "1.5rem" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
               Puedes añadir nuevos activos a tu portfolio en cualquier momento.
             </p>
 
@@ -732,7 +732,7 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginTop: "1.5rem",
                 marginBottom: "0.75rem",
               }}
@@ -798,7 +798,7 @@ export default function Help() {
                   >
                     Activos Soportados
                   </p>
-                  <p style={{ color: "#cbd5e1", fontSize: "0.9375rem" }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
                     La aplicación soporta activos de Yahoo Finance: acciones,
                     ETFs, criptomonedas, commodities, índices y bonos. El símbolo
                     debe coincidir con el de Yahoo Finance (ej: "BTC-USD" para
@@ -815,7 +815,7 @@ export default function Help() {
             title="7. Sistema de Recomendaciones"
             icon={AlertCircle}
           >
-            <p style={{ color: "#cbd5e1", marginBottom: "1.5rem" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
               El sistema genera recomendaciones automáticas basadas en el estado
               actual de tu portfolio. Estas aparecen en el dashboard principal.
             </p>
@@ -824,7 +824,7 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginTop: "1.5rem",
                 marginBottom: "0.75rem",
               }}
@@ -885,7 +885,7 @@ export default function Help() {
                 <div
                   key={idx}
                   style={{
-                    background: "rgba(255, 255, 255, 0.04)",
+                    background: "var(--hover-bg)",
                     border: `1px solid ${rec.color}40`,
                     borderRadius: "8px",
                     padding: "1rem",
@@ -914,12 +914,12 @@ export default function Help() {
                           background: rec.color,
                         }}
                       />
-                      <strong style={{ color: "#f1f5f9" }}>{rec.type}</strong>
+                      <strong style={{ color: "var(--text-primary)" }}>{rec.type}</strong>
                     </div>
                     <span
                       style={{
                         background: rec.color,
-                        color: "white",
+                        color: "var(--text-primary)",
                         fontSize: "0.7rem",
                         fontWeight: "700",
                         padding: "0.25rem 0.5rem",
@@ -931,7 +931,7 @@ export default function Help() {
                   </div>
                   <p
                     style={{
-                      color: "#cbd5e1",
+                      color: "var(--text-secondary)",
                       fontSize: "0.875rem",
                       marginBottom: rec.action ? "0.5rem" : 0,
                     }}
@@ -958,8 +958,8 @@ export default function Help() {
           {/* Quick Actions */}
           <div
             style={{
-              background: "#131b2e",
-              border: "1px solid #1e293b",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
               borderRadius: "12px",
               padding: "1.5rem",
               marginTop: "2rem",
@@ -969,7 +969,7 @@ export default function Help() {
               style={{
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 marginBottom: "1rem",
               }}
             >
@@ -1060,8 +1060,8 @@ function Section({
     <section
       id={id}
       style={{
-        background: "#131b2e",
-        border: "1px solid #1e293b",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border)",
         borderRadius: "12px",
         padding: "2rem",
         marginBottom: "2rem",
@@ -1075,7 +1075,7 @@ function Section({
           gap: "1rem",
           marginBottom: "1.5rem",
           paddingBottom: "1rem",
-          borderBottom: "1px solid #1e293b",
+          borderBottom: "1px solid var(--border)",
         }}
       >
         <Icon size={28} color="#60a5fa" />
@@ -1083,7 +1083,7 @@ function Section({
           style={{
             fontSize: "1.5rem",
             fontWeight: "700",
-            color: "#f1f5f9",
+            color: "var(--text-primary)",
             margin: 0,
           }}
         >
@@ -1142,7 +1142,7 @@ function Step({
       >
         {number}
       </div>
-      <div style={{ flex: 1, color: "#cbd5e1", lineHeight: "1.6" }}>
+      <div style={{ flex: 1, color: "var(--text-secondary)", lineHeight: "1.6" }}>
         {children}
       </div>
     </div>

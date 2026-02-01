@@ -165,45 +165,45 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
 
   return (
     <div style={{
-      background: '#131b2e', border: '1px solid #1e293b', borderRadius: '8px',
+      background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
       padding: '1.5rem', marginBottom: '1rem',
     }}>
       {/* Info panel */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap',
         padding: '0.5rem 0.875rem', marginBottom: '0.75rem',
-        background: 'rgba(255,255,255,0.03)', border: '1px solid #1e293b', borderRadius: '6px',
+        background: 'var(--hover-bg)', border: '1px solid var(--border)', borderRadius: '6px',
         fontSize: '0.8125rem', minHeight: '36px',
       }}>
-        <span style={{ color: '#94a3b8', fontWeight: '600', fontSize: '0.875rem', minWidth: '28px' }}>{label}</span>
-        <div style={{ width: '1px', height: '24px', background: '#1e293b' }} />
+        <span style={{ color: 'var(--text-muted)', fontWeight: '600', fontSize: '0.875rem', minWidth: '28px' }}>{label}</span>
+        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: '#64748b', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
-          <span style={{ color: '#f1f5f9', fontWeight: '600' }}>{display.month}</span>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{display.month}</span>
         </div>
-        <div style={{ width: '1px', height: '24px', background: '#1e293b' }} />
+        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: '#64748b', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: '#64748b', marginRight: '3px', verticalAlign: 'middle' }} />
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: 'var(--text-secondary)', marginRight: '3px', verticalAlign: 'middle' }} />
             Capital inicial
           </span>
-          <span style={{ color: '#cbd5e1', fontWeight: '600' }}>{fmtUsd(display.initialCapital)}</span>
+          <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{fmtUsd(display.initialCapital)}</span>
         </div>
-        <div style={{ width: '1px', height: '24px', background: '#1e293b' }} />
+        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: '#64748b', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: '#60a5fa', marginRight: '3px', verticalAlign: 'middle' }} />
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: 'var(--accent-blue)', marginRight: '3px', verticalAlign: 'middle' }} />
             Aportaciones
           </span>
-          <span style={{ color: '#cbd5e1', fontWeight: '600' }}>{fmtUsd(display.cumulativeContributions)}</span>
+          <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{fmtUsd(display.cumulativeContributions)}</span>
         </div>
-        <div style={{ width: '1px', height: '24px', background: '#1e293b' }} />
+        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: '#64748b', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: display.returns >= 0 ? '#34d399' : '#f87171', marginRight: '3px', verticalAlign: 'middle' }} />
             Retornos
           </span>
@@ -211,17 +211,17 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
             {display.returns >= 0 ? '+' : ''}{fmtUsd(display.returns)}
           </span>
         </div>
-        <div style={{ width: '1px', height: '24px', background: '#1e293b' }} />
+        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: '#64748b', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equity</span>
-          <span style={{ color: '#f1f5f9', fontWeight: '700' }}>{fmtUsd(display.equity)}</span>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equity</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{fmtUsd(display.equity)}</span>
         </div>
 
         {!hover && (
           <>
             <div style={{ flex: 1 }} />
-            <span style={{ color: '#475569', fontSize: '0.75rem', fontStyle: 'italic' }}>Pasa el ratón por el gráfico</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic' }}>Pasa el ratón por el gráfico</span>
           </>
         )}
       </div>
@@ -237,16 +237,16 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
         {/* Grid */}
         {yTicks.map((tick) => (
           <g key={tick}>
-            <line x1={pad.left} x2={chartWidth - pad.right} y1={sy(tick)} y2={sy(tick)} stroke="#1e293b" strokeWidth="1" />
-            <text x={pad.left - 8} y={sy(tick) + 4} fill="#475569" fontSize="10" textAnchor="end" fontFamily="monospace">
+            <line x1={pad.left} x2={chartWidth - pad.right} y1={sy(tick)} y2={sy(tick)} stroke="var(--border)" strokeWidth="1" />
+            <text x={pad.left - 8} y={sy(tick) + 4} fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="monospace">
               ${formatNumberES(tick / 1000, { maximumFractionDigits: 0 })}K
             </text>
           </g>
         ))}
         {xLabels.map((month) => (
           <g key={month}>
-            <line x1={sx(month)} x2={sx(month)} y1={pad.top} y2={chartHeight - pad.bottom} stroke="#1e293b" strokeWidth="1" />
-            <text x={sx(month)} y={chartHeight - 10} fill="#475569" fontSize="10" textAnchor="middle" fontFamily="monospace">
+            <line x1={sx(month)} x2={sx(month)} y1={pad.top} y2={chartHeight - pad.bottom} stroke="var(--border)" strokeWidth="1" />
+            <text x={sx(month)} y={chartHeight - 10} fill="var(--text-secondary)" fontSize="10" textAnchor="middle" fontFamily="monospace">
               {month === 0 ? '0' : `${month / 12}a`}
             </text>
           </g>
@@ -267,24 +267,24 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
         {/* Invested line (dashed) */}
         <polyline
           points={points.map((p) => `${sx(p.month).toFixed(1)},${sy(p.initialCapital + p.cumulativeContributions).toFixed(1)}`).join(' ')}
-          fill="none" stroke="#475569" strokeWidth="1" strokeDasharray="4,3"
+          fill="none" stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="4,3"
         />
 
         {/* Equity line */}
-        <polyline points={equityLine} fill="none" stroke="#f1f5f9" strokeWidth="2" />
+        <polyline points={equityLine} fill="none" stroke="var(--text-muted)" strokeWidth="1.5" />
 
         {/* Hover crosshair + dot */}
         {hover && (
           <g>
-            <line x1={sx(hover.month)} x2={sx(hover.month)} y1={pad.top} y2={chartHeight - pad.bottom} stroke="#334155" strokeWidth="1" />
-            <circle cx={sx(hover.month)} cy={sy(hover.equity)} r="4" fill="#f1f5f9" stroke="#0f172a" strokeWidth="1.5" />
-            <circle cx={sx(hover.month)} cy={sy(hover.initialCapital + hover.cumulativeContributions)} r="3" fill="#475569" stroke="#0f172a" strokeWidth="1.5" />
+            <line x1={sx(hover.month)} x2={sx(hover.month)} y1={pad.top} y2={chartHeight - pad.bottom} stroke="var(--border-light)" strokeWidth="1" />
+            <circle cx={sx(hover.month)} cy={sy(hover.equity)} r="4" fill="var(--text-muted)" stroke="var(--bg-body)" strokeWidth="1.5" />
+            <circle cx={sx(hover.month)} cy={sy(hover.initialCapital + hover.cumulativeContributions)} r="3" fill="var(--text-secondary)" stroke="var(--bg-body)" strokeWidth="1.5" />
           </g>
         )}
 
         {/* Axis borders */}
-        <line x1={pad.left} x2={pad.left} y1={pad.top} y2={chartHeight - pad.bottom} stroke="#1e293b" strokeWidth="1" />
-        <line x1={pad.left} x2={chartWidth - pad.right} y1={chartHeight - pad.bottom} y2={chartHeight - pad.bottom} stroke="#1e293b" strokeWidth="1" />
+        <line x1={pad.left} x2={pad.left} y1={pad.top} y2={chartHeight - pad.bottom} stroke="var(--border)" strokeWidth="1" />
+        <line x1={pad.left} x2={chartWidth - pad.right} y1={chartHeight - pad.bottom} y2={chartHeight - pad.bottom} stroke="var(--border)" strokeWidth="1" />
       </svg>
     </div>
   );
@@ -325,14 +325,14 @@ export default function EquityBreakdownChart({ result }: Props) {
   return (
     <div style={{ marginBottom: '1.5rem' }}>
       <div style={{
-        background: '#131b2e', border: '1px solid #1e293b', borderRadius: '8px',
+        background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
         padding: '1.5rem', paddingBottom: '0.75rem', marginBottom: '0',
         borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
       }}>
-        <h3 style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '1.125rem', margin: 0 }}>
+        <h3 style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '1.125rem', margin: 0 }}>
           Desglose del Equity
         </h3>
-        <p style={{ color: '#64748b', fontSize: '0.8125rem', marginTop: '0.25rem', marginBottom: 0 }}>
+        <p style={{ color: 'var(--text-dim)', fontSize: '0.8125rem', marginTop: '0.25rem', marginBottom: 0 }}>
           Capital inicial + aportaciones acumuladas vs equity real. La diferencia son los retornos del mercado.
         </p>
       </div>

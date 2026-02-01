@@ -117,7 +117,7 @@ export default function Rebalance() {
             minHeight: "100vh",
           }}
         >
-          <p style={{ color: "white", fontSize: "1.2rem" }}>Cargando...</p>
+          <p style={{ color: "var(--text-primary)", fontSize: "1.2rem" }}>Cargando...</p>
         </div>
       </>
     );
@@ -140,21 +140,21 @@ export default function Rebalance() {
               style={{
                 marginBottom: "2rem",
                 paddingBottom: "1.5rem",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
               }}
             >
               <h1
                 style={{
                   fontSize: "1.875rem",
                   fontWeight: "700",
-                  color: "#f1f5f9",
+                  color: "var(--text-primary)",
                   marginBottom: "0.25rem",
                   letterSpacing: "-0.025em",
                 }}
               >
                 Rebalancear Portfolio
               </h1>
-              <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                 Asignación óptima calculada por algoritmo basada en las
                 condiciones actuales del mercado
               </p>
@@ -163,7 +163,7 @@ export default function Rebalance() {
             {isCalculating ? (
               <div
                 style={{
-                  background: "rgba(255, 255, 255, 0.1)",
+                  background: "var(--bg-glass)",
                   borderRadius: "16px",
                   padding: "4rem 2rem",
                   backdropFilter: "blur(10px)",
@@ -172,14 +172,14 @@ export default function Rebalance() {
               >
                 <p
                   style={{
-                    color: "white",
+                    color: "var(--text-primary)",
                     fontSize: "1.2rem",
                     marginBottom: "1rem",
                   }}
                 >
                   Calculando asignación óptima...
                 </p>
-                <p style={{ color: "rgba(255, 255, 255, 0.6)" }}>
+                <p style={{ color: "var(--text-on-glass-muted)" }}>
                   Analizando señales de drawdown, desviación de pesos y
                   volatilidad
                 </p>
@@ -208,7 +208,7 @@ export default function Rebalance() {
                     >
                       <p
                         style={{
-                          color: "rgba(255, 255, 255, 0.9)",
+                          color: "var(--text-on-glass)",
                           fontSize: "1.1rem",
                           fontWeight: "600",
                           margin: 0,
@@ -218,7 +218,7 @@ export default function Rebalance() {
                       </p>
                       <p
                         style={{
-                          color: "rgba(255, 255, 255, 0.7)",
+                          color: "var(--text-on-glass)",
                           fontSize: "0.9rem",
                           marginTop: "0.5rem",
                           margin: 0,
@@ -242,14 +242,14 @@ export default function Rebalance() {
                 >
                   <div
                     style={{
-                      background: "rgba(255, 255, 255, 0.1)",
+                      background: "var(--bg-glass)",
                       borderRadius: "12px",
                       padding: "1.5rem",
                     }}
                   >
                     <h3
                       style={{
-                        color: "rgba(255, 255, 255, 0.7)",
+                        color: "var(--text-on-glass)",
                         fontSize: "0.9rem",
                         marginBottom: "1rem",
                       }}
@@ -257,26 +257,26 @@ export default function Rebalance() {
                       ESTADO ACTUAL
                     </h3>
                     <div style={{ marginBottom: "0.5rem" }}>
-                      <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>
+                      <span style={{ color: "var(--text-on-glass-muted)" }}>
                         Equity:{" "}
                       </span>
-                      <span style={{ color: "white", fontWeight: "600" }}>
+                      <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                         {formatCurrencyES(proposal.currentEquity)}
                       </span>
                     </div>
                     <div style={{ marginBottom: "0.5rem" }}>
-                      <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>
+                      <span style={{ color: "var(--text-on-glass-muted)" }}>
                         Exposure:{" "}
                       </span>
-                      <span style={{ color: "white", fontWeight: "600" }}>
+                      <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                         {formatCurrencyES(proposal.currentExposure)}
                       </span>
                     </div>
                     <div>
-                      <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>
+                      <span style={{ color: "var(--text-on-glass-muted)" }}>
                         Leverage:{" "}
                       </span>
-                      <span style={{ color: "white", fontWeight: "600" }}>
+                      <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                         {formatNumberES(proposal.currentLeverage, {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
@@ -296,7 +296,7 @@ export default function Rebalance() {
                   >
                     <h3
                       style={{
-                        color: "rgba(255, 255, 255, 0.7)",
+                        color: "var(--text-on-glass)",
                         fontSize: "0.9rem",
                         marginBottom: "1rem",
                       }}
@@ -304,7 +304,7 @@ export default function Rebalance() {
                       DESPUÉS DEL REBALANCE
                     </h3>
                     <div style={{ marginBottom: "0.5rem" }}>
-                      <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>
+                      <span style={{ color: "var(--text-on-glass-muted)" }}>
                         Equity:{" "}
                       </span>
                       <span style={{ color: "#4ade80", fontWeight: "600" }}>
@@ -312,18 +312,18 @@ export default function Rebalance() {
                       </span>
                     </div>
                     <div style={{ marginBottom: "0.5rem" }}>
-                      <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>
+                      <span style={{ color: "var(--text-on-glass-muted)" }}>
                         Exposición:{" "}
                       </span>
-                      <span style={{ color: "white", fontWeight: "600" }}>
+                      <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                         {formatCurrencyES(proposal.summary.newExposure)}
                       </span>
                     </div>
                     <div>
-                      <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>
+                      <span style={{ color: "var(--text-on-glass-muted)" }}>
                         Leverage:{" "}
                       </span>
-                      <span style={{ color: "white", fontWeight: "600" }}>
+                      <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                         {formatNumberES(proposal.summary.newLeverage, {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
@@ -337,7 +337,7 @@ export default function Rebalance() {
                 {/* Weights Used */}
                 <div
                   style={{
-                    background: "rgba(255, 255, 255, 0.05)",
+                    background: "var(--hover-bg)",
                     borderRadius: "12px",
                     padding: "1rem 1.5rem",
                     marginBottom: "1.5rem",
@@ -348,41 +348,34 @@ export default function Rebalance() {
                     gap: "1rem",
                   }}
                 >
-                  <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
                     <span
                       style={{
-                        color: "rgba(255, 255, 255, 0.6)",
+                        color: "var(--text-on-glass-muted)",
                         fontSize: "0.85rem",
                       }}
                     >
-                      Pesos:{" "}
+                      Pesos:
                     </span>
                     <span
                       style={{
                         color: proposal.dynamicWeightsComputed
                           ? "#a78bfa"
-                          : "#94a3b8",
+                          : "var(--text-muted)",
                         fontSize: "0.85rem",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                        }}
-                      >
                         {proposal.dynamicWeightsComputed ? (
                           <>
                             <Brain size={16} />
                             <span>Dinámicos (Optimizados Sharpe)</span>
                           </>
                         ) : (
-                          <>
-                            <span>Estáticos (PORTFOLIO_INITIAL)</span>
-                          </>
+                          <span>Estáticos (PORTFOLIO_INITIAL)</span>
                         )}
-                      </div>
                     </span>
                   </div>
                   <div
@@ -393,7 +386,7 @@ export default function Rebalance() {
                         <span
                           key={symbol}
                           style={{
-                            color: "rgba(255, 255, 255, 0.7)",
+                            color: "var(--text-on-glass)",
                             fontSize: "0.85rem",
                           }}
                         >
@@ -411,7 +404,7 @@ export default function Rebalance() {
                 {/* Instructions Table */}
                 <div
                   style={{
-                    background: "rgba(255, 255, 255, 0.1)",
+                    background: "var(--bg-glass)",
                     borderRadius: "16px",
                     padding: "2rem",
                     backdropFilter: "blur(10px)",
@@ -422,7 +415,7 @@ export default function Rebalance() {
                     style={{
                       fontSize: "1.25rem",
                       fontWeight: "bold",
-                      color: "white",
+                      color: "var(--text-primary)",
                       marginBottom: "1.5rem",
                     }}
                   >
@@ -454,13 +447,13 @@ export default function Rebalance() {
                               ? "rgba(74, 222, 128, 0.1)"
                               : pos.action === "SELL"
                               ? "rgba(248, 113, 113, 0.1)"
-                              : "rgba(255, 255, 255, 0.05)",
+                              : "var(--hover-bg)",
                           border:
                             pos.action === "BUY"
                               ? "1px solid rgba(74, 222, 128, 0.3)"
                               : pos.action === "SELL"
                               ? "1px solid rgba(248, 113, 113, 0.3)"
-                              : "1px solid rgba(255, 255, 255, 0.1)",
+                              : "1px solid var(--border)",
                           borderRadius: "12px",
                           padding: "1.25rem",
                         }}
@@ -476,14 +469,14 @@ export default function Rebalance() {
                             <div
                               style={{
                                 fontWeight: "600",
-                                color: "white",
+                                color: "var(--text-primary)",
                                 fontSize: "1.1rem",
                               }}
                             >
                               {pos.assetName}{" "}
                               <span
                                 style={{
-                                  color: "rgba(255, 255, 255, 0.5)",
+                                  color: "var(--text-on-glass-muted)",
                                   fontWeight: "400",
                                 }}
                               >
@@ -492,7 +485,7 @@ export default function Rebalance() {
                             </div>
                             <div
                               style={{
-                                color: "rgba(255, 255, 255, 0.6)",
+                                color: "var(--text-on-glass-muted)",
                                 fontSize: "0.9rem",
                                 marginTop: "0.25rem",
                               }}
@@ -531,7 +524,7 @@ export default function Rebalance() {
                                   style={{
                                     fontSize: "1.25rem",
                                     fontWeight: "600",
-                                    color: "white",
+                                    color: "var(--text-primary)",
                                   }}
                                 >
                                   {formatNumberES(Math.abs(pos.deltaQuantity), {
@@ -539,7 +532,7 @@ export default function Rebalance() {
                                   })}{" "}
                                   <span
                                     style={{
-                                      color: "rgba(255, 255, 255, 0.6)",
+                                      color: "var(--text-on-glass-muted)",
                                       fontSize: "0.9rem",
                                     }}
                                   >
@@ -548,7 +541,7 @@ export default function Rebalance() {
                                 </div>
                                 <div
                                   style={{
-                                    color: "rgba(255, 255, 255, 0.5)",
+                                    color: "var(--text-on-glass-muted)",
                                     fontSize: "0.85rem",
                                   }}
                                 >
@@ -567,10 +560,10 @@ export default function Rebalance() {
                           style={{
                             marginTop: "1rem",
                             paddingTop: "1rem",
-                            borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                            borderTop: "1px solid var(--border)",
                             display: "flex",
                             justifyContent: "space-between",
-                            color: "rgba(255, 255, 255, 0.6)",
+                            color: "var(--text-on-glass-muted)",
                             fontSize: "0.85rem",
                           }}
                         >
@@ -607,48 +600,32 @@ export default function Rebalance() {
                       marginBottom: "1.5rem",
                     }}
                   >
-                    <p
-                      style={{
-                        color: "rgba(255, 255, 255, 0.8)",
-                        fontSize: "0.9rem",
-                        margin: 0,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                        }}
-                      >
-                        <DollarSign size={16} />
-                        <strong>Desglose de origen:</strong>
-                      </div>{" "}
-                      {proposal.summary.equityUsedFromContribution > 0 && (
-                        <>
-                          {formatCurrencyES(
-                            proposal.summary.equityUsedFromContribution
-                          )}{" "}
-                          de equity
-                        </>
-                      )}
-                      {proposal.summary.equityUsedFromContribution > 0 &&
-                        proposal.summary.borrowIncrease > 0 && <> + </>}
-                      {proposal.summary.borrowIncrease > 0 && (
-                        <>
-                          {formatCurrencyES(proposal.summary.borrowIncrease)} de
-                          préstamo
-                        </>
-                      )}
-                      {proposal.summary.borrowIncrease < 0 && (
-                        <>
-                          Reducción de préstamo: $
-                          {formatCurrencyES(
-                            Math.abs(proposal.summary.borrowIncrease)
+                    {(() => {
+                      const items: string[] = [];
+                      if (proposal.summary.equityUsedFromContribution > 0)
+                        items.push(`${formatCurrencyES(proposal.summary.equityUsedFromContribution)} de equity`);
+                      if (proposal.summary.borrowIncrease > 0)
+                        items.push(`${formatCurrencyES(proposal.summary.borrowIncrease)} de préstamo`);
+                      if (proposal.summary.borrowIncrease < 0)
+                        items.push(`Reducción de préstamo: ${formatCurrencyES(Math.abs(proposal.summary.borrowIncrease))}`);
+                      return (
+                        <div style={{ color: "var(--text-on-glass)", fontSize: "0.9rem", margin: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: items.length > 1 ? "0.5rem" : 0 }}>
+                            <DollarSign size={16} />
+                            <strong>Desglose de origen:{items.length === 1 ? ` ${items[0]}` : ""}</strong>
+                          </div>
+                          {items.length > 1 && (
+                            <div style={{ paddingLeft: "1.5rem" }}>
+                              {items.map((item, i) => (
+                                <div key={i} style={{ marginBottom: i < items.length - 1 ? "0.25rem" : 0 }}>
+                                  • {item}
+                                </div>
+                              ))}
+                            </div>
                           )}
-                        </>
-                      )}
-                    </p>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -664,7 +641,7 @@ export default function Rebalance() {
                 >
                   <p
                     style={{
-                      color: "rgba(255, 255, 255, 0.8)",
+                      color: "var(--text-on-glass)",
                       fontSize: "0.9rem",
                       margin: 0,
                       display: "flex",
@@ -706,13 +683,13 @@ export default function Rebalance() {
                         style={{
                           padding: "0.875rem 2rem",
                           background: isDisabled
-                            ? "rgba(255, 255, 255, 0.1)"
+                            ? "var(--bg-glass)"
                             : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                           color: isDisabled
-                            ? "rgba(255, 255, 255, 0.5)"
+                            ? "var(--text-on-glass-muted)"
                             : "white",
                           border: isDisabled
-                            ? "1px solid rgba(255, 255, 255, 0.1)"
+                            ? "1px solid var(--border)"
                             : "none",
                           borderRadius: "6px",
                           fontSize: "0.95rem",

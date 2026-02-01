@@ -16,7 +16,10 @@ import {
   Menu,
   X,
   BarChart3,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useTheme } from "../contexts/ThemeContext";
 
 /**
  * Hook to detect screen size
@@ -53,6 +56,7 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const router = useRouter();
   const { signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -176,8 +180,8 @@ export default function DashboardSidebar({
   const sidebarWidth = isMobile ? "280px" : isCollapsed ? "70px" : "260px";
   const sidebarStyle: React.CSSProperties = {
     width: sidebarWidth,
-    background: "#0f172a",
-    borderRight: "1px solid #1e293b",
+    background: "var(--bg-sidebar)",
+    borderRight: "1px solid var(--border)",
     display: "flex",
     flexDirection: "column",
     transition: "transform 0.3s ease, width 0.2s ease",
@@ -220,10 +224,10 @@ export default function DashboardSidebar({
             left: "1rem",
             zIndex: 1001,
             padding: "0.625rem",
-            background: "#131b2e",
-            border: "1px solid #334155",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-light)",
             borderRadius: "8px",
-            color: "#cbd5e1",
+            color: "var(--text-secondary)",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
@@ -242,7 +246,7 @@ export default function DashboardSidebar({
         <div
           style={{
             padding: isCollapsed ? "1.5rem 0.75rem" : "1.5rem 1.25rem",
-            borderBottom: "1px solid #1e293b",
+            borderBottom: "1px solid var(--border)",
             display: "flex",
             alignItems: "center",
             justifyContent: isCollapsed ? "center" : "space-between",
@@ -255,7 +259,7 @@ export default function DashboardSidebar({
               gap: "0.75rem",
             }}
           >
-            <TrendingUp size={24} color="#60a5fa" />
+            <TrendingUp size={24} color="var(--accent-blue-light)" />
             {!isCollapsed && (
               <a
                 href={`/dashboard${portfolioId ? `?portfolioId=${portfolioId}` : ""}`}
@@ -264,7 +268,7 @@ export default function DashboardSidebar({
                   router.push(`/dashboard${portfolioId ? `?portfolioId=${portfolioId}` : ""}`);
                 }}
                 style={{
-                  color: "#f1f5f9",
+                  color: "var(--text-primary)",
                   fontWeight: "700",
                   fontSize: "1.125rem",
                   textDecoration: "none",
@@ -272,10 +276,10 @@ export default function DashboardSidebar({
                   transition: "color 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#60a5fa";
+                  e.currentTarget.style.color = "var(--accent-blue-light)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "#f1f5f9";
+                  e.currentTarget.style.color = "var(--text-primary)";
                 }}
               >
                 DCA App
@@ -304,7 +308,7 @@ export default function DashboardSidebar({
                   background: active
                     ? "rgba(59, 130, 246, 0.1)"
                     : "transparent",
-                  color: active ? item.color : "#cbd5e1",
+                  color: active ? "#60a5fa" : "var(--text-secondary)",
                   border: "none",
                   borderRadius: "8px",
                   textAlign: "left",
@@ -321,14 +325,14 @@ export default function DashboardSidebar({
                 onMouseEnter={(e) => {
                   if (!active) {
                     e.currentTarget.style.background =
-                      "rgba(255, 255, 255, 0.05)";
-                    e.currentTarget.style.color = "#f1f5f9";
+                      "var(--hover-bg)";
+                    e.currentTarget.style.color = "var(--text-primary)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
                     e.currentTarget.style.background = "transparent";
-                    e.currentTarget.style.color = "#cbd5e1";
+                    e.currentTarget.style.color = "var(--text-secondary)";
                   }
                 }}
               >
@@ -345,10 +349,49 @@ export default function DashboardSidebar({
         {/* Footer: Collapse button and Sign Out */}
         <div
           style={{
-            borderTop: "1px solid #1e293b",
+            borderTop: "1px solid var(--border)",
             padding: "1rem 0.5rem",
           }}
         >
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            style={{
+              width: "100%",
+              padding: isCollapsed ? "0.875rem 0.5rem" : "0.875rem 1rem",
+              background: "transparent",
+              color: "var(--text-dim)",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "0.9375rem",
+              fontWeight: "500",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.875rem",
+              marginBottom: "0.25rem",
+              transition: "all 0.15s ease",
+              justifyContent: isCollapsed ? "center" : "flex-start",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--hover-bg)";
+              e.currentTarget.style.color = "var(--text-secondary)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "var(--text-dim)";
+            }}
+          >
+            {theme === "dark" ? (
+              <Sun size={20} style={{ flexShrink: 0 }} />
+            ) : (
+              <Moon size={20} style={{ flexShrink: 0 }} />
+            )}
+            {!isCollapsed && (
+              <span>{theme === "dark" ? "Tema claro" : "Tema oscuro"}</span>
+            )}
+          </button>
+
           {/* Collapse Button - Only show on desktop */}
           {!isMobile && (
             <button
@@ -363,7 +406,7 @@ export default function DashboardSidebar({
                 width: "100%",
                 padding: isCollapsed ? "0.875rem 0.5rem" : "0.875rem 1rem",
                 background: "transparent",
-                color: "#64748b",
+                color: "var(--text-dim)",
                 border: "none",
                 borderRadius: "8px",
                 fontSize: "0.9375rem",
@@ -377,12 +420,12 @@ export default function DashboardSidebar({
                 justifyContent: isCollapsed ? "center" : "flex-start",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-                e.currentTarget.style.color = "#cbd5e1";
+                e.currentTarget.style.background = "var(--hover-bg)";
+                e.currentTarget.style.color = "var(--text-secondary)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#64748b";
+                e.currentTarget.style.color = "var(--text-dim)";
               }}
             >
               {isCollapsed ? (
@@ -401,7 +444,7 @@ export default function DashboardSidebar({
               width: "100%",
               padding: isCollapsed ? "0.875rem 0.5rem" : "0.875rem 1rem",
               background: "transparent",
-              color: "#ef4444",
+              color: "var(--accent-red)",
               border: "none",
               borderRadius: "8px",
               fontSize: "0.9375rem",

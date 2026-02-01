@@ -54,7 +54,7 @@ export default function Home() {
             minHeight: "100vh",
           }}
         >
-          <p style={{ color: "#94a3b8", fontSize: "1rem" }}>Cargando...</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>Cargando...</p>
         </div>
       </>
     );
@@ -100,8 +100,8 @@ export default function Home() {
         `}</style>
         <div
           style={{
-            background: "#131b2e",
-            border: "1px solid #1e293b",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
             borderRadius: "12px",
             padding: "3rem",
             maxWidth: "420px",
@@ -115,7 +115,7 @@ export default function Home() {
                 fontSize: "1.75rem",
                 fontWeight: "700",
                 marginBottom: "0.5rem",
-                color: "#f1f5f9",
+                color: "var(--text-primary)",
                 letterSpacing: "-0.025em",
               }}
             >
@@ -123,7 +123,7 @@ export default function Home() {
             </h1>
             <p
               style={{
-                color: "#94a3b8",
+                color: "var(--text-muted)",
                 fontSize: "0.875rem",
                 fontWeight: "500",
               }}
@@ -138,7 +138,7 @@ export default function Home() {
                 display: "block",
                 fontWeight: "500",
                 marginBottom: "0.5rem",
-                color: "#cbd5e1",
+                color: "var(--text-secondary)",
                 fontSize: "0.875rem",
               }}
             >
@@ -154,9 +154,9 @@ export default function Home() {
               style={{
                 width: "100%",
                 padding: "0.75rem 1rem",
-                background: "#0a0e27",
-                color: "#e2e8f0",
-                border: "1px solid #334155",
+                background: "var(--input-bg)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--input-border)",
                 borderRadius: "6px",
                 fontSize: "0.95rem",
                 marginBottom: "1.25rem",
@@ -178,7 +178,7 @@ export default function Home() {
               style={{
                 width: "100%",
                 padding: "0.875rem",
-                background: "#3b82f6",
+                background: "var(--accent-blue)",
                 color: "white",
                 border: "none",
                 borderRadius: "6px",
@@ -234,11 +234,11 @@ export default function Home() {
             style={{
               marginTop: "2rem",
               paddingTop: "1.5rem",
-              borderTop: "1px solid #1e293b",
+              borderTop: "1px solid var(--border)",
               textAlign: "center",
             }}
           >
-            <p style={{ color: "#64748b", fontSize: "0.8rem" }}>
+            <p style={{ color: "var(--text-dim)", fontSize: "0.8rem" }}>
               Autenticación segura sin contraseña
             </p>
           </div>

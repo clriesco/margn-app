@@ -9,7 +9,7 @@ interface Props {
 
 /** Green for positive, red for negative, neutral otherwise */
 function valueColor(v: number, positive: 'green' | 'red' | 'neutral'): string {
-  if (positive === 'neutral') return '#cbd5e1';
+  if (positive === 'neutral') return 'var(--text-secondary)';
   if (positive === 'green') return v >= 0 ? '#34d399' : '#f87171';
   // positive === 'red' means higher = worse (e.g. drawdown is already negative)
   return v <= 0 ? '#f87171' : '#34d399';
@@ -60,15 +60,15 @@ function EquityPieChart({ label, initialCapital, totalContributed, finalCapital 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <span style={{ color: '#94a3b8', fontSize: '0.8125rem', fontWeight: '600', marginBottom: '0.5rem' }}>{label}</span>
+      <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', fontWeight: '600', marginBottom: '0.5rem' }}>{label}</span>
       <svg viewBox={`0 0 ${size} ${size}`} style={{ width: `${size}px`, height: `${size}px` }}>
         {arcs.map((arc) => (
-          <path key={arc.name} d={arc.d} fill={arc.color} stroke="#131b2e" strokeWidth="2" />
+          <path key={arc.name} d={arc.d} fill={arc.color} stroke="var(--bg-card)" strokeWidth="2" />
         ))}
       </svg>
       {/* Total + return below the pie */}
       <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-        <div style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '1rem' }}>{fmtUsd(finalCapital)}</div>
+        <div style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '1rem' }}>{fmtUsd(finalCapital)}</div>
         <div style={{ color: returns >= 0 ? '#34d399' : '#f87171', fontSize: '0.8125rem', fontWeight: '500' }}>{fmtPct(returns)}</div>
       </div>
       {/* Legend */}
@@ -77,9 +77,9 @@ function EquityPieChart({ label, initialCapital, totalContributed, finalCapital 
           <div key={arc.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: arc.color, flexShrink: 0 }} />
-              <span style={{ color: '#94a3b8' }}>{arc.name}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{arc.name}</span>
             </div>
-            <span style={{ color: '#cbd5e1', fontWeight: '500' }}>{fmtUsd(arc.value)}</span>
+            <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>{fmtUsd(arc.value)}</span>
           </div>
         ))}
       </div>
@@ -97,12 +97,12 @@ function MetricRow({ label, p10, p50, p90, format, coloring }: {
     padding: '0.75rem 1rem',
     color: valueColor(v, coloring),
     textAlign: 'right',
-    borderBottom: '1px solid #1e293b',
+    borderBottom: '1px solid var(--border)',
   });
 
   return (
     <tr>
-      <td style={{ padding: '0.75rem 1rem', color: '#cbd5e1', fontWeight: '500', borderBottom: '1px solid #1e293b' }}>
+      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: '500', borderBottom: '1px solid var(--border)' }}>
         {label}
       </td>
       <td style={cellStyle(p10)}>{format(p10)}</td>
@@ -125,22 +125,22 @@ export default function BacktestResults({ result }: Props) {
   const sortedWindows = [...result.windows].sort((a, b) => b.sharpe - a.sharpe);
 
   const thStyle: React.CSSProperties = {
-    padding: '0.75rem 1rem', color: '#94a3b8', textAlign: 'right',
-    fontSize: '0.8125rem', borderBottom: '1px solid #334155',
+    padding: '0.75rem 1rem', color: 'var(--text-muted)', textAlign: 'right',
+    fontSize: '0.8125rem', borderBottom: '1px solid var(--border-light)',
   };
 
   return (
     <div>
       {/* Summary */}
       <div style={{
-        background: '#131b2e', border: '1px solid #1e293b', borderRadius: '8px',
+        background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
         padding: '1.5rem', marginBottom: '1.5rem',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '1.125rem', margin: 0 }}>
+          <h3 style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '1.125rem', margin: 0 }}>
             Resumen
           </h3>
-          <div style={{ display: 'flex', gap: '1.5rem', color: '#94a3b8', fontSize: '0.875rem' }}>
+          <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
             <span>{result.totalWindows} ventanas</span>
             <span>{result.marginCallCount} margin calls</span>
           </div>
@@ -152,9 +152,9 @@ export default function BacktestResults({ result }: Props) {
         }}>
           {Object.entries(result.weightsUsed).map(([symbol, weight]) => (
             <span key={symbol} style={{
-              padding: '0.25rem 0.75rem', background: 'rgba(255,255,255,0.05)',
-              border: '1px solid #334155', borderRadius: '20px',
-              color: '#94a3b8', fontSize: '0.8125rem',
+              padding: '0.25rem 0.75rem', background: 'var(--hover-bg)',
+              border: '1px solid var(--border-light)', borderRadius: '20px',
+              color: 'var(--text-muted)', fontSize: '0.8125rem',
             }}>
               {symbol}: {(weight * 100).toFixed(1)}%
             </span>
@@ -187,10 +187,10 @@ export default function BacktestResults({ result }: Props) {
 
       {/* Equity breakdown pie charts */}
       <div style={{
-        background: '#131b2e', border: '1px solid #1e293b', borderRadius: '8px',
+        background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
         padding: '1.5rem', marginBottom: '1.5rem',
       }}>
-        <h3 style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '1.125rem', marginBottom: '1.25rem' }}>
+        <h3 style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '1.125rem', marginBottom: '1.25rem' }}>
           Composición del Capital Final
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
@@ -215,8 +215,8 @@ export default function BacktestResults({ result }: Props) {
         onClick={() => setShowBreakdown(!showBreakdown)}
         style={{
           width: '100%', padding: '0.75rem',
-          background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
-          border: '1px solid #1e293b', borderRadius: '8px',
+          background: 'var(--hover-bg)', color: 'var(--text-muted)',
+          border: '1px solid var(--border)', borderRadius: '8px',
           cursor: 'pointer', fontSize: '0.875rem', marginBottom: '1rem',
         }}
       >
@@ -230,8 +230,8 @@ export default function BacktestResults({ result }: Props) {
         onClick={() => setShowDetail(!showDetail)}
         style={{
           width: '100%', padding: '0.75rem',
-          background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
-          border: '1px solid #1e293b', borderRadius: '8px',
+          background: 'var(--hover-bg)', color: 'var(--text-muted)',
+          border: '1px solid var(--border)', borderRadius: '8px',
           cursor: 'pointer', fontSize: '0.875rem', marginBottom: '1rem',
         }}
       >
@@ -241,14 +241,14 @@ export default function BacktestResults({ result }: Props) {
       {/* Detail table */}
       {showDetail && (
         <div style={{
-          background: '#131b2e', border: '1px solid #1e293b', borderRadius: '8px',
+          background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
           padding: '1rem', overflowX: 'auto',
         }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
             <thead>
               <tr>
                 {['#', 'Inicio', 'Fin', 'Capital', 'Sharpe', 'CAGR', 'Max DD', 'Margin Call'].map((h) => (
-                  <th key={h} style={{ padding: '0.5rem', color: '#94a3b8', textAlign: 'right', borderBottom: '1px solid #334155' }}>
+                  <th key={h} style={{ padding: '0.5rem', color: 'var(--text-muted)', textAlign: 'right', borderBottom: '1px solid var(--border-light)' }}>
                     {h}
                   </th>
                 ))}
@@ -257,14 +257,14 @@ export default function BacktestResults({ result }: Props) {
             <tbody>
               {sortedWindows.map((w, i) => (
                 <tr key={w.windowIndex}>
-                  <td style={{ padding: '0.5rem', color: '#94a3b8', textAlign: 'right', borderBottom: '1px solid #1e293b' }}>{i + 1}</td>
-                  <td style={{ padding: '0.5rem', color: '#cbd5e1', textAlign: 'right', borderBottom: '1px solid #1e293b' }}>{w.startDate}</td>
-                  <td style={{ padding: '0.5rem', color: '#cbd5e1', textAlign: 'right', borderBottom: '1px solid #1e293b' }}>{w.endDate}</td>
-                  <td style={{ padding: '0.5rem', color: valueColor(w.finalCapital, 'green'), textAlign: 'right', borderBottom: '1px solid #1e293b' }}>{fmtUsd(w.finalCapital)}</td>
-                  <td style={{ padding: '0.5rem', color: '#cbd5e1', textAlign: 'right', borderBottom: '1px solid #1e293b' }}>{fmtNum(w.sharpe)}</td>
-                  <td style={{ padding: '0.5rem', color: valueColor(w.cagr, 'green'), textAlign: 'right', borderBottom: '1px solid #1e293b' }}>{fmtPct(w.cagr)}</td>
-                  <td style={{ padding: '0.5rem', color: valueColor(w.maxDrawdownEquity, 'red'), textAlign: 'right', borderBottom: '1px solid #1e293b' }}>{fmtPct(w.maxDrawdownEquity)}</td>
-                  <td style={{ padding: '0.5rem', color: '#cbd5e1', textAlign: 'right', borderBottom: '1px solid #1e293b' }}>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-muted)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{i + 1}</td>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{w.startDate}</td>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{w.endDate}</td>
+                  <td style={{ padding: '0.5rem', color: valueColor(w.finalCapital, 'green'), textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtUsd(w.finalCapital)}</td>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtNum(w.sharpe)}</td>
+                  <td style={{ padding: '0.5rem', color: valueColor(w.cagr, 'green'), textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtPct(w.cagr)}</td>
+                  <td style={{ padding: '0.5rem', color: valueColor(w.maxDrawdownEquity, 'red'), textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtPct(w.maxDrawdownEquity)}</td>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>
                     {w.marginCall ? 'Sí' : 'No'}
                   </td>
                 </tr>

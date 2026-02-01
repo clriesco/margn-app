@@ -36,9 +36,9 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
         onClick={() => setMenuOpen(!menuOpen)}
         style={{
           padding: "0.625rem 1.25rem",
-          background: "#131b2e",
-          color: "#cbd5e1",
-          border: "1px solid #334155",
+          background: "var(--bg-card)",
+          color: "var(--text-secondary)",
+          border: "1px solid var(--input-border)",
           borderRadius: "6px",
           fontSize: "0.875rem",
           fontWeight: "500",
@@ -73,8 +73,8 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
               top: "100%",
               right: 0,
               marginTop: "0.5rem",
-              background: "#131b2e",
-              border: "1px solid #334155",
+              background: "var(--bg-card)",
+              border: "1px solid var(--input-border)",
               borderRadius: "8px",
               minWidth: "220px",
               boxShadow: "0 10px 25px rgba(0, 0, 0, 0.3)",
@@ -93,9 +93,9 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
                 width: "100%",
                 padding: "0.875rem 1.25rem",
                 background: "transparent",
-                color: "#cbd5e1",
+                color: "var(--text-secondary)",
                 border: "none",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
                 textAlign: "left",
                 fontSize: "0.9rem",
                 fontWeight: "500",
@@ -111,7 +111,7 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#cbd5e1";
+                e.currentTarget.style.color = "var(--text-secondary)";
               }}
             >
               <DollarSign size={18} />
@@ -128,9 +128,9 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
                 width: "100%",
                 padding: "0.875rem 1.25rem",
                 background: "transparent",
-                color: "#cbd5e1",
+                color: "var(--text-secondary)",
                 border: "none",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
                 textAlign: "left",
                 fontSize: "0.9rem",
                 fontWeight: "500",
@@ -146,7 +146,7 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#cbd5e1";
+                e.currentTarget.style.color = "var(--text-secondary)";
               }}
             >
               <Scale size={18} />
@@ -163,9 +163,9 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
                 width: "100%",
                 padding: "0.875rem 1.25rem",
                 background: "transparent",
-                color: "#cbd5e1",
+                color: "var(--text-secondary)",
                 border: "none",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
                 textAlign: "left",
                 fontSize: "0.9rem",
                 fontWeight: "500",
@@ -176,12 +176,12 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background =
-                  "rgba(255, 255, 255, 0.05)";
-                e.currentTarget.style.color = "#f1f5f9";
+                  "var(--hover-bg)";
+                e.currentTarget.style.color = "var(--text-primary)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#cbd5e1";
+                e.currentTarget.style.color = "var(--text-secondary)";
               }}
             >
               <Edit size={18} />
@@ -198,9 +198,9 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
                 width: "100%",
                 padding: "0.875rem 1.25rem",
                 background: "transparent",
-                color: "#cbd5e1",
+                color: "var(--text-secondary)",
                 border: "none",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
                 textAlign: "left",
                 fontSize: "0.9rem",
                 fontWeight: "500",
@@ -211,12 +211,12 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background =
-                  "rgba(255, 255, 255, 0.05)";
-                e.currentTarget.style.color = "#f1f5f9";
+                  "var(--hover-bg)";
+                e.currentTarget.style.color = "var(--text-primary)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#cbd5e1";
+                e.currentTarget.style.color = "var(--text-secondary)";
               }}
             >
               <Settings size={18} />
@@ -231,9 +231,9 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
                 width: "100%",
                 padding: "0.875rem 1.25rem",
                 background: "transparent",
-                color: "#cbd5e1",
+                color: "var(--text-secondary)",
                 border: "none",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
                 textAlign: "left",
                 fontSize: "0.9rem",
                 fontWeight: "500",
@@ -244,12 +244,12 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background =
-                  "rgba(255, 255, 255, 0.05)";
-                e.currentTarget.style.color = "#f1f5f9";
+                  "var(--hover-bg)";
+                e.currentTarget.style.color = "var(--text-primary)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#cbd5e1";
+                e.currentTarget.style.color = "var(--text-secondary)";
               }}
             >
               <LayoutDashboard size={18} />
@@ -266,9 +266,9 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
                 width: "100%",
                 padding: "0.875rem 1.25rem",
                 background: "transparent",
-                color: "#cbd5e1",
+                color: "var(--text-secondary)",
                 border: "none",
-                borderBottom: "1px solid #1e293b",
+                borderBottom: "1px solid var(--border)",
                 textAlign: "left",
                 fontSize: "0.9rem",
                 fontWeight: "500",
@@ -279,12 +279,12 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background =
-                  "rgba(255, 255, 255, 0.05)";
-                e.currentTarget.style.color = "#f1f5f9";
+                  "var(--hover-bg)";
+                e.currentTarget.style.color = "var(--text-primary)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#cbd5e1";
+                e.currentTarget.style.color = "var(--text-secondary)";
               }}
             >
               <User size={18} />
