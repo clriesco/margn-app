@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>('light');
 
   // Apply CSS variables to document root
   const applyTheme = useCallback((t: Theme) => {
@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Read from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('theme') as Theme | null;
-    const initial = stored === 'light' ? 'light' : 'dark';
+    const initial = stored === 'dark' ? 'dark' : 'light';
     setTheme(initial);
     applyTheme(initial);
   }, [applyTheme]);

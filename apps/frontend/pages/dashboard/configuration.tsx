@@ -115,12 +115,14 @@ export default function Configuration() {
       setIsLoading(false);
     }
 
-    if (!loading && !user) {
+    if (!router.isReady || loading) return;
+    if (!user) {
       router.push("/");
-    } else if (user) {
+    } else {
       loadConfig();
     }
-  }, [user, loading, router, router.query.portfolioId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading, router.isReady, router.query.portfolioId]);
 
   const handleInputChange = (
     field: string,

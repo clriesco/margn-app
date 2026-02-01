@@ -1238,11 +1238,14 @@ function Dashboard() {
                         {paginatedHistory.map((point, idx) => (
                           <tr
                             key={`${point.date}-${idx}`}
+                            className="table-row-hoverable"
                             style={{
                               borderBottom:
                                 idx < paginatedHistory.length - 1
                                   ? "1px solid var(--bg-body)"
                                   : "none",
+                              background: idx % 2 === 1 ? "var(--hover-bg)" : "transparent",
+                              transition: "background 0.15s ease",
                             }}
                           >
                             <td style={tableCellStyle}>
@@ -1620,11 +1623,14 @@ function Dashboard() {
                         {summary.positions.map((pos: Position, idx: number) => (
                           <tr
                             key={pos.id}
+                            className="table-row-hoverable"
                             style={{
                               borderBottom:
                                 idx < summary.positions.length - 1
                                   ? "1px solid var(--bg-body)"
                                   : "none",
+                              background: idx % 2 === 1 ? "var(--hover-bg)" : "transparent",
+                              transition: "background 0.15s ease",
                             }}
                           >
                             <td style={tableCellStyle}>

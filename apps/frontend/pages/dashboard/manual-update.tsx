@@ -159,12 +159,14 @@ export default function ManualUpdate() {
       }
     }
 
-    if (!loading && !user) {
+    if (!router.isReady || loading) return;
+    if (!user) {
       router.push("/");
-    } else if (user) {
+    } else {
       loadPortfolio();
     }
-  }, [user, loading, router, router.query.portfolioId, formatQuantity]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading, router.isReady, router.query.portfolioId, formatQuantity]);
 
   const handlePositionChange = (index: number, value: number | string) => {
     const updated = [...positions];

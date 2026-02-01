@@ -95,6 +95,11 @@ export default function App({ Component, pageProps }: AppProps) {
             }
           }
 
+          /* Table row hover */
+          tr.table-row-hoverable:hover {
+            background: var(--bg-glass-strong) !important;
+          }
+
           /* Prevent horizontal scroll */
           html,
           body {

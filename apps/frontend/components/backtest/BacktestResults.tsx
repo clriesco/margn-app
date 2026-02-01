@@ -87,12 +87,14 @@ function EquityPieChart({ label, initialCapital, totalContributed, finalCapital 
   );
 }
 
-function MetricRow({ label, p10, p50, p90, format, coloring }: {
+function MetricRow({ label, p10, p50, p90, format, coloring, idx }: {
   label: string;
   p10: number; p50: number; p90: number;
   format: (v: number) => string;
   coloring: 'green' | 'red' | 'neutral';
+  idx?: number;
 }) {
+  const rowBg = idx !== undefined && idx % 2 === 1 ? 'var(--hover-bg)' : 'transparent';
   const cellStyle = (v: number): React.CSSProperties => ({
     padding: '0.75rem 1rem',
     color: valueColor(v, coloring),
@@ -101,7 +103,7 @@ function MetricRow({ label, p10, p50, p90, format, coloring }: {
   });
 
   return (
-    <tr>
+    <tr className="table-row-hoverable" style={{ background: rowBg, transition: "background 0.15s ease" }}>
       <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: '500', borderBottom: '1px solid var(--border)' }}>
         {label}
       </td>
@@ -173,13 +175,13 @@ export default function BacktestResults({ result }: Props) {
               </tr>
             </thead>
             <tbody>
-              <MetricRow label="Capital Final" p10={p10.finalCapital} p50={p50.finalCapital} p90={p90.finalCapital} format={fmtUsd} coloring="green" />
-              <MetricRow label="Retorno %" p10={p10.returnPercent} p50={p50.returnPercent} p90={p90.returnPercent} format={fmtPct} coloring="green" />
-              <MetricRow label="CAGR" p10={p10.cagr} p50={p50.cagr} p90={p90.cagr} format={fmtPct} coloring="green" />
-              <MetricRow label="Sharpe" p10={p10.sharpe} p50={p50.sharpe} p90={p90.sharpe} format={fmtNum} coloring="neutral" />
-              <MetricRow label="Max Drawdown" p10={p10.maxDrawdownEquity} p50={p50.maxDrawdownEquity} p90={p90.maxDrawdownEquity} format={fmtPct} coloring="red" />
-              <MetricRow label="Recovery (días)" p10={p10.recoveryDays} p50={p50.recoveryDays} p90={p90.recoveryDays} format={fmtDays} coloring="neutral" />
-              <MetricRow label="Leverage Final" p10={p10.finalLeverage} p50={p50.finalLeverage} p90={p90.finalLeverage} format={fmtNum} coloring="neutral" />
+              <MetricRow idx={0} label="Capital Final" p10={p10.finalCapital} p50={p50.finalCapital} p90={p90.finalCapital} format={fmtUsd} coloring="green" />
+              <MetricRow idx={1} label="Retorno %" p10={p10.returnPercent} p50={p50.returnPercent} p90={p90.returnPercent} format={fmtPct} coloring="green" />
+              <MetricRow idx={2} label="CAGR" p10={p10.cagr} p50={p50.cagr} p90={p90.cagr} format={fmtPct} coloring="green" />
+              <MetricRow idx={3} label="Sharpe" p10={p10.sharpe} p50={p50.sharpe} p90={p90.sharpe} format={fmtNum} coloring="neutral" />
+              <MetricRow idx={4} label="Max Drawdown" p10={p10.maxDrawdownEquity} p50={p50.maxDrawdownEquity} p90={p90.maxDrawdownEquity} format={fmtPct} coloring="red" />
+              <MetricRow idx={5} label="Recovery (días)" p10={p10.recoveryDays} p50={p50.recoveryDays} p90={p90.recoveryDays} format={fmtDays} coloring="neutral" />
+              <MetricRow idx={6} label="Leverage Final" p10={p10.finalLeverage} p50={p50.finalLeverage} p90={p90.finalLeverage} format={fmtNum} coloring="neutral" />
             </tbody>
           </table>
         </div>
@@ -256,7 +258,7 @@ export default function BacktestResults({ result }: Props) {
             </thead>
             <tbody>
               {sortedWindows.map((w, i) => (
-                <tr key={w.windowIndex}>
+                <tr key={w.windowIndex} className="table-row-hoverable" style={{ background: i % 2 === 1 ? "var(--hover-bg)" : "transparent", transition: "background 0.15s ease" }}>
                   <td style={{ padding: '0.5rem', color: 'var(--text-muted)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{i + 1}</td>
                   <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{w.startDate}</td>
                   <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{w.endDate}</td>

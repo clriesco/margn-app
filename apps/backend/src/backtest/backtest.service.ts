@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 
-interface PricePoint {
-  date: string;
-  close: number;
-}
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class BacktestService {

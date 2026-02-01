@@ -33,7 +33,8 @@ export default function Profile() {
     if (!loading && !user) {
       router.push("/");
     }
-  }, [user, loading, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading]);
 
   // Get portfolioId from URL
   useEffect(() => {
