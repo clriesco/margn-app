@@ -16,6 +16,15 @@ on:
           - prices
           - metrics
           - daily-check
+      environment:
+        description: "Which environment to run against (staging, production, or both)"
+        required: false
+        default: "both"
+        type: choice
+        options:
+          - both
+          - staging
+          - production
 
 jobs:
   price-ingestion:
@@ -23,35 +32,56 @@ jobs:
     if: |
       github.event_name == 'schedule' ||
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'all' || github.event.inputs.job == 'prices'))
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - env_name: staging
+            backend_url_secret: BACKEND_URL_STAGING
+            cron_token_secret: CRON_SECRET_TOKEN_STAGING
+          - env_name: production
+            backend_url_secret: BACKEND_URL
+            cron_token_secret: CRON_SECRET_TOKEN
     steps:
-      - name: Call price ingestion endpoint
+      - name: Check if environment should run
+        id: check
         run: |
-          BACKEND_URL="${{ secrets.BACKEND_URL }}"
-          CRON_TOKEN="${{ secrets.CRON_SECRET_TOKEN }}"
-          
+          INPUT_ENV="${{ github.event.inputs.environment }}"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "$INPUT_ENV" = "both" ] || [ "$INPUT_ENV" = "${{ matrix.env_name }}" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Call price ingestion endpoint (${{ matrix.env_name }})
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          BACKEND_URL="${{ secrets[matrix.backend_url_secret] }}"
+          CRON_TOKEN="${{ secrets[matrix.cron_token_secret] }}"
+
           if [ -z "$BACKEND_URL" ]; then
-            echo "⚠️  BACKEND_URL secret not set. Skipping."
+            echo "BACKEND_URL secret not set for ${{ matrix.env_name }}. Skipping."
             exit 0
           fi
-          
+
           if [ -z "$CRON_TOKEN" ]; then
-            echo "⚠️  CRON_SECRET_TOKEN secret not set. Skipping."
+            echo "CRON_SECRET_TOKEN secret not set for ${{ matrix.env_name }}. Skipping."
             exit 0
           fi
-          
-          echo "🔄 Calling price ingestion endpoint..."
+
+          echo "Calling price ingestion endpoint (${{ matrix.env_name }})..."
           response=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer $CRON_TOKEN" \
             "$BACKEND_URL/api/cron/price-ingestion" || echo -e "\n000")
-          
+
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
-          
+
           if [ "$http_code" = "200" ]; then
-            echo "✅ Price ingestion completed successfully"
+            echo "Price ingestion completed successfully (${{ matrix.env_name }})"
             echo "$body" | jq '.' 2>/dev/null || echo "$body"
           else
-            echo "❌ Price ingestion failed with HTTP $http_code"
+            echo "Price ingestion failed with HTTP $http_code (${{ matrix.env_name }})"
             echo "$body"
             exit 1
           fi
@@ -60,37 +90,59 @@ jobs:
     runs-on: ubuntu-latest
     needs: price-ingestion
     if: |
-      github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'all' || github.event.inputs.job == 'metrics'))
+      always() &&
+      (github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'all' || github.event.inputs.job == 'metrics')))
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - env_name: staging
+            backend_url_secret: BACKEND_URL_STAGING
+            cron_token_secret: CRON_SECRET_TOKEN_STAGING
+          - env_name: production
+            backend_url_secret: BACKEND_URL
+            cron_token_secret: CRON_SECRET_TOKEN
     steps:
-      - name: Call metrics refresh endpoint
+      - name: Check if environment should run
+        id: check
         run: |
-          BACKEND_URL="${{ secrets.BACKEND_URL }}"
-          CRON_TOKEN="${{ secrets.CRON_SECRET_TOKEN }}"
-          
+          INPUT_ENV="${{ github.event.inputs.environment }}"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "$INPUT_ENV" = "both" ] || [ "$INPUT_ENV" = "${{ matrix.env_name }}" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Call metrics refresh endpoint (${{ matrix.env_name }})
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          BACKEND_URL="${{ secrets[matrix.backend_url_secret] }}"
+          CRON_TOKEN="${{ secrets[matrix.cron_token_secret] }}"
+
           if [ -z "$BACKEND_URL" ]; then
-            echo "⚠️  BACKEND_URL secret not set. Skipping."
+            echo "BACKEND_URL secret not set for ${{ matrix.env_name }}. Skipping."
             exit 0
           fi
-          
+
           if [ -z "$CRON_TOKEN" ]; then
-            echo "⚠️  CRON_SECRET_TOKEN secret not set. Skipping."
+            echo "CRON_SECRET_TOKEN secret not set for ${{ matrix.env_name }}. Skipping."
             exit 0
           fi
-          
-          echo "🔄 Calling metrics refresh endpoint..."
+
+          echo "Calling metrics refresh endpoint (${{ matrix.env_name }})..."
           response=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer $CRON_TOKEN" \
             "$BACKEND_URL/api/cron/metrics-refresh" || echo -e "\n000")
-          
+
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
-          
+
           if [ "$http_code" = "200" ]; then
-            echo "✅ Metrics refresh completed successfully"
+            echo "Metrics refresh completed successfully (${{ matrix.env_name }})"
             echo "$body" | jq '.' 2>/dev/null || echo "$body"
           else
-            echo "❌ Metrics refresh failed with HTTP $http_code"
+            echo "Metrics refresh failed with HTTP $http_code (${{ matrix.env_name }})"
             echo "$body"
             exit 1
           fi
@@ -99,37 +151,59 @@ jobs:
     runs-on: ubuntu-latest
     needs: metrics-refresh
     if: |
-      github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'all' || github.event.inputs.job == 'daily-check'))
+      always() &&
+      (github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'all' || github.event.inputs.job == 'daily-check')))
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - env_name: staging
+            backend_url_secret: BACKEND_URL_STAGING
+            cron_token_secret: CRON_SECRET_TOKEN_STAGING
+          - env_name: production
+            backend_url_secret: BACKEND_URL
+            cron_token_secret: CRON_SECRET_TOKEN
     steps:
-      - name: Call daily check endpoint
+      - name: Check if environment should run
+        id: check
         run: |
-          BACKEND_URL="${{ secrets.BACKEND_URL }}"
-          CRON_TOKEN="${{ secrets.CRON_SECRET_TOKEN }}"
-          
+          INPUT_ENV="${{ github.event.inputs.environment }}"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "$INPUT_ENV" = "both" ] || [ "$INPUT_ENV" = "${{ matrix.env_name }}" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Call daily check endpoint (${{ matrix.env_name }})
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          BACKEND_URL="${{ secrets[matrix.backend_url_secret] }}"
+          CRON_TOKEN="${{ secrets[matrix.cron_token_secret] }}"
+
           if [ -z "$BACKEND_URL" ]; then
-            echo "⚠️  BACKEND_URL secret not set. Skipping."
+            echo "BACKEND_URL secret not set for ${{ matrix.env_name }}. Skipping."
             exit 0
           fi
-          
+
           if [ -z "$CRON_TOKEN" ]; then
-            echo "⚠️  CRON_SECRET_TOKEN secret not set. Skipping."
+            echo "CRON_SECRET_TOKEN secret not set for ${{ matrix.env_name }}. Skipping."
             exit 0
           fi
-          
-          echo "🔍 Calling daily check endpoint..."
+
+          echo "Calling daily check endpoint (${{ matrix.env_name }})..."
           response=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer $CRON_TOKEN" \
             "$BACKEND_URL/api/cron/daily-check" || echo -e "\n000")
-          
+
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
-          
+
           if [ "$http_code" = "200" ]; then
-            echo "✅ Daily check completed successfully"
+            echo "Daily check completed successfully (${{ matrix.env_name }})"
             echo "$body" | jq '.' 2>/dev/null || echo "$body"
           else
-            echo "❌ Daily check failed with HTTP $http_code"
+            echo "Daily check failed with HTTP $http_code (${{ matrix.env_name }})"
             echo "$body"
             exit 1
           fi

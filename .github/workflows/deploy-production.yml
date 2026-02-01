@@ -1,0 +1,50 @@
+name: Deploy Production
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend to Render
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render production deploy
+        run: |
+          echo "Triggering Render deploy for production backend..."
+          response=$(curl -s -w "\n%{http_code}" \
+            -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_PRODUCTION_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          if [ "$http_code" = "201" ] || [ "$http_code" = "200" ]; then
+            echo "Render deploy triggered successfully"
+            echo "$body" | jq '.' 2>/dev/null || echo "$body"
+          else
+            echo "Render deploy failed with HTTP $http_code"
+            echo "$body"
+            exit 1
+          fi
+
+  deploy-frontend:
+    name: Deploy Frontend to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel Production
+        run: vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
