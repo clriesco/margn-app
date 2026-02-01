@@ -129,6 +129,7 @@ npm run dev:frontend  # Frontend on http://localhost:3002
 - **User Profile** - Personal information and notification preferences
 - **Historical Data** - Monthly metrics history with pagination
 - **Interactive Charts** - SVG-based equity history visualization
+- **Historical Backtesting** - Configurable backtest simulator with rolling windows, Sharpe optimization, and P10/P50/P90 percentile results
 
 ### 🚧 In Progress / Planned
 
@@ -268,7 +269,10 @@ Generates actionable recommendations based on:
 - `/dashboard/manual-update` - Update positions manually
 - `/dashboard/rebalance` - View and accept rebalancing proposals
 - `/dashboard/configuration` - Configure portfolio strategy
+- `/dashboard/backtest` - Historical backtest simulator with configurable parameters
+- `/dashboard/onboarding` - Portfolio creation wizard (SSE progress)
 - `/dashboard/profile` - User profile and preferences
+- `/dashboard/help` - Help and documentation
 
 ## 🔐 Authentication
 

@@ -22,6 +22,7 @@ import {
   Bell,
 } from "lucide-react";
 import { NumberInput } from "../../components/NumberInput";
+import { Tooltip } from "../../components/Tooltip";
 import { formatNumberES, formatPercentES } from "../../lib/number-format";
 
 /**
@@ -423,6 +424,7 @@ export default function Configuration() {
                   >
                     <BarChart size={18} />
                     Rango de Leverage
+                    <Tooltip text="El sistema recomendará reborrow cuando el leverage baje del mínimo, y aporte extra cuando suba del máximo." />
                   </div>
                 }
               >
@@ -458,10 +460,6 @@ export default function Configuration() {
                     suffix="x"
                   />
                 </div>
-                <p style={helpTextStyle}>
-                  El sistema recomendará reborrow cuando el leverage baje del
-                  mínimo, y aporte extra cuando suba del máximo.
-                </p>
               </ConfigSection>
 
               {/* Target Weights */}
@@ -977,13 +975,6 @@ const gridStyle: React.CSSProperties = {
   gap: "1.25rem",
 };
 
-const helpTextStyle: React.CSSProperties = {
-  color: "var(--text-dim)",
-  fontSize: "0.8125rem",
-  marginTop: "0.75rem",
-  fontStyle: "italic",
-};
-
 // Components
 function ConfigSection({
   title,
@@ -1054,7 +1045,8 @@ function InputField({
     <div>
       <label
         style={{
-          display: "block",
+          display: "flex",
+          alignItems: "center",
           fontWeight: "500",
           marginBottom: "0.5rem",
           color: "var(--text-secondary)",
@@ -1062,6 +1054,7 @@ function InputField({
         }}
       >
         {label}
+        {help && <Tooltip text={help} />}
       </label>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         {type === "number" ? (
@@ -1106,17 +1099,6 @@ function InputField({
           </span>
         )}
       </div>
-      {help && (
-        <p
-          style={{
-            color: "var(--text-dim)",
-            fontSize: "0.75rem",
-            marginTop: "0.35rem",
-          }}
-        >
-          {help}
-        </p>
-      )}
     </div>
   );
 }
