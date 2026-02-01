@@ -487,13 +487,13 @@ export default function Profile() {
                     background: isSubmitting
                       ? "var(--disabled-bg)"
                       : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    color: "var(--input-color)",
-                    border: "none",
+                    color: isSubmitting ? "var(--disabled-color)" : "white",
+                    border: isSubmitting ? "1px solid var(--disabled-border)" : "none",
                     borderRadius: "6px",
                     fontSize: "0.9375rem",
                     fontWeight: "600",
                     cursor: isSubmitting ? "not-allowed" : "pointer",
-                    opacity: isSubmitting ? 0.7 : 1,
+                    opacity: isSubmitting ? 0.5 : 1,
                   }}
                 >
                   {isSubmitting ? "Guardando..." : "Guardar Cambios"}

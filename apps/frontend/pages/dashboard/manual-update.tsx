@@ -976,13 +976,15 @@ export default function ManualUpdate() {
                   style={{
                     padding: "0.875rem 2rem",
                     background:
-                      "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    color: "var(--text-primary)",
-                    border: "none",
+                      isSubmitting || !portfolioId
+                        ? "var(--disabled-bg)"
+                        : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    color: isSubmitting || !portfolioId ? "var(--disabled-color)" : "white",
+                    border: isSubmitting || !portfolioId ? "1px solid var(--disabled-border)" : "none",
                     borderRadius: "6px",
                     fontSize: "0.95rem",
                     fontWeight: "600",
-                    opacity: isSubmitting || !portfolioId ? 0.7 : 1,
+                    opacity: isSubmitting || !portfolioId ? 0.5 : 1,
                     cursor:
                       isSubmitting || !portfolioId ? "not-allowed" : "pointer",
                   }}
