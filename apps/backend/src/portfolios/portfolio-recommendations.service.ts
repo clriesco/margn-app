@@ -325,23 +325,38 @@ export class PortfolioRecommendationsService {
       leverageMax
     );
 
-    // Case 1: Contribution day reminder (always if enabled and it's the day)
+    // Case 1: Contribution day reminder (only if enabled, it's the day, and not already contributed)
     if (isContributionDay && config.contributionEnabled) {
-      recommendations.push({
-        type: "contribution_due",
-        priority: "medium",
-        title: "Recordatorio: Aportación Mensual",
-        description: `Hoy es tu día de aportación mensual. Registra tu aportación de $${
-          config.monthlyContribution?.toLocaleString("es-ES") || 0
-        }.`,
-        actions: {
-          contributionReminder: {
-            suggestedAmount: config.monthlyContribution || 0,
-            currency: portfolio.baseCurrency,
-          },
+      // Check if the user already contributed today
+      const now = new Date();
+      const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const todayEnd = new Date(todayStart);
+      todayEnd.setUTCDate(todayEnd.getUTCDate() + 1);
+
+      const todayContribution = await this.prisma.monthlyContribution.findFirst({
+        where: {
+          portfolioId: portfolio.id,
+          contributedAt: { gte: todayStart, lt: todayEnd },
         },
-        actionUrl: "/dashboard/contribution",
       });
+
+      if (!todayContribution) {
+        recommendations.push({
+          type: "contribution_due",
+          priority: "medium",
+          title: "Recordatorio: Aportación Mensual",
+          description: `Hoy es tu día de aportación mensual. Registra tu aportación de $${
+            config.monthlyContribution?.toLocaleString("es-ES") || 0
+          }.`,
+          actions: {
+            contributionReminder: {
+              suggestedAmount: config.monthlyContribution || 0,
+              currency: portfolio.baseCurrency,
+            },
+          },
+          actionUrl: "/dashboard/contribution",
+        });
+      }
     }
 
     // Case 2: Leverage LOW - Need to increase exposure (reborrow)
@@ -427,26 +442,6 @@ export class PortfolioRecommendationsService {
         actionUrl: `/dashboard/contribution?extra=true&amount=${Math.ceil(
           extraContribution.amount
         )}`,
-      });
-    }
-
-    // If everything is in range, show status
-    if (
-      recommendations.length === 0 ||
-      (recommendations.length === 1 &&
-        recommendations[0].type === "contribution_due")
-    ) {
-      recommendations.push({
-        type: "in_range",
-        priority: "low",
-        title: "Portfolio en Rango",
-        description: `Tu leverage (${leverage
-          .toFixed(2)
-          .replace(".", ",")}x) está dentro del rango objetivo (${leverageMin
-          .toFixed(1)
-          .replace(".", ",")}x - ${leverageMax
-          .toFixed(1)
-          .replace(".", ",")}x). No se requiere acción inmediata.`,
       });
     }
 

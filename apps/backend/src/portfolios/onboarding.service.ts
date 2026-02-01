@@ -290,7 +290,7 @@ export class OnboardingService {
     });
 
     // Create daily metric entry too
-    const dailyMetricClient = (this.prisma as any).dailyMetric;
+    const dailyMetricClient = this.prisma.dailyMetric;
     if (dailyMetricClient) {
       await dailyMetricClient.create({
         data: {

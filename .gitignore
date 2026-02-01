@@ -11,6 +11,7 @@ dist/
 **/.next/
 **/out/
 **/build/
+**/tsconfig.tsbuildinfo
 
 # TypeScript compiled files (in scripts directories)
 infra/scripts/*.js

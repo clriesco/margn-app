@@ -30,7 +30,7 @@ async function calculateMetrics(portfolioId: string, date: Date) {
 
   // Get latest prices for all assets
   const assetPrices = await Promise.all(
-    positions.map(async (pos: typeof positions[0]) => {
+    positions.map(async (pos: (typeof positions)[0]) => {
       const latestPrice = await prisma.assetPrice.findFirst({
         where: {
           assetId: pos.assetId,
@@ -47,11 +47,25 @@ async function calculateMetrics(portfolioId: string, date: Date) {
 
   const priceMap = new Map(assetPrices.map((p) => [p.assetId, p.price]));
 
-  // Calculate total exposure
+  // Calculate total exposure and update stored exposureUsd per position
   let totalExposure = 0;
   for (const pos of positions) {
     const currentPrice = priceMap.get(pos.assetId) || pos.avgPrice;
-    totalExposure += pos.quantity * currentPrice;
+    const positionValue = pos.quantity * currentPrice;
+    totalExposure += positionValue;
+
+    // Keep exposureUsd in sync with current prices
+    if (Math.abs(pos.exposureUsd - positionValue) > 0.01) {
+      await prisma.portfolioPosition.update({
+        where: {
+          portfolioId_assetId: {
+            portfolioId: pos.portfolioId,
+            assetId: pos.assetId,
+          },
+        },
+        data: { exposureUsd: positionValue },
+      });
+    }
   }
 
   // Get latest metrics to calculate base equity and borrowedAmount
@@ -87,31 +101,37 @@ async function calculateMetrics(portfolioId: string, date: Date) {
   });
 
   // Determine which contributions have already been processed
-  // by checking the metadataJson.contributions array in the existing metric
+  // Search across recent metrics (not just the latest) to avoid missing IDs
+  // when today's metric was created by a different source than yesterday's
   let processedContributionIds: Set<string> = new Set();
 
-  if (latestMetric?.metadataJson) {
-    try {
-      const existingMetadata = JSON.parse(latestMetric.metadataJson);
-      if (
-        existingMetadata.contributions &&
-        Array.isArray(existingMetadata.contributions)
-      ) {
-        // Extract contribution IDs that have already been processed
-        existingMetadata.contributions.forEach((c: any) => {
-          if (c.contributionId) {
-            processedContributionIds.add(c.contributionId);
-          }
-        });
+  const recentMetrics = await prisma.metricsTimeseries.findMany({
+    where: { portfolioId },
+    orderBy: { date: "desc" },
+    take: 5,
+    select: { metadataJson: true },
+  });
+
+  for (const metric of recentMetrics) {
+    if (metric.metadataJson) {
+      try {
+        const meta = JSON.parse(metric.metadataJson);
+        if (meta.contributions && Array.isArray(meta.contributions)) {
+          meta.contributions.forEach((c: any) => {
+            if (c.contributionId) {
+              processedContributionIds.add(c.contributionId);
+            }
+          });
+        }
+      } catch (e) {
+        // If parsing fails, skip this metric
       }
-    } catch (e) {
-      // If parsing fails, assume no contributions have been processed
     }
   }
 
   // Filter to find contributions NOT yet processed
   const newContributions = allContributions.filter(
-    (c: typeof allContributions[0]) => !processedContributionIds.has(c.id)
+    (c: (typeof allContributions)[0]) => !processedContributionIds.has(c.id)
   );
 
   let contributionsSinceLastMetric = newContributions.reduce(
@@ -141,7 +161,7 @@ async function calculateMetrics(portfolioId: string, date: Date) {
   } else if (allContributions.length > 0) {
     // No previous metrics but we have contributions - process all of them
     contributionsSinceLastMetric = allContributions.reduce(
-      (sum: number, c: typeof allContributions[0]) => sum + c.amount,
+      (sum: number, c: (typeof allContributions)[0]) => sum + c.amount,
       0
     );
     console.log(
@@ -174,59 +194,51 @@ async function calculateMetrics(portfolioId: string, date: Date) {
     latestMetric &&
     latestMetric.borrowedAmount !== null &&
     latestMetric.borrowedAmount >= 0 &&
-    latestMetric.exposure > 0
+    latestMetric.exposure > 0 &&
+    totalExposure > 0
   ) {
-    // We have valid previous metrics with leverage
-    // BUT: Validate that the previous metrics are mathematically correct
-    // If borrowedAmount = 0 and leverage should be > 1, something is wrong
-    const targetLeverage =
-      portfolio.leverageTarget ||
-      (portfolio.leverageMin + portfolio.leverageMax) / 2;
+    // We have valid previous metrics with stored borrowedAmount
+    // borrowedAmount stays constant (only changes on rebalance), equity absorbs price changes
+    borrowedAmount = latestMetric.borrowedAmount;
+    equity = totalExposure - borrowedAmount + totalContributionsToAdd;
 
-    // Recalculate borrowedAmount from scratch
-    equity = totalExposure / targetLeverage + totalContributionsToAdd;
-    borrowedAmount = totalExposure - (equity - totalContributionsToAdd);
+    console.log(
+      `[metrics-refresh] Using stored borrowedAmount=$${borrowedAmount.toFixed(
+        2
+      )}, equity=$${equity.toFixed(2)} (exposure=$${totalExposure.toFixed(
+        2
+      )} - borrowed + contributions=$${totalContributionsToAdd.toFixed(2)})`
+    );
   } else if (
     latestMetric &&
     latestMetric.equity > 0 &&
     latestMetric.exposure > 0 &&
     totalExposure > 0
   ) {
-    // We have previous metrics but borrowedAmount might be 0 or null
-    // First, validate that the previous equity is mathematically correct
-    // If equity = exposure, that means leverage = 1, which is likely incorrect
-    const previousLeverage = latestMetric.exposure / latestMetric.equity;
+    // Fallback: derive borrowedAmount from previous equity/exposure
+    const previousBorrowed = latestMetric.exposure - latestMetric.equity;
     const targetLeverage =
       portfolio.leverageTarget ||
       (portfolio.leverageMin + portfolio.leverageMax) / 2;
-    const leverageDeviation =
-      Math.abs(previousLeverage - targetLeverage) / targetLeverage;
 
-    // If previous leverage is way off (more than 50% deviation), recalculate from scratch
-    if (leverageDeviation > 0.5 || previousLeverage < 1.1) {
+    if (previousBorrowed >= 0) {
+      borrowedAmount = previousBorrowed;
+      equity = totalExposure - borrowedAmount + totalContributionsToAdd;
+
       console.log(
-        `[metrics-refresh] ⚠️  Previous equity appears incorrect (leverage=${previousLeverage.toFixed(
+        `[metrics-refresh] Derived borrowedAmount=$${borrowedAmount.toFixed(
           2
-        )}, expected=${targetLeverage.toFixed(
-          2
-        )}). Recalculating from scratch...`
+        )} from previous equity/exposure, equity=$${equity.toFixed(2)}`
       );
-      // Recalculate from leverage target
+    } else {
+      // Corrupt data, recalculate from leverage target
+      console.log(
+        `[metrics-refresh] ⚠️  Corrupt data (negative borrowed=${previousBorrowed.toFixed(
+          2
+        )}). Recalculating from leverage target=${targetLeverage.toFixed(2)}`
+      );
       equity = totalExposure / targetLeverage + totalContributionsToAdd;
       borrowedAmount = totalExposure - (equity - totalContributionsToAdd);
-    } else {
-      // Previous equity looks correct, use it to calculate borrowedAmount
-      const previousBorrowedAmount =
-        latestMetric.exposure - latestMetric.equity;
-      if (previousBorrowedAmount >= 0) {
-        borrowedAmount = previousBorrowedAmount;
-        const equityFromPriceChanges = totalExposure - borrowedAmount;
-        equity = equityFromPriceChanges + totalContributionsToAdd;
-      } else {
-        // Fallback: calculate from leverage target
-        equity = totalExposure / targetLeverage + totalContributionsToAdd;
-        borrowedAmount = totalExposure - (equity - totalContributionsToAdd);
-      }
     }
   } else {
     // New portfolio or no previous metrics
@@ -262,7 +274,7 @@ async function calculateMetrics(portfolioId: string, date: Date) {
   }
 
   // Calculate current portfolio composition
-  const composition = positions.map((pos: typeof positions[0]) => {
+  const composition = positions.map((pos: (typeof positions)[0]) => {
     const currentPrice = priceMap.get(pos.assetId) || pos.avgPrice;
     const value = pos.quantity * currentPrice;
     const weight = totalExposure > 0 ? value / totalExposure : 0;
@@ -338,8 +350,8 @@ async function refreshMetrics() {
           metadata.composition = metrics.composition;
         }
 
-        // Preserve other metadata fields from existing entry if they exist
-        // IMPORTANT: If user manually updated today, preserve their equity value
+        // Preserve metadata and equity from same-day events (contribution, rebalance, manual update)
+        // If another service already wrote today's metric, we preserve its equity adjusted for price changes
         let shouldPreserveEquity = false;
         let preservedEquity = 0;
         let preservedBorrowedAmount = 0;
@@ -348,110 +360,41 @@ async function refreshMetrics() {
           try {
             const existingMetadata = JSON.parse(existingMetric.metadataJson);
 
-            // CRITICAL: Preserve all arrays (contributions, rebalances, manualUpdates)
-            // These arrays contain historical information that should never be lost
-            if (
-              existingMetadata.contributions &&
-              Array.isArray(existingMetadata.contributions)
-            ) {
-              metadata.contributions = existingMetadata.contributions;
-
-              // IMPORTANT: If source is "contribution", the equity already includes the contribution
-              // We should preserve it and only adjust for price changes
-              if (existingMetadata.source === "contribution") {
-                // Calculate how much exposure changed due to price movements
-                const exposureChange =
-                  metrics.exposure - existingMetric.exposure;
-
-                // The equity change due to prices is the same as exposure change
-                // (borrowedAmount stays constant, so equity absorbs the price change)
-                const equityWithPriceChange =
-                  existingMetric.equity + exposureChange;
-
-                shouldPreserveEquity = true;
-                preservedEquity = equityWithPriceChange;
-                preservedBorrowedAmount = existingMetric.borrowedAmount || 0;
-                metadata.source = "contribution";
-                metadata.refreshedAt = new Date().toISOString();
-
-                console.log(
-                  `[metrics-refresh] Preserving contribution equity: $${existingMetric.equity.toFixed(
-                    2
-                  )} + price_change=$${exposureChange.toFixed(
-                    2
-                  )} = $${preservedEquity.toFixed(2)}`
-                );
-              }
-            }
-            if (
-              existingMetadata.rebalances &&
-              Array.isArray(existingMetadata.rebalances)
-            ) {
-              metadata.rebalances = existingMetadata.rebalances;
-
-              // If source is "rebalance", preserve equity and adjust for price changes
-              if (
-                existingMetadata.source === "rebalance" &&
-                !shouldPreserveEquity
-              ) {
-                const exposureChange =
-                  metrics.exposure - existingMetric.exposure;
-                const equityWithPriceChange =
-                  existingMetric.equity + exposureChange;
-
-                shouldPreserveEquity = true;
-                preservedEquity = equityWithPriceChange;
-                preservedBorrowedAmount = existingMetric.borrowedAmount || 0;
-                metadata.source = "rebalance";
-                metadata.refreshedAt = new Date().toISOString();
-
-                console.log(
-                  `[metrics-refresh] Preserving rebalance equity: $${existingMetric.equity.toFixed(
-                    2
-                  )} + price_change=$${exposureChange.toFixed(
-                    2
-                  )} = $${preservedEquity.toFixed(2)}`
-                );
-              }
-            }
-            if (
-              existingMetadata.manualUpdates &&
-              Array.isArray(existingMetadata.manualUpdates)
-            ) {
-              metadata.manualUpdates = existingMetadata.manualUpdates;
-
-              // Check if there's a recent manual update that should preserve equity
-              if (!shouldPreserveEquity) {
-                const exposureChange =
-                  metrics.exposure - existingMetric.exposure;
-                const equityWithPriceChange =
-                  existingMetric.equity + exposureChange;
-
-                shouldPreserveEquity = true;
-                preservedEquity = equityWithPriceChange;
-                preservedBorrowedAmount = existingMetric.borrowedAmount || 0;
-                metadata.source = existingMetadata.source || "manual_update";
-                metadata.refreshedAt = new Date().toISOString();
-
-                console.log(
-                  `[metrics-refresh] Preserving manual equity: $${existingMetric.equity.toFixed(
-                    2
-                  )} + price_change=$${exposureChange.toFixed(
-                    2
-                  )} = $${preservedEquity.toFixed(2)}`
-                );
+            // Preserve all metadata arrays (contributions, rebalances, manualUpdates)
+            const arrayKeys = ["contributions", "rebalances", "manualUpdates"] as const;
+            for (const key of arrayKeys) {
+              if (existingMetadata[key] && Array.isArray(existingMetadata[key])) {
+                metadata[key] = existingMetadata[key];
               }
             }
 
-            // Preserve source if it's not metrics-refresh (to indicate original source)
+            // Preserve source if it's not metrics-refresh
             if (
               existingMetadata.source &&
               existingMetadata.source !== "metrics-refresh"
             ) {
               metadata.source = existingMetadata.source;
             }
+
+            // If today's metric was set by another service, preserve its equity
+            // and only adjust for price changes since then
+            const preservableSources = ["contribution", "rebalance", "manual_update"];
+            if (preservableSources.includes(existingMetadata.source)) {
+              const exposureChange = metrics.exposure - existingMetric.exposure;
+              preservedEquity = existingMetric.equity + exposureChange;
+              preservedBorrowedAmount = existingMetric.borrowedAmount || 0;
+              shouldPreserveEquity = true;
+              metadata.refreshedAt = new Date().toISOString();
+
+              console.log(
+                `[metrics-refresh] Preserving ${existingMetadata.source} equity: $${existingMetric.equity.toFixed(
+                  2
+                )} + price_change=$${exposureChange.toFixed(
+                  2
+                )} = $${preservedEquity.toFixed(2)}`
+              );
+            }
           } catch (e) {
-            // If parsing fails, just use new metadata
             console.warn(
               `[metrics-refresh] Failed to parse existing metadata: ${e}`
             );
@@ -520,7 +463,7 @@ async function refreshMetrics() {
         });
 
         // Also update daily metrics (daily_metrics) for daily tracking
-        const dailyMetricClient = (prisma as any).dailyMetric;
+        const dailyMetricClient = prisma.dailyMetric;
         if (dailyMetricClient) {
           // Calculate peak equity from history
           const allMetrics = await prisma.metricsTimeseries.findMany({

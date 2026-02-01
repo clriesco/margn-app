@@ -120,7 +120,7 @@ export class PortfoliosService {
   }
 
   async getDailyMetrics(portfolioId: string) {
-    const dailyMetricClient = (this.prisma as any).dailyMetric;
+    const dailyMetricClient = this.prisma.dailyMetric;
     return this.executeWithRetry(() =>
       dailyMetricClient.findMany({
         where: { portfolioId },
@@ -155,7 +155,7 @@ export class PortfoliosService {
       orderBy: { date: "desc" },
     });
 
-    const dailyMetricClient = (this.prisma as any).dailyMetric;
+    const dailyMetricClient = this.prisma.dailyMetric;
     const latestDailyMetric: { date: Date; equity: number } | null =
       dailyMetricClient
         ? await this.executeWithRetry(() =>
@@ -229,19 +229,6 @@ export class PortfoliosService {
       // Calculate current value of this position
       const positionValue = position.quantity * price;
       currentExposure += positionValue;
-
-      // Update position exposureUsd to match current value
-      if (Math.abs(position.exposureUsd - positionValue) > 0.01) {
-        await this.prisma.portfolioPosition.update({
-          where: {
-            portfolioId_assetId: {
-              portfolioId: portfolio.id,
-              assetId: position.assetId,
-            },
-          },
-          data: { exposureUsd: positionValue },
-        });
-      }
     }
 
     // Calculate leverage using effective equity and real-time exposure
@@ -288,7 +275,9 @@ export class PortfoliosService {
     const analytics = this.calculatePortfolioAnalytics(
       allMetrics,
       totalContributions,
-      portfolio.initialCapital
+      portfolio.initialCapital,
+      portfolio.contributions,
+      portfolio.createdAt
     );
 
     console.log(`[getSummary] Analytics result - capitalFinal: ${analytics.capitalFinal}, totalInvested: ${analytics.totalInvested}`);
@@ -353,7 +342,9 @@ export class PortfoliosService {
   private calculatePortfolioAnalytics(
     metricsHistory: any[],
     totalContributions: number,
-    initialCapital: number
+    initialCapital: number,
+    contributions: Array<{ amount: number; contributedAt: Date }> = [],
+    portfolioCreatedAt?: Date
   ) {
     const dailyHistory = this.buildDailyHistory(metricsHistory);
 
@@ -369,6 +360,7 @@ export class PortfoliosService {
         absoluteReturn: 0,
         totalReturnPercent: 0,
         cagr: 0,
+        xirr: null,
         volatility: 0,
         sharpe: 0,
         maxDrawdownEquity: 0,
@@ -393,6 +385,7 @@ export class PortfoliosService {
         absoluteReturn,
         totalReturnPercent,
         cagr: 0,
+        xirr: null,
         volatility: 0,
         sharpe: 0,
         maxDrawdownEquity: 0,
@@ -491,6 +484,18 @@ export class PortfoliosService {
       maxDrawdownExposure = Math.min(maxDrawdownExposure, exposureDrawdown);
     }
 
+    // Build XIRR cash flows
+    const xirrCashFlows: Array<{ amount: number; date: Date }> = [];
+    const startDate = portfolioCreatedAt || new Date(firstEntry.date);
+    if (initialCapital > 0) {
+      xirrCashFlows.push({ amount: -initialCapital, date: startDate });
+    }
+    for (const c of contributions) {
+      xirrCashFlows.push({ amount: -c.amount, date: new Date(c.contributedAt) });
+    }
+    xirrCashFlows.push({ amount: lastEntry.equity, date: new Date(lastEntry.date) });
+    const xirr = this.calculateXIRR(xirrCashFlows);
+
     if (dailyReturns.length === 0) {
       const result = {
         capitalFinal: lastEntry.equity,
@@ -498,6 +503,7 @@ export class PortfoliosService {
         absoluteReturn,
         totalReturnPercent,
         cagr,
+        xirr,
         volatility: 0,
         sharpe: 0,
         maxDrawdownEquity,
@@ -531,6 +537,7 @@ export class PortfoliosService {
       absoluteReturn,
       totalReturnPercent,
       cagr,
+      xirr,
       volatility,
       sharpe,
       maxDrawdownEquity,
@@ -548,6 +555,76 @@ export class PortfoliosService {
     
     console.log(`[calculatePortfolioAnalytics] Returning result (with returns) with capitalFinal: ${result.capitalFinal}`);
     return result;
+  }
+
+  /**
+   * Calculate XIRR (Extended Internal Rate of Return) using Newton-Raphson method.
+   * Accounts for timing of cash flows (initial capital, contributions, final value).
+   */
+  private calculateXIRR(
+    cashFlows: Array<{ amount: number; date: Date }>
+  ): number | null {
+    if (cashFlows.length < 2) return null;
+
+    const dates = cashFlows.map((cf) => cf.date.getTime());
+    const amounts = cashFlows.map((cf) => cf.amount);
+    const d0 = dates[0];
+
+    // Years from first date for each cash flow
+    const years = dates.map(
+      (d) => (d - d0) / (365.25 * 24 * 60 * 60 * 1000)
+    );
+
+    // NPV function: sum of amount_i / (1+r)^t_i
+    const npv = (r: number): number => {
+      let sum = 0;
+      for (let i = 0; i < amounts.length; i++) {
+        const denom = Math.pow(1 + r, years[i]);
+        if (!Number.isFinite(denom) || denom === 0) return Number.NaN;
+        sum += amounts[i] / denom;
+      }
+      return sum;
+    };
+
+    // Derivative of NPV
+    const dnpv = (r: number): number => {
+      let sum = 0;
+      for (let i = 0; i < amounts.length; i++) {
+        const denom = Math.pow(1 + r, years[i] + 1);
+        if (!Number.isFinite(denom) || denom === 0) return Number.NaN;
+        sum -= (years[i] * amounts[i]) / denom;
+      }
+      return sum;
+    };
+
+    // Newton-Raphson iteration
+    let rate = 0.1; // Initial guess: 10%
+    const maxIter = 100;
+    const tolerance = 1e-7;
+
+    for (let i = 0; i < maxIter; i++) {
+      const f = npv(rate);
+      const df = dnpv(rate);
+
+      if (!Number.isFinite(f) || !Number.isFinite(df) || Math.abs(df) < 1e-12) {
+        return null;
+      }
+
+      const newRate = rate - f / df;
+
+      if (Math.abs(newRate - rate) < tolerance) {
+        // Sanity check: rate should be reasonable (-0.99 to 10 = -99% to 1000%)
+        if (newRate <= -1 || newRate > 10) return null;
+        return newRate;
+      }
+
+      rate = newRate;
+
+      // Guard against divergence
+      if (rate < -0.99 || rate > 10) return null;
+    }
+
+    return null; // Did not converge
   }
 
   private async executeWithRetry<T>(

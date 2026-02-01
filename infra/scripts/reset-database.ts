@@ -74,7 +74,7 @@ async function resetDatabase() {
 
     // Count daily metrics (might not exist in schema)
     try {
-      const dailyMetricClient = (prisma as any).dailyMetric;
+      const dailyMetricClient = prisma.dailyMetric;
       if (dailyMetricClient) {
         counts.dailyMetrics = await dailyMetricClient.count();
       }
@@ -115,7 +115,7 @@ async function resetDatabase() {
 
     console.log("🗑️  Deleting Daily Metrics...");
     try {
-      const dailyMetricClient = (prisma as any).dailyMetric;
+      const dailyMetricClient = prisma.dailyMetric;
       if (dailyMetricClient) {
         const deletedDailyMetrics = await dailyMetricClient.deleteMany({});
         console.log(`   ✅ Deleted ${deletedDailyMetrics.count} daily metric(s)`);

@@ -281,7 +281,7 @@ export class PositionsService {
       const marginRatio = exposure > 0 ? dto.equity / exposure : 1;
 
       // Get or calculate peak equity
-      const dailyMetricClient = (this.prisma as any).dailyMetric;
+      const dailyMetricClient = this.prisma.dailyMetric;
       const latestDailyMetric = dailyMetricClient
         ? await dailyMetricClient.findFirst({
             where: { portfolioId: dto.portfolioId },

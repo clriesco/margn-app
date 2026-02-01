@@ -25,7 +25,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 function getDailyMetricClient() {
-  return (prisma as any).dailyMetric ?? null;
+  return prisma.dailyMetric ?? null;
 }
 
 // ============================================================================

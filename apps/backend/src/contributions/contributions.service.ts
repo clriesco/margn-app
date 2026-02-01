@@ -28,7 +28,7 @@ export class ContributionsService {
 
     // Get current equity from latest metrics BEFORE creating contribution
     // This ensures we set the contribution date correctly
-    const dailyMetricClient = (this.prisma as any).dailyMetric;
+    const dailyMetricClient = this.prisma.dailyMetric;
     const latestDailyMetric = dailyMetricClient
       ? await dailyMetricClient.findFirst({
           where: { portfolioId: dto.portfolioId },
@@ -115,10 +115,10 @@ export class ContributionsService {
     let borrowedAmount: number | null = null;
     if (
       latestDailyMetric &&
-      (latestDailyMetric as any).borrowedAmount !== null &&
-      (latestDailyMetric as any).borrowedAmount !== undefined
+      latestDailyMetric.borrowedAmount !== null &&
+      latestDailyMetric.borrowedAmount !== undefined
     ) {
-      borrowedAmount = (latestDailyMetric as any).borrowedAmount;
+      borrowedAmount = latestDailyMetric.borrowedAmount;
     } else if (latestMetrics && latestMetrics.borrowedAmount !== null) {
       borrowedAmount = latestMetrics.borrowedAmount;
     } else {
