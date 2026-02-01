@@ -8,6 +8,7 @@ import { CronModule } from "./cron/cron.module";
 import { PortfoliosModule } from "./portfolios/portfolios.module";
 import { PositionsModule } from "./positions/positions.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { BacktestModule } from "./backtest/backtest.module";
 import { RebalanceModule } from "./rebalance/rebalance.module";
 import { UsersModule } from "./users/users.module";
 
@@ -20,6 +21,7 @@ import { UsersModule } from "./users/users.module";
     PositionsModule,
     PortfoliosModule,
     RebalanceModule,
+    BacktestModule,
     CronModule,
   ],
   controllers: [AppController],

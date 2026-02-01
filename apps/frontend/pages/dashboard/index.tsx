@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
@@ -147,6 +147,7 @@ interface AnalyticsStats {
   absoluteReturn: number;
   totalReturnPercent: number;
   cagr: number;
+  xirr: number | null;
   volatility: number;
   sharpe: number;
   maxDrawdownEquity: number;
@@ -846,7 +847,7 @@ function Dashboard() {
                       minimumFractionDigits: 1,
                       maximumFractionDigits: 1,
                     })}x`}
-                    subtitle="Ratio actual"
+                    subtitle={`Rango: ${formatNumberES(summary.portfolio.leverageMin, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}x – ${formatNumberES(summary.portfolio.leverageMax, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}x`}
                   />
                   <MetricCard
                     title="Retornos"
@@ -981,7 +982,15 @@ function Dashboard() {
                           label: "CAGR",
                           value: formatPercentES(analyticsStats.cagr),
                           description:
-                            "Tasa de crecimiento anual compuesta. Mide el retorno anualizado del portfolio desde el inicio.",
+                            "Tasa de crecimiento anual compuesta. No ajusta por contribuciones — usar XIRR para comparar con benchmarks.",
+                        },
+                        {
+                          label: "XIRR",
+                          value: analyticsStats.xirr !== null
+                            ? formatPercentES(analyticsStats.xirr)
+                            : "—",
+                          description:
+                            "Tasa interna de retorno extendida. Retorno anualizado ajustado por el timing de cada contribución.",
                         },
                         {
                           label: "Volatilidad anual",
@@ -1809,226 +1818,178 @@ function Dashboard() {
  */
 function EquityChart({ data }: { data: MetricsPoint[] }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const [_containerRef, setContainerRef] = useState<HTMLDivElement | null>(
-    null
-  );
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detect mobile on client side only
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   if (data.length === 0) return null;
 
-  // Responsive chart dimensions
-  const width = isMobile ? 600 : 1200;
-  const height = isMobile ? 180 : 220;
-  const padding = 40;
-  const firstEquity = data[0]?.equity || 0;
-  const lastEquity = data[data.length - 1]?.equity || 0;
+  const chartWidth = 800;
+  const chartHeight = 260;
+  const pad = { top: 12, right: 16, bottom: 32, left: 60 };
+  const innerW = chartWidth - pad.left - pad.right;
+  const innerH = chartHeight - pad.top - pad.bottom;
+
+  const firstEquity = data[0].equity;
+  const lastEquity = data[data.length - 1].equity;
   const isPositive = lastEquity >= firstEquity;
+  const lineColor = isPositive ? "#22c55e" : "#ef4444";
+
   const equities = data.map((d) => d.equity);
-  const minEquity = Math.min(...equities) * 0.95;
-  const maxEquity = Math.max(...equities) * 1.05;
-  const range = Math.max(maxEquity - minEquity, 1);
+  const minEq = Math.min(...equities) * 0.95;
+  const maxEq = Math.max(...equities) * 1.05;
+  const range = Math.max(maxEq - minEq, 1);
 
-  const coords = data.map((point, index) => {
-    const stepCount = Math.max(data.length - 1, 1);
-    const x = padding + (index / stepCount) * (width - 2 * padding);
-    const y =
-      height -
-      padding -
-      ((point.equity - minEquity) / range) * (height - 2 * padding);
-    return { x, y, point };
-  });
+  const sx = (i: number) => pad.left + (i / Math.max(data.length - 1, 1)) * innerW;
+  const sy = (eq: number) => pad.top + innerH - ((eq - minEq) / range) * innerH;
 
-  const polylinePoints = coords
-    .map((coord) => `${coord.x},${coord.y}`)
-    .join(" ");
+  const polylinePoints = data.map((d, i) => `${sx(i).toFixed(1)},${sy(d.equity).toFixed(1)}`).join(" ");
+  const areaPoints = `${sx(0).toFixed(1)},${sy(minEq).toFixed(1)} ${polylinePoints} ${sx(data.length - 1).toFixed(1)},${sy(minEq).toFixed(1)}`;
 
-  const handleMouseMove = (event: React.MouseEvent<SVGElement>) => {
-    // Get the SVG element's bounding box (already scaled by viewBox)
-    const svgRect = event.currentTarget.getBoundingClientRect();
-    if (svgRect.width === 0) {
-      setHoverIndex(null);
-      return;
-    }
+  // Y ticks — nice round numbers
+  const rawStep = range / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const niceStep = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= rawStep) || rawStep;
+  const yTicks: number[] = [];
+  let tick = Math.ceil(minEq / niceStep) * niceStep;
+  while (tick <= maxEq) { yTicks.push(tick); tick += niceStep; }
 
-    // Calculate mouse position relative to the SVG element
-    const relativeMouseX = event.clientX - svgRect.left;
-    // Convert to viewBox coordinates (the SVG viewBox handles scaling automatically)
-    // The SVG scales proportionally, so we can directly map the mouse position to viewBox coordinates
-    const svgX = (relativeMouseX / svgRect.width) * width;
-
-    // Check if mouse is within the chart area (accounting for padding)
-    if (svgX < padding || svgX > width - padding) {
-      setHoverIndex(null);
-      return;
-    }
-
-    // Find the closest point by calculating distance to each point's X coordinate
-    let closestIndex = 0;
-    let minDistance = Math.abs(coords[0].x - svgX);
-
-    for (let i = 1; i < coords.length; i++) {
-      const distance = Math.abs(coords[i].x - svgX);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestIndex = i;
-      }
-    }
-
-    setHoverIndex(closestIndex);
-  };
-
-  const handleMouseLeave = () => {
-    setHoverIndex(null);
-  };
-
+  // X ticks — ~5 date labels
   const tickIndices = Array.from(
-    new Set(
-      [0, 0.25, 0.5, 0.75, 1].map((ratio) =>
-        Math.max(
-          0,
-          Math.min(data.length - 1, Math.round(ratio * (data.length - 1)))
-        )
-      )
-    )
+    new Set([0, 0.25, 0.5, 0.75, 1].map((r) => Math.round(r * (data.length - 1))))
   );
 
-  const tooltip = hoverIndex !== null ? coords[hoverIndex] : null;
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * chartWidth;
+    if (svgX < pad.left || svgX > chartWidth - pad.right) { setHoverIndex(null); return; }
+    const ratio = (svgX - pad.left) / innerW;
+    const idx = Math.round(ratio * (data.length - 1));
+    setHoverIndex(Math.max(0, Math.min(data.length - 1, idx)));
+  };
+
+  // Display data: hovered point or last point
+  const di = hoverIndex ?? data.length - 1;
+  const dp = data[di];
+  const dpReturn = (dp.equity - firstEquity) / firstEquity;
+  const fmtPct = (v: number) => (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
+
+  const panelLabelStyle: React.CSSProperties = {
+    color: "#64748b", fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: "0.5px",
+  };
+  const panelValueStyle: React.CSSProperties = {
+    color: "#f1f5f9", fontWeight: "600", fontSize: "0.9375rem",
+  };
 
   return (
-    <div
-      ref={setContainerRef}
-      style={{ position: "relative", width: "100%", height: `${height}px` }}
-    >
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        style={{ width: "100%", height: "100%", cursor: "crosshair" }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
-        {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => (
-          <line
-            key={i}
-            x1={padding}
-            y1={height - padding - pct * (height - 2 * padding)}
-            x2={width - padding}
-            y2={height - padding - pct * (height - 2 * padding)}
-            stroke="#1e293b"
-            strokeWidth="1"
-          />
-        ))}
-
-        {[0, 0.5, 1].map((pct, i) => (
-          <text
-            key={i}
-            x={padding - 5}
-            y={height - padding - pct * (height - 2 * padding)}
-            fill="#64748b"
-            fontSize="10"
-            textAnchor="end"
-            alignmentBaseline="middle"
-          >
-            {formatNumberES((minEquity + pct * range) / 1000, {
-              maximumFractionDigits: 0,
-            })}
-            k
-          </text>
-        ))}
-
-        <polyline
-          fill="none"
-          stroke={isPositive ? "#22c55e" : "#ef4444"}
-          strokeWidth="2.5"
-          points={polylinePoints}
-        />
-
-        <polygon
-          fill={
-            isPositive ? "rgba(34, 197, 94, 0.12)" : "rgba(239, 68, 68, 0.12)"
-          }
-          points={`${padding},${height - padding} ${polylinePoints} ${
-            width - padding
-          },${height - padding}`}
-        />
-
-        {tickIndices.map((idx) => (
-          <text
-            key={`tick-${idx}`}
-            x={coords[idx].x}
-            y={height - 10}
-            fill="#64748b"
-            fontSize="10"
-            textAnchor={
-              idx === 0 ? "start" : idx === data.length - 1 ? "end" : "middle"
-            }
-          >
-            {new Date(data[idx].date).toLocaleDateString("es-ES", {
-              month: "short",
-              year: "2-digit",
-            })}
-          </text>
-        ))}
-
-        {tooltip && (
+    <div>
+      {/* Info panel */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap",
+        padding: "0.625rem 1rem", marginBottom: "0.75rem",
+        background: "rgba(255,255,255,0.03)", border: "1px solid #1e293b", borderRadius: "6px",
+        minHeight: "40px", fontSize: "0.8125rem",
+      }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+          <span style={panelLabelStyle}>Fecha</span>
+          <span style={panelValueStyle}>
+            {new Date(dp.date).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
+          </span>
+        </div>
+        <div style={{ width: "1px", height: "28px", background: "#1e293b" }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+          <span style={panelLabelStyle}>Equity</span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
+            <span style={panelValueStyle}>{formatCurrencyES(dp.equity)}</span>
+            <span style={{ color: dpReturn >= 0 ? "#34d399" : "#f87171", fontSize: "0.75rem", fontWeight: "500" }}>{fmtPct(dpReturn)}</span>
+          </div>
+        </div>
+        <div style={{ width: "1px", height: "28px", background: "#1e293b" }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+          <span style={panelLabelStyle}>Leverage</span>
+          <span style={panelValueStyle}>{dp.leverage.toFixed(2)}x</span>
+        </div>
+        {dp.drawdown != null && (
           <>
-            <line
-              x1={tooltip.x}
-              x2={tooltip.x}
-              y1={padding / 2}
-              y2={height - padding / 2}
-              stroke="rgba(255,255,255,0.2)"
-              strokeDasharray="4 4"
-            />
-            <circle
-              cx={tooltip.x}
-              cy={tooltip.y}
-              r={5}
-              fill={isPositive ? "#22c55e" : "#ef4444"}
-              stroke="rgba(0,0,0,0.4)"
-              strokeWidth="2"
-            />
+            <div style={{ width: "1px", height: "28px", background: "#1e293b" }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+              <span style={panelLabelStyle}>Drawdown</span>
+              <span style={{ ...panelValueStyle, color: dp.drawdown < -0.05 ? "#f87171" : "#cbd5e1" }}>
+                {(dp.drawdown * 100).toFixed(1)}%
+              </span>
+            </div>
           </>
         )}
+        {dp.pnl != null && (
+          <>
+            <div style={{ width: "1px", height: "28px", background: "#1e293b" }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+              <span style={panelLabelStyle}>PnL día</span>
+              <span style={{ ...panelValueStyle, color: dp.pnl >= 0 ? "#34d399" : "#f87171" }}>
+                {dp.pnl >= 0 ? "+" : ""}{formatCurrencyES(dp.pnl)}
+              </span>
+            </div>
+          </>
+        )}
+        {hoverIndex === null && (
+          <>
+            <div style={{ flex: 1 }} />
+            <span style={{ color: "#475569", fontSize: "0.75rem", fontStyle: "italic" }}>
+              Pasa el ratón por el gráfico
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* SVG chart */}
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        style={{ width: "100%", height: "auto", display: "block", cursor: "crosshair" }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoverIndex(null)}
+      >
+        <defs>
+          <linearGradient id="eq-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0.15" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
+
+        {/* Horizontal grid + Y labels */}
+        {yTicks.map((t) => (
+          <g key={t}>
+            <line x1={pad.left} x2={chartWidth - pad.right} y1={sy(t)} y2={sy(t)} stroke="#1e293b" strokeWidth="1" />
+            <text x={pad.left - 8} y={sy(t) + 4} fill="#475569" fontSize="10" textAnchor="end" fontFamily="monospace">
+              {formatNumberES(t / 1000, { maximumFractionDigits: 0 })}k
+            </text>
+          </g>
+        ))}
+
+        {/* X labels */}
+        {tickIndices.map((idx) => (
+          <text key={idx} x={sx(idx)} y={chartHeight - 8} fill="#475569" fontSize="10" textAnchor="middle" fontFamily="monospace">
+            {new Date(data[idx].date).toLocaleDateString("es-ES", { month: "short", year: "2-digit" })}
+          </text>
+        ))}
+
+        {/* Area fill */}
+        <polygon fill="url(#eq-gradient)" points={areaPoints} />
+
+        {/* Line */}
+        <polyline fill="none" stroke={lineColor} strokeWidth="2" points={polylinePoints} />
+
+        {/* Hover crosshair + dot */}
+        {hoverIndex !== null && (
+          <g>
+            <line x1={sx(hoverIndex)} x2={sx(hoverIndex)} y1={pad.top} y2={chartHeight - pad.bottom} stroke="#334155" strokeWidth="1" />
+            <circle cx={sx(hoverIndex)} cy={sy(data[hoverIndex].equity)} r="4" fill={lineColor} stroke="#0f172a" strokeWidth="1.5" />
+          </g>
+        )}
+
+        {/* Axis borders */}
+        <line x1={pad.left} x2={pad.left} y1={pad.top} y2={chartHeight - pad.bottom} stroke="#1e293b" strokeWidth="1" />
+        <line x1={pad.left} x2={chartWidth - pad.right} y1={chartHeight - pad.bottom} y2={chartHeight - pad.bottom} stroke="#1e293b" strokeWidth="1" />
       </svg>
-      {tooltip && (
-        <div
-          style={{
-            position: "absolute",
-            left: `${(tooltip.x / width) * 100}%`,
-            top: `${(tooltip.y / height) * 100}%`,
-            transform: "translate(-50%, -120%)",
-            background: "rgba(15, 23, 42, 0.95)",
-            border: "1px solid rgba(148, 163, 184, 0.3)",
-            borderRadius: "8px",
-            padding: "0.75rem",
-            pointerEvents: "none",
-            color: "white",
-            minWidth: "150px",
-            fontSize: "0.85rem",
-            zIndex: 10,
-          }}
-        >
-          <p style={{ margin: 0, fontWeight: "600" }}>
-            {new Date(tooltip.point.date).toLocaleDateString("es-ES", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </p>
-          <p style={{ margin: "0.25rem 0 0", color: "#a5b4fc" }}>
-            Equity: {formatCurrencyES(tooltip.point.equity)}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
@@ -2113,7 +2074,7 @@ function AnalyticsCard({
                   color: "#cbd5e1",
                   fontSize: "0.8125rem",
                   width: "280px",
-                  zIndex: 1000,
+                  zIndex: 1100,
                   boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
                   pointerEvents: "none",
                 }}

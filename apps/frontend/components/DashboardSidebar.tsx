@@ -15,6 +15,7 @@ import {
   BookOpen,
   Menu,
   X,
+  BarChart3,
 } from "lucide-react";
 
 /**
@@ -90,6 +91,12 @@ export default function DashboardSidebar({
       icon: Edit,
       path: "/dashboard/manual-update",
       color: "#fbbf24",
+    },
+    {
+      label: "Backtest",
+      icon: BarChart3,
+      path: "/dashboard/backtest",
+      color: "#f59e0b",
     },
     {
       label: "Configuración",
@@ -176,7 +183,7 @@ export default function DashboardSidebar({
     transition: "transform 0.3s ease, width 0.2s ease",
     position: "fixed",
     height: "100vh",
-    zIndex: 1000,
+    zIndex: isMobile ? 1000 : 10,
     top: 0,
     left: 0,
     ...(isMobile && {

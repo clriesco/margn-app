@@ -1,0 +1,458 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { X, HelpCircle } from 'lucide-react';
+import { NumberInput } from '../NumberInput';
+import { searchSymbols, type SymbolSearchResult } from '../../lib/api';
+import type { BacktestConfig as BacktestConfigType } from '../../lib/backtest/types';
+
+interface Props {
+  onSubmit: (config: BacktestConfigType) => void;
+  loading: boolean;
+}
+
+const DEFAULT_CONFIG: BacktestConfigType = {
+  symbols: ['SPY', 'TLT', 'QQQ', 'GLD'],
+  initialCapital: 60000,
+  monthlyContribution: 2000,
+  leverageMin: 2.5,
+  leverageMax: 4.0,
+  leverageTarget: 3.0,
+  startDate: '2015-01-01',
+  endDate: '2024-12-31',
+  windowMonths: 60,
+  weightMode: 'sharpe',
+  drawdownRedeployThreshold: 0.12,
+  weightDeviationThreshold: 0.05,
+  volatilityRedeployThreshold: 0.18,
+  volatilityLookbackDays: 63,
+  gradualDeployFactor: 0.5,
+  meanReturnShrinkage: 0.6,
+  riskFreeRate: 0.02,
+  maintenanceMarginRatio: 0.05,
+  maxWeight: 0.4,
+  minWeight: 0.05,
+};
+
+// ---------------------------------------------------------------------------
+// Tooltip
+// ---------------------------------------------------------------------------
+function Tooltip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <span ref={ref} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: '0.375rem' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        style={{
+          background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+          color: open ? '#60a5fa' : '#475569', display: 'flex', alignItems: 'center',
+          transition: 'color 0.15s',
+        }}
+        tabIndex={-1}
+      >
+        <HelpCircle size={14} />
+      </button>
+      {open && (
+        <span style={{
+          position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+          width: '280px', padding: '0.625rem 0.75rem',
+          background: '#1e293b', border: '1px solid #334155', borderRadius: '6px',
+          color: '#cbd5e1', fontSize: '0.75rem', lineHeight: '1.5',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 100, pointerEvents: 'none',
+          whiteSpace: 'pre-wrap',
+        }}>
+          {text}
+          {/* Arrow */}
+          <span style={{
+            position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+            width: 0, height: 0,
+            borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+            borderTop: '6px solid #334155',
+          }} />
+        </span>
+      )}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Label with optional tooltip
+// ---------------------------------------------------------------------------
+function Label({ text, tooltip }: { text: string; tooltip?: string }) {
+  return (
+    <label style={{
+      display: 'flex', alignItems: 'center',
+      fontWeight: '500', marginBottom: '0.5rem',
+      color: '#cbd5e1', fontSize: '0.875rem',
+    }}>
+      {text}
+      {tooltip && <Tooltip text={tooltip} />}
+    </label>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TOOLTIPS
+// ---------------------------------------------------------------------------
+const TIPS = {
+  capitalInicial:
+    'Dinero propio con el que arrancas la simulación. No incluye lo que pide prestado el broker.',
+  aportacionMensual:
+    'Cantidad que aportas cada mes. La estrategia decide cuánto desplegar según las señales de mercado y cuánto guardar como colchón.',
+  leverageMin:
+    'Si el apalancamiento baja de este nivel, la estrategia re-pide prestado (reborrow) para volver al objetivo. Valores típicos: 2-3x.',
+  leverageTarget:
+    'Nivel de apalancamiento al que la estrategia intenta volver cuando rebalancea. Es el punto de equilibrio entre rentabilidad y riesgo.',
+  leverageMax:
+    'Si el apalancamiento sube de este nivel (porque el mercado cayó y tu equity bajó), las aportaciones se usan para reducir deuda en vez de comprar más. Valores típicos: 3.5-5x.',
+  pesoMin:
+    'Peso mínimo que cualquier activo puede tener en el portfolio. Evita que el optimizador elimine activos por completo.',
+  pesoMax:
+    'Peso máximo que cualquier activo puede tener. Evita concentrar demasiado en un solo activo.',
+  shrinkage:
+    'Controla cuánto "confía" el optimizador en los retornos históricos.\n\n'
+    + '- 1.0 = usa los retornos tal cual (agresivo, puede sobreajustar)\n'
+    + '- 0.0 = ignora los retornos y solo mira la volatilidad\n'
+    + '- 0.6 = reduce los retornos históricos un 40%\n\n'
+    + 'Ejemplo: si BTC rindió históricamente un 50% anual, con shrinkage 0.6 el optimizador asume que rendirá un 30%. Esto evita apostar todo a lo que mejor fue en el pasado.',
+  fechaInicio:
+    'Inicio del período de datos históricos. El backtest creará múltiples ventanas rolling dentro de este rango.',
+  fechaFin:
+    'Fin del período de datos. Cuanto más largo el rango, más ventanas se simulan y más robusto el resultado.',
+  ventana:
+    'Duración de cada simulación individual. El backtest genera una ventana nueva cada mes dentro del rango total y luego muestra los percentiles P10/P50/P90.\n\nEjemplo: con rango 2015-2024 y ventana de 5 años, se simulan ~55 ventanas solapadas.',
+  weightSharpe:
+    'El optimizador calcula automáticamente los pesos de cada activo para maximizar el ratio Sharpe (rentabilidad ajustada por riesgo).',
+  weightEqual:
+    'Reparte el capital en partes iguales entre todos los activos. Simple y sin optimización.',
+  weightManual:
+    'Tú defines exactamente qué porcentaje va a cada activo.',
+};
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+export default function BacktestConfig({ onSubmit, loading }: Props) {
+  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SymbolSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [manualWeights, setManualWeights] = useState<Record<string, number>>({});
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const update = (field: string, value: number | string | boolean) => {
+    setConfig((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Debounced search (300ms)
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await searchSymbols(searchQuery);
+        const filtered = results.filter((r) => !config.symbols.includes(r.symbol));
+        setSearchResults(filtered);
+        setShowDropdown(filtered.length > 0);
+      } catch {
+        setSearchResults([]);
+        setShowDropdown(false);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, config.symbols]);
+
+  const addSymbol = useCallback((symbol: string) => {
+    if (config.symbols.includes(symbol)) return;
+    setConfig((prev) => ({ ...prev, symbols: [...prev.symbols, symbol] }));
+    setManualWeights((prev) => ({ ...prev, [symbol]: 0 }));
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowDropdown(false);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, [config.symbols]);
+
+  const handleSelectResult = useCallback((result: SymbolSearchResult) => {
+    addSymbol(result.symbol);
+  }, [addSymbol]);
+
+  const removeSymbol = useCallback((symbol: string) => {
+    setConfig((prev) => ({ ...prev, symbols: prev.symbols.filter((s) => s !== symbol) }));
+    setManualWeights((prev) => { const n = { ...prev }; delete n[symbol]; return n; });
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && searchQuery === '' && config.symbols.length > 0) {
+      removeSymbol(config.symbols[config.symbols.length - 1]);
+    }
+    if (e.key === 'Enter' && showDropdown && searchResults.length > 0) {
+      e.preventDefault();
+      handleSelectResult(searchResults[0]);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      ...config,
+      manualWeights: config.weightMode === 'manual' ? manualWeights : undefined,
+    });
+  };
+
+  // Shared styles
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '0.625rem 0.875rem',
+    background: 'rgba(255,255,255,0.05)', color: 'white',
+    border: '1px solid #334155', borderRadius: '6px', fontSize: '0.95rem',
+  };
+  const gridStyle: React.CSSProperties = {
+    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem',
+  };
+  const sectionStyle: React.CSSProperties = {
+    background: '#131b2e', border: '1px solid #1e293b', borderRadius: '8px',
+    padding: '1.5rem', marginBottom: '1.5rem',
+  };
+  const sectionTitleStyle: React.CSSProperties = {
+    fontSize: '1.125rem', fontWeight: '600', color: '#f1f5f9', marginBottom: '1.25rem',
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+
+      {/* ── Activos ──────────────────────────────────────────────── */}
+      <div style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>Activos</h3>
+        <div style={{ position: 'relative' }}>
+          <Label text="Buscar y agregar tickers" />
+
+          <div
+            style={{
+              display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem',
+              padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.05)',
+              border: '1px solid #334155', borderRadius: '6px', cursor: 'text', minHeight: '44px',
+            }}
+            onClick={() => inputRef.current?.focus()}
+          >
+            {config.symbols.map((symbol) => (
+              <span key={symbol} style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+                padding: '0.25rem 0.5rem 0.25rem 0.625rem',
+                background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)',
+                borderRadius: '4px', color: '#93c5fd', fontSize: '0.8125rem',
+                fontWeight: '600', letterSpacing: '0.025em',
+              }}>
+                {symbol}
+                <button type="button" onClick={(e) => { e.stopPropagation(); removeSymbol(symbol); }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0', lineHeight: 1 }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; }}
+                ><X size={14} /></button>
+              </span>
+            ))}
+            <input ref={inputRef} type="text" value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value.toUpperCase())}
+              onKeyDown={handleKeyDown}
+              onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
+              onBlur={() => { setTimeout(() => setShowDropdown(false), 200); }}
+              placeholder={config.symbols.length === 0 ? 'Buscar ticker (ej: SPY, AAPL, BTC-USD)' : 'Buscar...'}
+              style={{ flex: 1, minWidth: '120px', background: 'transparent', border: 'none',
+                outline: 'none', color: 'white', fontSize: '0.9rem', padding: '0.125rem 0' }}
+            />
+            {isSearching && <span style={{ color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Buscando...</span>}
+          </div>
+
+          {showDropdown && searchResults.length > 0 && (
+            <div ref={dropdownRef} style={{
+              position: 'absolute', top: '100%', left: 0, right: 0,
+              background: '#1e293b', border: '1px solid #334155', borderRadius: '8px',
+              marginTop: '0.25rem', maxHeight: '300px', overflowY: 'auto', zIndex: 1000,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            }}>
+              {searchResults.map((result, idx) => (
+                <div key={`${result.symbol}-${idx}`}
+                  onClick={() => handleSelectResult(result)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  style={{ padding: '0.75rem 1rem', cursor: 'pointer',
+                    borderBottom: idx < searchResults.length - 1 ? '1px solid #334155' : 'none',
+                    background: 'transparent', transition: 'background 0.15s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '0.95rem' }}>{result.symbol}</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.8125rem', marginTop: '0.125rem' }}>{result.name}</div>
+                      {result.exchange && <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.125rem' }}>{result.exchange}</div>}
+                    </div>
+                    {result.price !== null && (
+                      <div style={{ color: '#22c55e', fontWeight: '600', fontSize: '0.95rem' }}>${result.price.toFixed(2)}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.35rem' }}>
+            {config.symbols.length} activo{config.symbols.length !== 1 ? 's' : ''} seleccionado{config.symbols.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Pesos ────────────────────────────────────────────────── */}
+      <div style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>Pesos</h3>
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          {([
+            { mode: 'sharpe' as const, label: 'Sharpe Auto', tip: TIPS.weightSharpe },
+            { mode: 'equal' as const, label: 'Iguales', tip: TIPS.weightEqual },
+            { mode: 'manual' as const, label: 'Manual', tip: TIPS.weightManual },
+          ]).map(({ mode, label, tip }) => (
+            <label key={mode} style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.75rem 1rem', flex: 1, cursor: 'pointer', minWidth: '140px',
+              background: config.weightMode === mode ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.05)',
+              border: config.weightMode === mode ? '1px solid #3b82f6' : '1px solid #334155',
+              borderRadius: '8px',
+            }}>
+              <input type="radio" name="weightMode" checked={config.weightMode === mode}
+                onChange={() => update('weightMode', mode)} style={{ accentColor: '#3b82f6' }} />
+              <span style={{ color: '#f1f5f9', fontWeight: '600', fontSize: '0.875rem' }}>{label}</span>
+              <Tooltip text={tip} />
+            </label>
+          ))}
+        </div>
+
+        {config.weightMode === 'manual' && config.symbols.length > 0 && (
+          <div>
+            {config.symbols.map((symbol) => (
+              <div key={symbol} style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                <span style={{ color: '#f1f5f9', fontWeight: '600', minWidth: '80px' }}>{symbol}</span>
+                <input type="range" min={0} max={100}
+                  value={(manualWeights[symbol] || 0) * 100}
+                  onChange={(e) => setManualWeights((prev) => ({ ...prev, [symbol]: parseFloat(e.target.value) / 100 }))}
+                  style={{ flex: 1, accentColor: '#3b82f6' }} />
+                <span style={{ color: '#94a3b8', minWidth: '50px', textAlign: 'right' }}>
+                  {((manualWeights[symbol] || 0) * 100).toFixed(1)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {config.weightMode === 'sharpe' && (
+          <div style={gridStyle}>
+            <div>
+              <Label text="Peso Mín. (%)" tooltip={TIPS.pesoMin} />
+              <NumberInput value={config.minWeight * 100} onChange={(v) => update('minWeight', v / 100)}
+                min={1} max={50} step={1} decimals={0} style={inputStyle} />
+            </div>
+            <div>
+              <Label text="Peso Máx. (%)" tooltip={TIPS.pesoMax} />
+              <NumberInput value={config.maxWeight * 100} onChange={(v) => update('maxWeight', v / 100)}
+                min={10} max={100} step={5} decimals={0} style={inputStyle} />
+            </div>
+            <div>
+              <Label text="Shrinkage de retornos" tooltip={TIPS.shrinkage} />
+              <NumberInput value={config.meanReturnShrinkage} onChange={(v) => update('meanReturnShrinkage', v)}
+                min={0} max={1} step={0.1} decimals={1} style={inputStyle} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Capital y Leverage ───────────────────────────────────── */}
+      <div style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>Capital y Leverage</h3>
+        <div style={gridStyle}>
+          <div>
+            <Label text="Capital Inicial (USD)" tooltip={TIPS.capitalInicial} />
+            <NumberInput value={config.initialCapital} onChange={(v) => update('initialCapital', v)}
+              min={1000} step={1000} decimals={0} style={inputStyle} />
+          </div>
+          <div>
+            <Label text="Aportación Mensual (USD)" tooltip={TIPS.aportacionMensual} />
+            <NumberInput value={config.monthlyContribution} onChange={(v) => update('monthlyContribution', v)}
+              min={0} step={100} decimals={0} style={inputStyle} />
+          </div>
+          <div>
+            <Label text="Leverage Mín." tooltip={TIPS.leverageMin} />
+            <NumberInput value={config.leverageMin} onChange={(v) => update('leverageMin', v)}
+              min={1} max={10} step={0.1} decimals={1} style={inputStyle} />
+          </div>
+          <div>
+            <Label text="Leverage Objetivo" tooltip={TIPS.leverageTarget} />
+            <NumberInput value={config.leverageTarget} onChange={(v) => update('leverageTarget', v)}
+              min={1} max={10} step={0.1} decimals={1} style={inputStyle} />
+          </div>
+          <div>
+            <Label text="Leverage Máx." tooltip={TIPS.leverageMax} />
+            <NumberInput value={config.leverageMax} onChange={(v) => update('leverageMax', v)}
+              min={1} max={10} step={0.1} decimals={1} style={inputStyle} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Periodo y Ventanas ───────────────────────────────────── */}
+      <div style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>Periodo y Ventanas</h3>
+        <div style={gridStyle}>
+          <div>
+            <Label text="Fecha Inicio" tooltip={TIPS.fechaInicio} />
+            <input type="date" value={config.startDate}
+              onChange={(e) => update('startDate', e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <Label text="Fecha Fin" tooltip={TIPS.fechaFin} />
+            <input type="date" value={config.endDate}
+              onChange={(e) => update('endDate', e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <Label text="Duración Ventana" tooltip={TIPS.ventana} />
+            <select value={config.windowMonths}
+              onChange={(e) => update('windowMonths', parseInt(e.target.value))} style={inputStyle}>
+              <option value={36}>3 años (36 meses)</option>
+              <option value={48}>4 años (48 meses)</option>
+              <option value={60}>5 años (60 meses)</option>
+              <option value={72}>6 años (72 meses)</option>
+              <option value={84}>7 años (84 meses)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" disabled={loading || config.symbols.length === 0}
+        style={{
+          width: '100%', padding: '1rem',
+          background: loading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          color: loading ? 'rgba(255,255,255,0.5)' : 'white',
+          border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600',
+          cursor: loading ? 'not-allowed' : 'pointer',
+        }}>
+        {loading ? 'Cargando precios...' : 'Ejecutar Backtest'}
+      </button>
+    </form>
+  );
+}

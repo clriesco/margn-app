@@ -30,6 +30,7 @@ export interface AnalyticsStats {
   absoluteReturn: number;
   totalReturnPercent: number;
   cagr: number;
+  xirr: number | null;
   volatility: number;
   sharpe: number;
   maxDrawdownEquity: number;
@@ -686,4 +687,17 @@ export async function createPortfolio(
  */
 export async function checkNeedsOnboarding(): Promise<{ needsOnboarding: boolean }> {
   return fetchAPI("/portfolios/needs-onboarding");
+}
+
+export async function getBacktestPrices(
+  symbols: string[],
+  from: string,
+  to: string
+): Promise<{ prices: Record<string, Record<string, number>>; earliestCommonDate: string }> {
+  const params = new URLSearchParams({
+    symbols: symbols.join(","),
+    from,
+    to,
+  });
+  return fetchAPI(`/backtest/prices?${params.toString()}`);
 }
