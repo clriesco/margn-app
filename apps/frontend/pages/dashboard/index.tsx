@@ -8,6 +8,7 @@ import {
   usePortfolios,
   usePortfolioSummary,
   usePortfolioMetrics,
+  useContributionHistory,
   usePortfolioRecommendations,
 } from "../../lib/hooks/use-portfolio-data";
 import { getProfile, UserProfile } from "../../lib/api";
@@ -206,6 +207,11 @@ function Dashboard() {
     isLoading: recommendationsLoading,
     mutate: refreshRecommendations,
   } = usePortfolioRecommendations(portfolioId);
+  const {
+    history: contributionHistory,
+    isLoading: contributionHistoryLoading,
+    mutate: refreshContributionHistory,
+  } = useContributionHistory(portfolioId);
 
   const [historyPage, setHistoryPage] = useState(1);
   const itemsPerPage = 24;
@@ -216,6 +222,7 @@ function Dashboard() {
     portfoliosLoading ||
     summaryLoading ||
     metricsLoading ||
+    contributionHistoryLoading ||
     recommendationsLoading;
   const error = portfoliosError
     ? portfoliosError instanceof Error
@@ -225,14 +232,9 @@ function Dashboard() {
 
   const historyForTable = useMemo(() => {
     // Sort by date descending (most recent first)
-    const sorted = [...metricsHistory]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .map((point) => ({
-        ...point,
-        composition: point.metadata?.composition ?? [],
-      }));
-    return sorted;
-  }, [metricsHistory]);
+    return [...contributionHistory]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [contributionHistory]);
 
   // Calculate pagination
   const totalPages = Math.ceil(historyForTable.length / itemsPerPage);
@@ -1221,12 +1223,13 @@ function Dashboard() {
                       style={{
                         width: "100%",
                         borderCollapse: "collapse",
-                        minWidth: "600px",
+                        minWidth: "700px",
                       }}
                     >
                       <thead>
                         <tr style={{ borderBottom: "1px solid var(--border)" }}>
                           <th style={tableHeaderStyle}>Fecha</th>
+                          <th style={tableHeaderStyle}>Aportación</th>
                           <th style={tableHeaderStyle}>Equity</th>
                           <th style={tableHeaderStyle}>Exposición</th>
                           <th style={tableHeaderStyle}>Leverage</th>
@@ -1252,10 +1255,14 @@ function Dashboard() {
                               {new Date(point.date).toLocaleDateString(
                                 "es-ES",
                                 {
+                                  day: "numeric",
                                   month: "short",
                                   year: "numeric",
                                 }
                               )}
+                            </td>
+                            <td style={tableCellStyle}>
+                              {formatCurrencyES(Math.round(point.contribution))}
                             </td>
                             <td style={tableCellStyle}>
                               {formatCurrencyES(Math.round(point.equity))}
@@ -1345,6 +1352,7 @@ function Dashboard() {
                               {new Date(point.date).toLocaleDateString(
                                 "es-ES",
                                 {
+                                  day: "numeric",
                                   month: "long",
                                   year: "numeric",
                                 }
@@ -1363,6 +1371,12 @@ function Dashboard() {
                               {formatCurrencyES(point.pnl ?? 0)}
                             </div>
                           </div>
+                        </div>
+                        <div className="history-card-row">
+                          <span className="history-card-label">Aportación</span>
+                          <span className="history-card-value">
+                            {formatCurrencyES(Math.round(point.contribution))}
+                          </span>
                         </div>
                         <div className="history-card-row">
                           <span className="history-card-label">Equity</span>

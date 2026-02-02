@@ -1160,9 +1160,10 @@ export class RebalanceService {
         equity: proposal.summary.newEquity,
         exposure: proposal.summary.newExposure,
         leverage: proposal.summary.newLeverage,
+        borrowedAmount: proposal.summary.newExposure - proposal.summary.newEquity,
         drawdown: proposal.drawdown,
-        marginRatio: proposal.summary.newEquity > 0 
-          ? proposal.summary.newEquity / proposal.summary.newExposure 
+        marginRatio: proposal.summary.newEquity > 0
+          ? proposal.summary.newEquity / proposal.summary.newExposure
           : 1,
         metadataJson: JSON.stringify(metadata),
       },
@@ -1170,9 +1171,10 @@ export class RebalanceService {
         equity: proposal.summary.newEquity,
         exposure: proposal.summary.newExposure,
         leverage: proposal.summary.newLeverage,
+        borrowedAmount: proposal.summary.newExposure - proposal.summary.newEquity,
         drawdown: proposal.drawdown,
-        marginRatio: proposal.summary.newEquity > 0 
-          ? proposal.summary.newEquity / proposal.summary.newExposure 
+        marginRatio: proposal.summary.newEquity > 0
+          ? proposal.summary.newEquity / proposal.summary.newExposure
           : 1,
         metadataJson: JSON.stringify(metadata),
       },

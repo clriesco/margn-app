@@ -163,6 +163,13 @@ export async function getPortfolioMetrics(portfolioId: string) {
 }
 
 /**
+ * Get contribution history for dashboard table
+ */
+export async function getContributionHistory(portfolioId: string) {
+  return fetchAPI(`/portfolios/${portfolioId}/contribution-history`);
+}
+
+/**
  * Register monthly contribution
  */
 export async function createContribution(data: {

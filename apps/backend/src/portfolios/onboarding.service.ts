@@ -159,10 +159,42 @@ export class OnboardingService {
       }
       
       try {
-        await this.downloadHistoricalPrices(assetId, assetDto.symbol);
-        console.log(
-          `[OnboardingService] ✅ Downloaded history for ${assetDto.symbol}`
-        );
+        // Skip download if asset already covers the required date range
+        const requiredStart = new Date();
+        requiredStart.setDate(requiredStart.getDate() - 730);
+        requiredStart.setUTCHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        const oldestPrice = await this.prisma.assetPrice.findFirst({
+          where: { assetId },
+          orderBy: { date: "asc" },
+          select: { date: true },
+        });
+        const newestPrice = await this.prisma.assetPrice.findFirst({
+          where: { assetId },
+          orderBy: { date: "desc" },
+          select: { date: true },
+        });
+
+        // Allow 5-day tolerance on both ends to account for weekends and holidays
+        const toleranceMs = 5 * 24 * 60 * 60 * 1000;
+        const hasFullRange =
+          oldestPrice &&
+          newestPrice &&
+          oldestPrice.date.getTime() <= requiredStart.getTime() + toleranceMs &&
+          newestPrice.date.getTime() >= today.getTime() - toleranceMs;
+
+        if (hasFullRange) {
+          console.log(
+            `[OnboardingService] ℹ️  Skipping download for ${assetDto.symbol} (history covers ${oldestPrice.date.toISOString().split("T")[0]} to ${newestPrice.date.toISOString().split("T")[0]})`
+          );
+        } else {
+          await this.downloadHistoricalPrices(assetId, assetDto.symbol);
+          console.log(
+            `[OnboardingService] ✅ Downloaded history for ${assetDto.symbol}`
+          );
+        }
         if (progressCallback) {
           progressCallback({
             type: "asset",

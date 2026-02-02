@@ -109,9 +109,7 @@ async function resetDatabase() {
     const deletedPositions = await prisma.portfolioPosition.deleteMany({});
     console.log(`   ✅ Deleted ${deletedPositions.count} position(s)`);
 
-    console.log("🗑️  Deleting Asset Prices...");
-    const deletedAssetPrices = await prisma.assetPrice.deleteMany({});
-    console.log(`   ✅ Deleted ${deletedAssetPrices.count} asset price(s)`);
+    console.log("ℹ️  Keeping Asset Prices (historical data preserved)");
 
     console.log("🗑️  Deleting Daily Metrics...");
     try {
@@ -138,9 +136,7 @@ async function resetDatabase() {
     const deletedPortfolios = await prisma.portfolio.deleteMany({});
     console.log(`   ✅ Deleted ${deletedPortfolios.count} portfolio(s)`);
 
-    console.log("🗑️  Deleting Assets...");
-    const deletedAssets = await prisma.asset.deleteMany({});
-    console.log(`   ✅ Deleted ${deletedAssets.count} asset(s)`);
+    console.log("ℹ️  Keeping Assets (preserved with historical prices)");
 
     console.log("🗑️  Deleting Users...");
     const deletedUsers = await prisma.user.deleteMany({});
@@ -154,19 +150,22 @@ async function resetDatabase() {
     const remainingCounts = {
       users: await prisma.user.count(),
       portfolios: await prisma.portfolio.count(),
-      assets: await prisma.asset.count(),
       positions: await prisma.portfolioPosition.count(),
       contributions: await prisma.monthlyContribution.count(),
       rebalanceEvents: await prisma.rebalanceEvent.count(),
       rebalancePositions: await prisma.rebalancePosition.count(),
-      assetPrices: await prisma.assetPrice.count(),
       metricsTimeseries: await prisma.metricsTimeseries.count(),
+    };
+    const preservedCounts = {
+      assets: await prisma.asset.count(),
+      assetPrices: await prisma.assetPrice.count(),
     };
 
     const allZero = Object.values(remainingCounts).every((count) => count === 0);
 
     if (allZero) {
-      console.log("✅ Verification: All tables are empty.");
+      console.log("✅ Verification: All portfolio data cleared.");
+      console.log(`ℹ️  Preserved: ${preservedCounts.assets} asset(s), ${preservedCounts.assetPrices} price record(s)`);
     } else {
       console.log("⚠️  Warning: Some tables still have data:");
       Object.entries(remainingCounts).forEach(([table, count]) => {

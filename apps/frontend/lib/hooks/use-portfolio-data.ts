@@ -4,6 +4,7 @@ import {
   getPortfoliosByEmail,
   getPortfolioSummary,
   getPortfolioMetrics,
+  getContributionHistory,
   getPortfolioRecommendations,
   PortfolioSummary,
   PortfolioRecommendationsResponse,
@@ -93,6 +94,38 @@ export function usePortfolioMetrics(portfolioId: string | null) {
     isLoading,
     error,
     mutate, // Allow manual refresh
+  };
+}
+
+interface ContributionHistoryPoint {
+  date: string;
+  contribution: number;
+  equity: number;
+  exposure: number;
+  leverage: number;
+  composition: Array<{ symbol: string; weight: number; value: number }>;
+  pnl: number;
+  pnlPercent: number;
+}
+
+/**
+ * Hook to get contribution history for the dashboard table (cached)
+ */
+export function useContributionHistory(portfolioId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR<ContributionHistoryPoint[]>(
+    portfolioId ? `contribution-history-${portfolioId}` : null,
+    () => getContributionHistory(portfolioId!),
+    {
+      ...swrConfig,
+      revalidateIfStale: false,
+    }
+  );
+
+  return {
+    history: data || [],
+    isLoading,
+    error,
+    mutate,
   };
 }
 

@@ -122,6 +122,15 @@ export class PortfoliosController {
   }
 
   /**
+   * Get contribution history for dashboard table
+   * GET /api/portfolios/:id/contribution-history
+   */
+  @Get(":id/contribution-history")
+  async contributionHistory(@Param("id") id: string) {
+    return this.portfoliosService.getContributionHistory(id);
+  }
+
+  /**
    * Get portfolio summary (latest metrics + positions)
    * GET /api/portfolios/:id/summary
    */
