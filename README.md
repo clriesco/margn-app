@@ -179,7 +179,7 @@ Base URL: `http://localhost:3003/api`
 - `GET /portfolios/:portfolioId/rebalance/proposal` - Get rebalancing proposal
 - `POST /portfolios/:portfolioId/rebalance/accept` - Accept and save rebalancing
 
-For complete API documentation, see `README_LLM.md` (section "API Endpoints").
+For complete API documentation, see `CLAUDE.md` (section "API endpoints").
 
 ## 🛠️ Infrastructure Scripts
 
@@ -230,7 +230,7 @@ The database schema is defined in `apps/backend/prisma/schema.prisma`. Main mode
 - **MetricsTimeseries** - Monthly portfolio metrics
 - **DailyMetric** - Daily portfolio metrics
 
-See `README_LLM.md` (section "Data Model") for complete schema documentation.
+See `CLAUDE.md` (section "Esquema de base de datos") for complete schema documentation.
 
 ## 🧮 Core Algorithms
 
@@ -305,7 +305,7 @@ The system calculates comprehensive portfolio analytics:
 
 ## 📚 Documentation
 
-- **`README_LLM.md`** - Comprehensive documentation for LLMs (complete project context)
+- **`CLAUDE.md`** - Comprehensive documentation for LLMs (complete project context)
 - **`apps/backend/prisma/schema.prisma`** - Database schema
 - **`apps/backend/src/`** - Backend source code
 - **`apps/frontend/pages/`** - Frontend pages

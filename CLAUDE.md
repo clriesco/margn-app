@@ -425,6 +425,45 @@ Prioridades: low, medium, high, urgent.
 
 ---
 
+## Frontend — páginas y componentes
+
+### Páginas
+
+- **`/`** — Login (magic link). Redirige a dashboard si ya autenticado.
+- **`/dashboard`** — Dashboard principal: métricas (equity, exposure, leverage, returns), panel de recomendaciones, gráfica SVG de equity interactiva con tooltip, grid de analytics (CAGR, Sharpe, drawdown…), historial mensual paginado (24/página), tabla de posiciones actuales. Skeleton loading en todas las secciones.
+- **`/dashboard/onboarding`** — Wizard de creación de portfolio con SSE progress.
+- **`/dashboard/contribution`** — Formulario de contribución (monto, nota). Soporta contribución extra vía query params `?extra=true&amount=X`.
+- **`/dashboard/manual-update`** — Actualización manual de posiciones (equity actual, cantidades por activo).
+- **`/dashboard/rebalance`** — Propuesta de rebalanceo: estado actual vs objetivo, tabla BUY/SELL/HOLD con cantidades exactas, desglose equity/borrow. Botón "Accept and Save" (deshabilitado si no hay acciones).
+- **`/dashboard/configuration`** — Panel completo: contribución (monto, frecuencia, día, enabled), leverage (min/max/target), editor visual de pesos (valida suma 100%), thresholds de señales, parámetros Sharpe (solo visible si `useDynamicSharpeRebalance`).
+- **`/dashboard/backtest`** — Simulador de backtest con configuración, progreso y resultados (trayectorias, equity breakdown).
+- **`/dashboard/profile`** — Info personal (email read-only, nombre), preferencias de notificación.
+- **`/dashboard/help`** — Ayuda.
+
+### Componentes reutilizables
+
+- **DashboardSidebar** — Sidebar colapsable (icons only cuando colapsado). Items: Dashboard, +Contribution, Rebalance, Manual Update, Configuration, Profile. Sign out al fondo. Responsive: drawer en mobile, sidebar en desktop.
+- **AnalyticsCard** — Card de métrica con tooltip (icono info + descripción on hover).
+- **EquityChart** — Gráfica SVG custom de equity history, interactiva con tooltip y punto seleccionado.
+- **DashboardRecommendationCard** — Card de recomendación con colores por prioridad (urgent=red, high=orange…), acciones específicas, botón "Go to action" con URL dinámica.
+- **NumberInput** — Input numérico.
+- **Backtest components** — BacktestConfig, BacktestResults, BacktestProgress, TrajectoryChart, EquityBreakdownChart.
+
+### Sistema de traducciones
+
+Backend envía códigos de mensaje con parámetros. Frontend traduce con `t(code, params)` desde `lib/translations.ts`.
+
+```typescript
+// Backend envía
+{ "title": { "code": "LEVERAGE_LOW_TITLE", "params": { "leverage": 2.1 } } }
+// Frontend traduce
+t("LEVERAGE_LOW_TITLE", { leverage: 2.1 }) // → "Leverage Bajo (2.10x)"
+```
+
+Idioma actual: español (códigos preparados para múltiples idiomas).
+
+---
+
 ## API endpoints
 
 ```
@@ -499,6 +538,47 @@ Antes de hacer `git push`, ejecutar el lint del backend para evitar fallos en CI
 ```bash
 npm --workspace apps/backend run lint
 ```
+
+---
+
+## Convenciones
+
+- **Backend:** camelCase variables, PascalCase clases. NestJS modules con Controller, Service, DTOs.
+- **Frontend:** camelCase variables, PascalCase componentes. Pages en `pages/`, components en `components/`, utils en `lib/`.
+- **Database:** snake_case columnas (mapeado desde camelCase en Prisma).
+- **API Endpoints:** kebab-case (e.g., `/portfolios/:id/daily-metrics`).
+- **Errores backend:** NestJS exceptions (`UnauthorizedException`, `NotFoundException`, etc.). Responses: `{ statusCode, message, error }`.
+- **Errores frontend:** try/catch con mensajes user-friendly.
+
+---
+
+## Estado y roadmap
+
+### Completado
+- Auth (magic link + guard en todos los endpoints)
+- Portfolio management (CRUD, onboarding wizard SSE, summary, analytics)
+- Contributions (recording, history endpoint, deployed tracking)
+- Position updates (auto-fetch prices, descarga histórica de nuevos tickers)
+- Rebalanceo (Sharpe Nelder-Mead, deploy signals)
+- Configuración (panel completo con todos los parámetros)
+- Recomendaciones (alertas en tiempo real)
+- Visualizaciones (dashboard charts, backtest simulator)
+- Analytics (CAGR, XIRR, Sharpe, drawdown, underwater days)
+- Modelo de equity (borrowedAmount tracked en todos los servicios)
+
+### Pendiente — Alta prioridad
+- Portfolio ownership validation (verificar que el user es dueño del portfolio en cada request)
+- Configurar cron jobs en producción (ver `infra/CRON_JOBS.md`)
+
+### Pendiente — Media prioridad
+- Notificaciones email/SMS para alertas urgentes
+- Tests (al menos para rebalanceo)
+- Persistencia de historial de recomendaciones
+
+### Pendiente — Baja prioridad
+- Múltiples portfolios por usuario
+- Integración con broker API
+- Export de datos (CSV/Excel)
 
 ---
 
