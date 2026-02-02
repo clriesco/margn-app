@@ -13,6 +13,7 @@ import { Response } from "express";
 
 import { AuthGuard } from "../auth/auth.guard";
 import { CurrentUser } from "../auth/current-user.decorator";
+import { PortfolioOwnershipGuard } from "../auth/portfolio-ownership.guard";
 
 import { CreatePortfolioDto } from "./dto/create-portfolio.dto";
 import { OnboardingService } from "./onboarding.service";
@@ -108,6 +109,7 @@ export class PortfoliosController {
    * GET /api/portfolios/:id
    */
   @Get(":id")
+  @UseGuards(AuthGuard, PortfolioOwnershipGuard)
   async find(@Param("id") id: string) {
     return this.portfoliosService.findById(id);
   }
@@ -117,6 +119,7 @@ export class PortfoliosController {
    * GET /api/portfolios/:id/metrics
    */
   @Get(":id/metrics")
+  @UseGuards(AuthGuard, PortfolioOwnershipGuard)
   async metrics(@Param("id") id: string) {
     return this.portfoliosService.getMetrics(id);
   }
@@ -126,6 +129,7 @@ export class PortfoliosController {
    * GET /api/portfolios/:id/contribution-history
    */
   @Get(":id/contribution-history")
+  @UseGuards(AuthGuard, PortfolioOwnershipGuard)
   async contributionHistory(@Param("id") id: string) {
     return this.portfoliosService.getContributionHistory(id);
   }
@@ -135,6 +139,7 @@ export class PortfoliosController {
    * GET /api/portfolios/:id/summary
    */
   @Get(":id/summary")
+  @UseGuards(AuthGuard, PortfolioOwnershipGuard)
   async summary(@Param("id") id: string) {
     return this.portfoliosService.getSummary(id);
   }
@@ -144,6 +149,7 @@ export class PortfoliosController {
    * GET /api/portfolios/:id/daily-metrics
    */
   @Get(":id/daily-metrics")
+  @UseGuards(AuthGuard, PortfolioOwnershipGuard)
   async dailyMetrics(@Param("id") id: string) {
     return this.portfoliosService.getDailyMetrics(id);
   }

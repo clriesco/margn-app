@@ -1,6 +1,7 @@
 import { Controller, Get, Param, UseGuards } from "@nestjs/common";
 
 import { AuthGuard } from "../auth/auth.guard";
+import { PortfolioOwnershipGuard } from "../auth/portfolio-ownership.guard";
 
 import { PortfolioRecommendationsService } from "./portfolio-recommendations.service";
 
@@ -9,7 +10,7 @@ import { PortfolioRecommendationsService } from "./portfolio-recommendations.ser
  * Exposes endpoints to get actionable recommendations based on strategy rules
  */
 @Controller("portfolios/:portfolioId/recommendations")
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PortfolioOwnershipGuard)
 export class PortfolioRecommendationsController {
   constructor(
     private readonly recommendationsService: PortfolioRecommendationsService

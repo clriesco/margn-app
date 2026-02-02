@@ -158,6 +158,30 @@ export class PositionsService {
         }
       }
 
+      // Calculate weighted average price to preserve cost basis
+      // Only update avgPrice when quantity increases (buying more)
+      // On sells or manual updates, keep existing avgPrice
+      const existingPosition = await this.prisma.portfolioPosition.findUnique({
+        where: {
+          portfolioId_assetId: {
+            portfolioId: dto.portfolioId,
+            assetId: asset.id,
+          },
+        },
+      });
+
+      let avgPriceForUpdate = finalAvgPrice;
+      if (existingPosition && existingPosition.quantity > 0 && item.quantity > existingPosition.quantity && finalAvgPrice > 0) {
+        // Buying more: weighted average
+        const deltaQty = item.quantity - existingPosition.quantity;
+        avgPriceForUpdate =
+          (existingPosition.quantity * existingPosition.avgPrice + deltaQty * finalAvgPrice) /
+          item.quantity;
+      } else if (existingPosition && item.quantity > 0 && item.quantity <= existingPosition.quantity) {
+        // Selling or same quantity: keep existing avgPrice
+        avgPriceForUpdate = existingPosition.avgPrice;
+      }
+
       const position = await this.prisma.portfolioPosition.upsert({
         where: {
           portfolioId_assetId: {
@@ -167,7 +191,7 @@ export class PositionsService {
         },
         update: {
           quantity: item.quantity,
-          avgPrice: finalAvgPrice,
+          avgPrice: avgPriceForUpdate,
           exposureUsd: exposure,
         },
         create: {

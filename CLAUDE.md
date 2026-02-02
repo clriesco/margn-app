@@ -567,12 +567,12 @@ npm --workspace apps/backend run lint
 - Modelo de equity (borrowedAmount tracked en todos los servicios)
 
 ### Pendiente — Alta prioridad
-- Portfolio ownership validation (verificar que el user es dueño del portfolio en cada request)
-- Configurar cron jobs en producción (ver `infra/CRON_JOBS.md`)
+- ~~Portfolio ownership validation~~ — Completado: `PortfolioOwnershipGuard` en todos los endpoints con `:id`/`:portfolioId`/`body.portfolioId`
+- ~~Configurar cron jobs en producción~~ — Completado: GitHub Actions (ver `infra/CRON_JOBS.md`)
 
 ### Pendiente — Media prioridad
 - Notificaciones email/SMS para alertas urgentes
-- Tests (al menos para rebalanceo)
+- ~~Tests (al menos para rebalanceo)~~ — Completado: unit tests para `RebalanceService` (17 tests) y `PortfolioOwnershipGuard` (6 tests) en `tests/unit/`
 - Persistencia de historial de recomendaciones
 
 ### Pendiente — Baja prioridad

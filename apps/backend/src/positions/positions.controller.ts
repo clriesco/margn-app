@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
 
 import { AuthGuard } from '../auth/auth.guard';
+import { PortfolioOwnershipGuard } from '../auth/portfolio-ownership.guard';
 
 import { UpsertPositionsDto } from './dto/upsert-positions.dto';
 import { PositionsService } from './positions.service';
@@ -12,6 +13,7 @@ export class PositionsController {
 
   @Post()
   @HttpCode(201)
+  @UseGuards(AuthGuard, PortfolioOwnershipGuard)
   async upsert(@Body() dto: UpsertPositionsDto) {
     console.log("[PositionsController] Received upsert request:", {
       portfolioId: dto.portfolioId,

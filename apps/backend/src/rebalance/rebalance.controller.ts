@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 
 import { AuthGuard } from "../auth/auth.guard";
+import { PortfolioOwnershipGuard } from "../auth/portfolio-ownership.guard";
 
 import { RebalanceService, RebalanceProposal } from "./rebalance.service";
 
@@ -17,7 +18,7 @@ import { RebalanceService, RebalanceProposal } from "./rebalance.service";
  * Controller for portfolio rebalancing operations
  */
 @Controller("portfolios/:portfolioId/rebalance")
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PortfolioOwnershipGuard)
 export class RebalanceController {
   constructor(private readonly rebalanceService: RebalanceService) {}
 

@@ -1,6 +1,7 @@
 import { Controller, Get, Put, Param, Body, UseGuards } from "@nestjs/common";
 
 import { AuthGuard } from "../auth/auth.guard";
+import { PortfolioOwnershipGuard } from "../auth/portfolio-ownership.guard";
 
 import {
   UpdatePortfolioConfigurationDto,
@@ -12,7 +13,7 @@ import { PortfolioConfigurationService } from "./portfolio-configuration.service
  * Controller for portfolio configuration endpoints
  */
 @Controller("portfolios/:portfolioId/configuration")
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PortfolioOwnershipGuard)
 export class PortfolioConfigurationController {
   constructor(
     private readonly configurationService: PortfolioConfigurationService

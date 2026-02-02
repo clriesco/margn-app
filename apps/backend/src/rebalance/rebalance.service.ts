@@ -1047,7 +1047,18 @@ export class RebalanceService {
         },
       });
 
-      // Update portfolio position
+      // Update portfolio position with weighted average price
+      // BUY: newAvgPrice = (oldQty * oldAvgPrice + deltaQty * currentPrice) / newQty
+      // SELL: avgPrice stays the same (cost basis doesn't change on sells)
+      // NEW: avgPrice = currentPrice
+      let updatedAvgPrice = pos.currentPrice;
+      if (pos.action === "BUY" && pos.currentQuantity > 0) {
+        updatedAvgPrice =
+          (pos.currentQuantity * (pos.currentValue / pos.currentQuantity) +
+            pos.deltaQuantity * pos.currentPrice) /
+          pos.targetQuantity;
+      }
+
       await this.prisma.portfolioPosition.upsert({
         where: {
           portfolioId_assetId: {
@@ -1064,7 +1075,7 @@ export class RebalanceService {
         },
         update: {
           quantity: pos.targetQuantity,
-          avgPrice: pos.currentPrice,
+          ...(pos.action !== "SELL" && { avgPrice: updatedAvgPrice }),
           exposureUsd: pos.targetValue,
         },
       });
