@@ -1228,13 +1228,13 @@ function Dashboard() {
                     >
                       <thead>
                         <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                          <th style={tableHeaderStyle}>Fecha</th>
-                          <th style={tableHeaderStyle}>Aportación</th>
-                          <th style={tableHeaderStyle}>Equity</th>
-                          <th style={tableHeaderStyle}>Exposición</th>
-                          <th style={tableHeaderStyle}>Leverage</th>
-                          <th style={tableHeaderStyle}>Composición</th>
-                          <th style={tableHeaderStyle}>PnL</th>
+                          <th style={{ ...tableHeaderStyle, width: "12%" }}>Fecha</th>
+                          <th style={{ ...tableHeaderStyle, width: "12%" }}>Aportación</th>
+                          <th style={{ ...tableHeaderStyle, width: "14%" }}>Equity</th>
+                          <th style={{ ...tableHeaderStyle, width: "14%" }}>Exposición</th>
+                          <th style={{ ...tableHeaderStyle, width: "10%" }}>Leverage</th>
+                          <th style={{ ...tableHeaderStyle, width: "26%" }}>Composición</th>
+                          <th style={{ ...tableHeaderStyle, width: "12%" }}>PnL</th>
                         </tr>
                       </thead>
                       <tbody>
