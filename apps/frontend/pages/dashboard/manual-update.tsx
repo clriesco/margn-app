@@ -61,6 +61,8 @@ export default function ManualUpdate() {
     Record<number, SymbolSearchResult[]>
   >({});
   const [showDropdown, setShowDropdown] = useState<Record<number, boolean>>({});
+  const [searchAbort, setSearchAbort] = useState<Record<number, AbortController>>({});
+  const [highlightedIndex, setHighlightedIndex] = useState<Record<number, number>>({});
   const [searchTimeout, setSearchTimeout] = useState<
     Record<number, NodeJS.Timeout>
   >({});
@@ -224,19 +226,26 @@ export default function ManualUpdate() {
     };
     setPositions(updated);
 
-    // Clear previous timeout
+    // Clear previous timeout and abort previous request
     if (searchTimeout[index]) {
       clearTimeout(searchTimeout[index]);
     }
+    if (searchAbort[index]) {
+      searchAbort[index].abort();
+    }
 
-    // Debounce search
+    // Debounce search with abort controller
     if (symbol.length >= 2) {
+      const abortController = new AbortController();
+      setSearchAbort((prev) => ({ ...prev, [index]: abortController }));
       const timeout = setTimeout(async () => {
         try {
           const results = await searchSymbols(symbol);
+          if (abortController.signal.aborted) return;
           setSearchResults((prev) => ({ ...prev, [index]: results }));
           setShowDropdown((prev) => ({ ...prev, [index]: true }));
         } catch (error) {
+          if (abortController.signal.aborted) return;
           console.error("Error searching symbols:", error);
         }
       }, 300);
@@ -257,6 +266,34 @@ export default function ManualUpdate() {
     setPositions(updated);
     setShowDropdown((prev) => ({ ...prev, [index]: false }));
     setSearchResults((prev) => ({ ...prev, [index]: [] }));
+    setHighlightedIndex((prev) => ({ ...prev, [index]: -1 }));
+  };
+
+  const handleSymbolKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    const results = searchResults[index] || [];
+    const isOpen = showDropdown[index] && results.length > 0;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isOpen) {
+        const idx = (highlightedIndex[index] ?? -1) >= 0 ? highlightedIndex[index] : 0;
+        handleSelectSymbol(index, results[idx]);
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown' && isOpen) {
+      e.preventDefault();
+      setHighlightedIndex((prev) => ({ ...prev, [index]: ((prev[index] ?? -1) + 1) % results.length }));
+      return;
+    }
+    if (e.key === 'ArrowUp' && isOpen) {
+      e.preventDefault();
+      setHighlightedIndex((prev) => ({ ...prev, [index]: (prev[index] ?? -1) <= 0 ? results.length - 1 : (prev[index] ?? 0) - 1 }));
+      return;
+    }
+    if (e.key === 'Escape') {
+      setShowDropdown((prev) => ({ ...prev, [index]: false }));
+      setHighlightedIndex((prev) => ({ ...prev, [index]: -1 }));
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -620,6 +657,7 @@ export default function ManualUpdate() {
                                       e.target.value
                                     )
                                   }
+                                  onKeyDown={(e) => handleSymbolKeyDown(originalIdx, e)}
                                   onFocus={() => {
                                     if (searchResults[originalIdx]?.length > 0) {
                                       setShowDropdown((prev) => ({
@@ -720,6 +758,9 @@ export default function ManualUpdate() {
                                           onMouseDown={(e) =>
                                             e.preventDefault()
                                           } // Prevent blur
+                                          onMouseEnter={() =>
+                                            setHighlightedIndex((prev) => ({ ...prev, [originalIdx]: resultIdx }))
+                                          }
                                           style={{
                                             padding: "0.75rem 1rem",
                                             cursor: "pointer",
@@ -728,18 +769,10 @@ export default function ManualUpdate() {
                                               searchResults[originalIdx]
                                                 .length -
                                                 1
-                                                ? "1px solid #334155"
+                                                ? "1px solid var(--input-border)"
                                                 : "none",
-                                            background: "transparent",
-                                            transition: "background 0.2s",
-                                          }}
-                                          onMouseEnter={(e) => {
-                                            e.currentTarget.style.background =
-                                              "rgba(59, 130, 246, 0.2)";
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            e.currentTarget.style.background =
-                                              "transparent";
+                                            background: resultIdx === (highlightedIndex[originalIdx] ?? -1) ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                            transition: "background 0.15s",
                                           }}
                                         >
                                           <div
@@ -762,8 +795,8 @@ export default function ManualUpdate() {
                                               <div
                                                 style={{
                                                   color: "var(--text-muted)",
-                                                  fontSize: "0.875rem",
-                                                  marginTop: "0.25rem",
+                                                  fontSize: "0.8125rem",
+                                                  marginTop: "0.125rem",
                                                 }}
                                               >
                                                 {result.name}

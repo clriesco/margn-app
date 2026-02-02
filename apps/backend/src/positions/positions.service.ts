@@ -933,40 +933,12 @@ export class PositionsService {
       const data = await response.json();
       const quotes = data.quotes || [];
 
-      // Fetch current prices for each symbol
-      const results = await Promise.all(
-        quotes.slice(0, 10).map(async (quote: any) => {
-          let price: number | null = null;
-          
-          try {
-            // Try to get current price
-            const priceUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${quote.symbol}?interval=1d&range=1d`;
-            const priceResponse = await fetch(priceUrl, {
-              headers: {
-                "User-Agent":
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-              },
-            });
-            
-            if (priceResponse.ok) {
-              const priceData = await priceResponse.json();
-              price =
-                priceData.chart?.result?.[0]?.meta?.regularMarketPrice || null;
-            }
-          } catch {
-            // Ignore price fetch errors
-          }
-
-          return {
-            symbol: quote.symbol,
-            name: quote.longname || quote.shortname || quote.symbol,
-            price,
-            exchange: quote.exchange || "",
-          };
-        })
-      );
-
-      return results;
+      return quotes.slice(0, 10).map((quote: any) => ({
+        symbol: quote.symbol,
+        name: quote.longname || quote.shortname || quote.symbol,
+        price: null,
+        exchange: quote.exchange || "",
+      }));
     } catch (error) {
       console.error("Error searching symbols:", error);
       return [];

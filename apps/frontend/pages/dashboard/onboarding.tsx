@@ -50,6 +50,7 @@ export default function Onboarding() {
   const [searchResults, setSearchResults] = useState<SymbolSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = React.useRef<HTMLDivElement | null>(null);
 
   // Step 3: Weights
@@ -119,10 +120,12 @@ export default function Onboarding() {
       return;
     }
 
+    const abortController = new AbortController();
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
         const results = await searchSymbols(searchQuery);
+        if (abortController.signal.aborted) return;
         // Filter out already added assets
         const filtered = results.filter(
           (r) => !assets.some((a) => a.symbol === r.symbol)
@@ -130,6 +133,7 @@ export default function Onboarding() {
         setSearchResults(filtered);
         setShowDropdown(filtered.length > 0);
       } catch (err) {
+        if (abortController.signal.aborted) return;
         console.error("Search error:", err);
         const errorMessage = err instanceof Error ? err.message : String(err);
 
@@ -151,12 +155,14 @@ export default function Onboarding() {
             // Retry search after token refresh
             try {
               const retryResults = await searchSymbols(searchQuery);
+              if (abortController.signal.aborted) return;
               const filtered = retryResults.filter(
                 (r) => !assets.some((a) => a.symbol === r.symbol)
               );
               setSearchResults(filtered);
               setShowDropdown(filtered.length > 0);
             } catch (retryErr) {
+              if (abortController.signal.aborted) return;
               console.error("[Onboarding] Retry failed:", retryErr);
               setSearchResults([]);
               setShowDropdown(false);
@@ -170,11 +176,16 @@ export default function Onboarding() {
           setShowDropdown(false);
         }
       } finally {
-        setIsSearching(false);
+        if (!abortController.signal.aborted) {
+          setIsSearching(false);
+        }
       }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      abortController.abort();
+    };
   }, [searchQuery, assets, user]);
 
   // Add asset
@@ -202,6 +213,36 @@ export default function Onboarding() {
       return newWeights;
     });
   }, []);
+
+  // Reset highlight when results change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [searchResults]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (showDropdown && searchResults.length > 0) {
+        const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
+        handleAddAsset(searchResults[idx]);
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown' && showDropdown && searchResults.length > 0) {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev + 1) % searchResults.length);
+      return;
+    }
+    if (e.key === 'ArrowUp' && showDropdown && searchResults.length > 0) {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev <= 0 ? searchResults.length - 1 : prev - 1));
+      return;
+    }
+    if (e.key === 'Escape') {
+      setShowDropdown(false);
+      setHighlightedIndex(-1);
+    }
+  };
 
   // Update manual weight
   const handleWeightChange = useCallback((symbol: string, weight: number) => {
@@ -521,6 +562,7 @@ export default function Onboarding() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
                     onFocus={() => {
                       if (searchResults.length > 0) {
                         setShowDropdown(true);
@@ -572,6 +614,7 @@ export default function Onboarding() {
                           key={`${result.symbol}-${resultIdx}`}
                           onClick={() => handleAddAsset(result)}
                           onMouseDown={(e) => e.preventDefault()} // Prevent blur
+                          onMouseEnter={() => setHighlightedIndex(resultIdx)}
                           style={{
                             padding: "0.75rem 1rem",
                             cursor: "pointer",
@@ -579,15 +622,8 @@ export default function Onboarding() {
                               resultIdx < searchResults.length - 1
                                 ? "1px solid var(--input-border)"
                                 : "none",
-                            background: "transparent",
+                            background: resultIdx === highlightedIndex ? "rgba(59, 130, 246, 0.2)" : "transparent",
                             transition: "background 0.2s",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background =
-                              "rgba(59, 130, 246, 0.2)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "transparent";
                           }}
                         >
                           <div

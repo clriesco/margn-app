@@ -104,28 +104,36 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
     setConfig((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Debounced search (300ms)
+  // Debounced search with abort controller to cancel stale requests
   useEffect(() => {
     if (searchQuery.length < 2) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
     }
+    const abortController = new AbortController();
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
         const results = await searchSymbols(searchQuery);
+        if (abortController.signal.aborted) return;
         const filtered = results.filter((r) => !config.symbols.includes(r.symbol));
         setSearchResults(filtered);
         setShowDropdown(filtered.length > 0);
       } catch {
+        if (abortController.signal.aborted) return;
         setSearchResults([]);
         setShowDropdown(false);
       } finally {
-        setIsSearching(false);
+        if (!abortController.signal.aborted) {
+          setIsSearching(false);
+        }
       }
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      abortController.abort();
+    };
   }, [searchQuery, config.symbols]);
 
   const addSymbol = useCallback((symbol: string) => {
@@ -147,13 +155,39 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
     setManualWeights((prev) => { const n = { ...prev }; delete n[symbol]; return n; });
   }, []);
 
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  // Reset highlight when results change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [searchResults]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && searchQuery === '' && config.symbols.length > 0) {
       removeSymbol(config.symbols[config.symbols.length - 1]);
+      return;
     }
-    if (e.key === 'Enter' && showDropdown && searchResults.length > 0) {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      handleSelectResult(searchResults[0]);
+      if (showDropdown && searchResults.length > 0) {
+        const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
+        handleSelectResult(searchResults[idx]);
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown' && showDropdown && searchResults.length > 0) {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev + 1) % searchResults.length);
+      return;
+    }
+    if (e.key === 'ArrowUp' && showDropdown && searchResults.length > 0) {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev <= 0 ? searchResults.length - 1 : prev - 1));
+      return;
+    }
+    if (e.key === 'Escape') {
+      setShowDropdown(false);
+      setHighlightedIndex(-1);
     }
   };
 
@@ -239,11 +273,10 @@ export default function BacktestConfig({ onSubmit, loading }: Props) {
                 <div key={`${result.symbol}-${idx}`}
                   onClick={() => handleSelectResult(result)}
                   onMouseDown={(e) => e.preventDefault()}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
                   style={{ padding: '0.75rem 1rem', cursor: 'pointer',
                     borderBottom: idx < searchResults.length - 1 ? '1px solid var(--input-border)' : 'none',
-                    background: 'transparent', transition: 'background 0.15s' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                    background: idx === highlightedIndex ? 'rgba(59,130,246,0.2)' : 'transparent', transition: 'background 0.15s' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
