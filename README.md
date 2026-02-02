@@ -11,7 +11,7 @@ A complete web application for managing leveraged investment portfolios that imp
 4. Contributions are deployed conditionally based on market signals (drawdown, weight deviation, volatility)
 5. Clear recommendations and specific actions are provided to keep the portfolio within configured risk parameters
 
-The strategy is based on quantitative analysis from the `montecarlo-quantfury` project, using Monte Carlo simulation and historical backtesting to optimize leveraged portfolios.
+The strategy is based on quantitative analysis from the `leveraged-dca-simulator` project, using Monte Carlo simulation and historical backtesting to optimize leveraged portfolios.
 
 ## 🏗️ Architecture
 
@@ -300,10 +300,8 @@ The system calculates comprehensive portfolio analytics:
 
 ## 🐛 Known Issues
 
-1. **Equity calculation:** Currently approximated as `exposure / leverage`, should be `exposure - borrowedAmount`
-2. **Price fetching:** Manual update doesn't automatically fetch prices when `avgPrice` is 0
-3. **Auth middleware:** Not all endpoints validate portfolio ownership
-4. **Daily metrics:** `metrics-refresh.ts` should also write to `daily_metrics` table
+1. **Portfolio ownership:** Auth guard exists but individual portfolio endpoints don't verify the portfolio belongs to the requesting user
+2. **Notifications:** User preferences are stored but no email/SMS delivery is implemented (only logging)
 
 ## 📚 Documentation
 
@@ -366,23 +364,29 @@ npm run lint
 
 ## 🔮 Roadmap
 
-### High Priority
-- [x] Configure cron jobs in production (see `infra/CRON_JOBS.md`)
+### Done
 - [x] Implement real equity calculation (track `borrowedAmount`)
-- [x] Add auth middleware to all endpoints
+- [x] Auth guard on all endpoints
 - [x] Auto-fetch prices in position updates
+- [x] Metrics refresh writes to both MetricsTimeseries and DailyMetric
+- [x] Onboarding wizard with SSE progress
+- [x] Contribution history endpoint
+- [x] Help page
+- [x] Backtest simulator page
+
+### High Priority
+- [ ] Portfolio ownership validation (verify user owns portfolio on each request)
+- [ ] Configure cron jobs in production (see `infra/CRON_JOBS.md`)
 
 ### Medium Priority
-- [ ] Improve pending contributions tracking
-- [ ] Add basic tests
-- [ ] Implement email/SMS notifications
-- [ ] Recommendation history
+- [ ] Email/SMS notifications for urgent alerts
+- [ ] Add basic tests (at least for rebalancing)
+- [ ] Recommendation history (persist past recommendations)
 
 ### Low Priority
 - [ ] Multiple portfolios per user
 - [ ] Broker API integration
 - [ ] Data export (CSV/Excel)
-- [ ] "What if" simulator
 
 ## 📄 License
 
@@ -390,5 +394,5 @@ Private project - All rights reserved
 
 ---
 
-**Last updated:** December 2024  
+**Last updated:** February 2026
 **Status:** Functional MVP with core features implemented

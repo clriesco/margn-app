@@ -15,7 +15,7 @@ The application implements an investment strategy where:
 
 ### Strategy Context
 
-The strategy is based on quantitative analysis performed in the `montecarlo-quantfury` project, which uses Monte Carlo simulation and historical backtesting to optimize leveraged portfolios. Key principles are:
+The strategy is based on quantitative analysis performed in the `leveraged-dca-simulator` project, which uses Monte Carlo simulation and historical backtesting to optimize leveraged portfolios. Key principles are:
 
 - **Priority:** Reduce liquidation risk over maximizing growth
 - **Non-automatic contributions:** Contributions are recorded but deployed conditionally
@@ -1181,27 +1181,13 @@ cd apps/frontend && npm run build
 
 ### Known Issues
 
-1. **Equity calculated incorrectly:**
-   - Currently approximated as `exposure / leverage`
-   - Should be `exposure - borrowedAmount`
-   - Requires tracking of `borrowedAmount` on each update
+1. **Portfolio ownership not validated:**
+   - Auth guard exists on all controllers, but individual portfolio endpoints don't verify the portfolio belongs to the requesting user
+   - Anyone with a valid token and a `portfolioId` can access any portfolio
 
-2. **Prices not automatically fetched:**
-   - In `manual-update`, if `avgPrice` is 0, it should be fetched automatically
-   - Currently requires user to enter price
-
-3. **Pending contributions:**
-   - `deployed` tracking works, but `pendingContributions` calculation can be improved
-   - Should consider partially deployed contributions
-
-4. **Authentication in endpoints:**
-   - No auth middleware in all controllers
-   - Anyone with `portfolioId` can access (though requires token)
-   - Should validate that user owns the portfolio
-
-5. **Daily metrics:**
-   - `metrics-refresh.ts` script writes to `metrics_timeseries` but should also write to `daily_metrics`
-   - Currently `daily_metrics` is only filled by `daily-check.ts` job
+2. **Cron jobs not scheduled in production:**
+   - Scripts exist in `infra/scripts/` and work correctly
+   - No Render cron job or external scheduler configured yet
 
 ### Current Limitations
 
@@ -1214,6 +1200,7 @@ cd apps/frontend && npm run build
    - No webhooks or broker APIs (Quantfury, etc.)
 
 3. **No real notifications:**
+   - User notification preferences are stored in database but not used
    - System generates recommendations but doesn't send emails/SMS
    - Only shows in dashboard
 
@@ -1225,21 +1212,23 @@ cd apps/frontend && npm run build
 
 ## 📊 Implementation Status
 
-| Module | Status | Completeness | Notes |
-|--------|--------|-------------|-------|
-| Authentication | ✅ Complete | 100% | Passwordless with Supabase |
-| User Management | ✅ Complete | 95% | Profile implemented |
-| Portfolio Management | ✅ Complete | 95% | Missing initial portfolio creation |
-| Contributions | ✅ Complete | 90% | Deployed tracking works |
-| Position Updates | ✅ Complete | 85% | Missing automatic price fetching |
-| Rebalancing | ✅ Complete | 95% | Complete and sophisticated algorithm |
-| Configuration | ✅ Complete | 100% | Complete panel implemented |
-| Recommendations | ✅ Complete | 90% | Complete system, missing history |
-| Visualizations | ✅ Complete | 85% | Complete dashboard with charts |
-| Analytics | ✅ Complete | 95% | Complete metrics calculated |
-| Infrastructure Scripts | ⚠️ Partial | 70% | Scripts ready, cron not configured |
-| Testing | ❌ Not implemented | 0% | No tests |
-| Documentation | ⚠️ Basic | 60% | README and ENDPOINTS.md |
+| Module | Status | Notes |
+|--------|--------|-------|
+| Authentication | ✅ Complete | Passwordless with Supabase, auth guard on all endpoints |
+| User Management | ✅ Complete | Profile + notification preferences |
+| Portfolio Management | ✅ Complete | CRUD, onboarding wizard with SSE, summary, analytics |
+| Contributions | ✅ Complete | Recording, history endpoint, deployed tracking |
+| Position Updates | ✅ Complete | Auto-fetch prices, historical download for new tickers |
+| Rebalancing | ✅ Complete | Sharpe optimization (Nelder-Mead), deploy signals |
+| Configuration | ✅ Complete | Full panel with all strategy parameters |
+| Recommendations | ✅ Complete | Real-time alerts, missing persistence of history |
+| Visualizations | ✅ Complete | Dashboard charts, backtest simulator page |
+| Analytics | ✅ Complete | CAGR, XIRR, Sharpe, drawdown, underwater days |
+| Equity Model | ✅ Complete | borrowedAmount tracked across all services |
+| Infrastructure Scripts | ⚠️ Partial | Scripts work, cron scheduling not configured |
+| Portfolio Ownership | ⚠️ Missing | Auth guard exists but no per-portfolio ownership check |
+| Notifications | ⚠️ Missing | Preferences stored, no delivery (email/SMS) |
+| Testing | ❌ Not implemented | No tests |
 
 ---
 
@@ -1290,7 +1279,7 @@ cd apps/frontend && npm run build
 
 ### Related Projects
 
-- `montecarlo-quantfury/` - Notebooks with original quantitative analysis
+- `leveraged-dca-simulator/` - Notebooks with original quantitative analysis
   - `MonteCarloSimulator.ipynb` - Simulation and optimization
   - `BacktestHistorical.ipynb` - Comparative backtest
 
@@ -1307,25 +1296,20 @@ cd apps/frontend && npm run build
 
 ### High Priority
 
-1. **Configure cron jobs** in production (Render/Supabase)
-2. **Implement real equity calculation** (tracking of `borrowedAmount`)
-3. **Add auth middleware** to all endpoints
-4. **Automatically fetch prices** in `updatePositions`
+1. **Portfolio ownership validation** — verify user owns portfolio on each request
+2. **Configure cron jobs** in production (Render/Supabase)
 
 ### Medium Priority
 
-5. **Improve pending contributions tracking** (consider partials)
-6. **Add basic tests** (at least for rebalancing)
-7. **Implement notifications** (email/SMS for urgent alerts)
-8. **Recommendation history** (save previous recommendations)
+3. **Email/SMS notifications** for urgent alerts
+4. **Add basic tests** (at least for rebalancing)
+5. **Recommendation history** (persist past recommendations)
 
 ### Low Priority
 
-9. **Multiple portfolios per user**
-10. **Broker API integration** (webhooks)
-11. **Export data** (CSV/Excel)
-12. **"What if" simulator** before accepting rebalancing
-13. **Better visualizations** (more charts, comparisons)
+6. **Multiple portfolios per user**
+7. **Broker API integration** (webhooks)
+8. **Data export** (CSV/Excel)
 
 ---
 
@@ -1359,11 +1343,12 @@ The algorithm is very sophisticated and replicates the logic from the `BacktestH
 
 - Passwordless authentication (magic links)
 - JWT tokens verified in backend
+- Auth guard on all controllers
 - Data validation in DTOs
-- (Pending) Portfolio ownership validation
+- (Pending) Portfolio ownership validation per request
 
 ---
 
-**Last updated:** December 2024  
-**Document version:** 1.0  
+**Last updated:** February 2026
+**Document version:** 1.1
 **Project status:** Functional MVP with core features implemented

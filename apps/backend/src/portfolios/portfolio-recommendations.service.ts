@@ -36,7 +36,7 @@ const SYMBOL_UNITS: Record<string, string> = {
 
 /**
  * Service for generating portfolio recommendations
- * Implements the strategy from montecarlo-quantfury README
+ * Implements the strategy from leveraged-dca-simulator README
  */
 @Injectable()
 export class PortfolioRecommendationsService {
