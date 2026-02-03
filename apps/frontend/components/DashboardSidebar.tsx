@@ -20,6 +20,7 @@ import {
   Moon,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
+import TopBar from "./TopBar";
 
 /**
  * Hook to detect screen size
@@ -471,13 +472,21 @@ export default function DashboardSidebar({
         </div>
       </div>
 
+      {/* Top Bar */}
+      <TopBar
+        portfolioId={portfolioId}
+        isMobile={isMobile}
+        sidebarCollapsed={isCollapsed}
+      />
+
       {/* Main Content */}
       <div
         style={{
           marginLeft: isMobile ? "0" : isCollapsed ? "70px" : "260px",
+          marginTop: "56px",
           flex: 1,
           transition: "margin-left 0.2s ease",
-          minHeight: "100vh",
+          minHeight: "calc(100vh - 56px)",
           width: isMobile ? "100%" : "auto",
           overflowX: "hidden",
         }}
