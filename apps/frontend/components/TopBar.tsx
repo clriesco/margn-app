@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
+import useSWR from "swr";
 import { useAuth } from "../contexts/AuthContext";
 import { usePortfolioSummary } from "../lib/hooks/use-portfolio-data";
+import { getProfile, UserProfile } from "../lib/api";
 import { User, Settings, LogOut, ChevronDown } from "lucide-react";
 import { formatCurrencyES } from "../lib/number-format";
 
@@ -23,6 +25,13 @@ export default function TopBar({
   const { user, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user profile for avatar
+  const { data: profile } = useSWR<UserProfile>(
+    user ? "profile" : null,
+    () => getProfile(),
+    { revalidateOnFocus: false }
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -52,6 +61,10 @@ export default function TopBar({
 
   // Get user initials or first letter of email
   const getInitials = () => {
+    if (profile?.fullName) {
+      const names = profile.fullName.split(" ");
+      return names.map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+    }
     if (user?.user_metadata?.full_name) {
       const names = user.user_metadata.full_name.split(" ");
       return names.map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -156,7 +169,9 @@ export default function TopBar({
               width: "32px",
               height: "32px",
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+              background: profile?.avatarUrl
+                ? `url(${profile.avatarUrl}) center/cover no-repeat`
+                : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -165,7 +180,7 @@ export default function TopBar({
               fontWeight: "600",
             }}
           >
-            {getInitials()}
+            {!profile?.avatarUrl && getInitials()}
           </div>
           <ChevronDown
             size={16}
@@ -207,7 +222,7 @@ export default function TopBar({
                   fontWeight: "600",
                 }}
               >
-                {user?.user_metadata?.full_name || "Usuario"}
+                {profile?.fullName || user?.user_metadata?.full_name || "Usuario"}
               </div>
               <div
                 style={{

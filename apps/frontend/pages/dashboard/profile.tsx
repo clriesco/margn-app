@@ -4,6 +4,7 @@ import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
 import { getProfile, updateProfile, UserProfile } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
+import AvatarUpload from "../../components/AvatarUpload";
 import { FileText, Bell } from "lucide-react";
 
 /**
@@ -207,6 +208,44 @@ export default function Profile() {
           {/* Profile Form */}
           {profile && (
             <form onSubmit={handleSubmit}>
+              {/* Avatar Section */}
+              <div
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  padding: "1.5rem",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: "600",
+                    color: "var(--text-primary)",
+                    marginBottom: "1.5rem",
+                    textAlign: "center",
+                  }}
+                >
+                  Foto de Perfil
+                </h2>
+                <AvatarUpload
+                  userId={profile.id}
+                  currentAvatarUrl={profile.avatarUrl}
+                  onUploadComplete={async (url) => {
+                    try {
+                      const updated = await updateProfile({ avatarUrl: url });
+                      setProfile(updated);
+                      setMessage("✅ Foto de perfil actualizada");
+                      setTimeout(() => setMessage(""), 3000);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Error al actualizar la foto");
+                    }
+                  }}
+                  size={120}
+                />
+              </div>
+
               {/* Personal Information */}
               <div
                 style={{

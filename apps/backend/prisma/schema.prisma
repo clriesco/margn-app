@@ -17,7 +17,8 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Personal information
-  fullName String? @map("full_name")
+  fullName  String? @map("full_name")
+  avatarUrl String? @map("avatar_url")
 
   // Notification preferences
   notifyOnRecommendations Boolean @default(true) @map("notify_on_recommendations")

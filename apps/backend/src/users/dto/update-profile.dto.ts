@@ -2,6 +2,7 @@ import {
   IsString,
   IsOptional,
   IsBoolean,
+  IsUrl,
   MaxLength,
 } from "class-validator";
 
@@ -13,6 +14,11 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(200)
   fullName?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsUrl({}, { message: "avatarUrl must be a valid URL" })
+  avatarUrl?: string | null;
 
   @IsOptional()
   @IsBoolean()
@@ -38,6 +44,7 @@ export interface ProfileResponse {
   id: string;
   email: string;
   fullName: string | null;
+  avatarUrl: string | null;
   notifyOnRecommendations: boolean;
   notifyOnContributions: boolean;
   notifyOnLeverageAlerts: boolean;

@@ -29,6 +29,7 @@ export class UsersService {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
+      avatarUrl: user.avatarUrl,
       notifyOnRecommendations: user.notifyOnRecommendations ?? true,
       notifyOnContributions: user.notifyOnContributions ?? true,
       notifyOnLeverageAlerts: user.notifyOnLeverageAlerts ?? true,
@@ -56,6 +57,7 @@ export class UsersService {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
+      avatarUrl: user.avatarUrl,
       notifyOnRecommendations: user.notifyOnRecommendations ?? true,
       notifyOnContributions: user.notifyOnContributions ?? true,
       notifyOnLeverageAlerts: user.notifyOnLeverageAlerts ?? true,
@@ -87,6 +89,7 @@ export class UsersService {
       where: { id: userId },
       data: {
         fullName: data.fullName !== undefined ? data.fullName : undefined,
+        avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : undefined,
         notifyOnRecommendations:
           data.notifyOnRecommendations !== undefined
             ? data.notifyOnRecommendations
@@ -110,6 +113,7 @@ export class UsersService {
       id: updated.id,
       email: updated.email,
       fullName: updated.fullName,
+      avatarUrl: updated.avatarUrl,
       notifyOnRecommendations: updated.notifyOnRecommendations ?? true,
       notifyOnContributions: updated.notifyOnContributions ?? true,
       notifyOnLeverageAlerts: updated.notifyOnLeverageAlerts ?? true,

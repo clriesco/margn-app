@@ -570,6 +570,7 @@ export interface UserProfile {
   id: string;
   email: string;
   fullName: string | null;
+  avatarUrl: string | null;
   notifyOnRecommendations: boolean;
   notifyOnContributions: boolean;
   notifyOnLeverageAlerts: boolean;
@@ -583,6 +584,7 @@ export interface UserProfile {
  */
 export interface UpdateProfileDto {
   fullName?: string;
+  avatarUrl?: string | null;
   notifyOnRecommendations?: boolean;
   notifyOnContributions?: boolean;
   notifyOnLeverageAlerts?: boolean;
