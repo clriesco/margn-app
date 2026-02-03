@@ -182,7 +182,7 @@ interface MetricsPoint {
  */
 function Dashboard() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
 
   // Use SWR hooks for cached data
   const {
@@ -252,12 +252,31 @@ function Dashboard() {
     }
   }, [user, loading, router]);
 
-  // Redirect to onboarding if no portfolio found
+  // Redirect to onboarding if no portfolio found (but not if there was an error)
   useEffect(() => {
-    if (!portfoliosLoading && portfolios.length === 0 && user) {
+    if (!portfoliosLoading && portfolios.length === 0 && user && !portfoliosError) {
       router.push("/dashboard/onboarding");
     }
-  }, [portfoliosLoading, portfolios.length, user, router]);
+  }, [portfoliosLoading, portfolios.length, user, portfoliosError, router]);
+
+  // Handle authentication errors - sign out and redirect to login
+  useEffect(() => {
+    if (portfoliosError) {
+      const errorMessage = portfoliosError.message?.toLowerCase() || "";
+      const isAuthError =
+        errorMessage.includes("unauthorized") ||
+        errorMessage.includes("401") ||
+        errorMessage.includes("jwt") ||
+        errorMessage.includes("token");
+
+      if (isAuthError) {
+        console.log("[Dashboard] Auth error detected, signing out:", portfoliosError.message);
+        signOut().then(() => {
+          router.push("/");
+        });
+      }
+    }
+  }, [portfoliosError, signOut, router]);
 
   // Load user profile
   useEffect(() => {
@@ -299,8 +318,86 @@ function Dashboard() {
     return null;
   }
 
+  // Show error state if portfolios failed to load (and it's not an auth error being handled)
+  if (!portfoliosLoading && portfoliosError && portfolios.length === 0) {
+    const errorMessage = portfoliosError.message?.toLowerCase() || "";
+    const isAuthError =
+      errorMessage.includes("unauthorized") ||
+      errorMessage.includes("401") ||
+      errorMessage.includes("jwt") ||
+      errorMessage.includes("token");
+
+    // Auth errors are handled by the useEffect above, show loading while signing out
+    if (isAuthError) {
+      return (
+        <>
+          <Head>
+            <title>Sesión expirada - Dashboard</title>
+          </Head>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "100vh",
+              flexDirection: "column",
+              gap: "1rem",
+              padding: "2rem",
+            }}
+          >
+            <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>
+              Sesión expirada. Redirigiendo al login...
+            </p>
+          </div>
+        </>
+      );
+    }
+
+    // Non-auth errors - show error with retry option
+    return (
+      <>
+        <Head>
+          <title>Error - Dashboard</title>
+        </Head>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "100vh",
+            flexDirection: "column",
+            gap: "1rem",
+            padding: "2rem",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ color: "var(--text-error, #ef4444)", fontSize: "1rem" }}>
+            Error al cargar los datos del portfolio.
+          </p>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
+            {portfoliosError.message || "Error desconocido"}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              marginTop: "1rem",
+              padding: "0.5rem 1rem",
+              backgroundColor: "var(--primary)",
+              color: "white",
+              border: "none",
+              borderRadius: "0.375rem",
+              cursor: "pointer",
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      </>
+    );
+  }
+
   // Show loading while checking for portfolios or redirecting to onboarding
-  if (!portfoliosLoading && portfolios.length === 0) {
+  if (!portfoliosLoading && portfolios.length === 0 && !portfoliosError) {
     return (
       <>
         <Head>
