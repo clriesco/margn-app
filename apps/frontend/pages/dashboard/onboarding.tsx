@@ -20,6 +20,7 @@ import {
   DollarSign,
   Scale,
   Edit,
+  LogOut,
 } from "lucide-react";
 import { NumberInput } from "../../components/NumberInput";
 import {
@@ -33,7 +34,7 @@ import {
  */
 export default function Onboarding() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { portfolios, isLoading: portfoliosLoading } = usePortfolios();
 
   // Wizard state
@@ -94,13 +95,15 @@ export default function Onboarding() {
   useEffect(() => {
     if (assets.length > 0) {
       const equalWeight = 1 / assets.length;
-      const newWeights: Record<string, number> = {};
-      for (const asset of assets) {
-        newWeights[asset.symbol] = manualWeights[asset.symbol] ?? equalWeight;
-      }
-      setManualWeights(newWeights);
+      setManualWeights((prevWeights) => {
+        const newWeights: Record<string, number> = {};
+        for (const asset of assets) {
+          newWeights[asset.symbol] = prevWeights[asset.symbol] ?? equalWeight;
+        }
+        return newWeights;
+      });
     }
-  }, [assets.length]);
+  }, [assets]);
 
   // Debounced search
   useEffect(() => {
@@ -447,6 +450,37 @@ export default function Onboarding() {
         <title>Configurar Portfolio - Leveraged DCA App</title>
       </Head>
       <div style={containerStyle}>
+        {/* Logout button - top right */}
+        <button
+          onClick={signOut}
+          style={{
+            position: "absolute",
+            top: "1rem",
+            right: "1rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.375rem",
+            padding: "0.5rem 0.75rem",
+            background: "transparent",
+            border: "1px solid var(--border)",
+            borderRadius: "6px",
+            color: "var(--text-dim)",
+            fontSize: "0.8rem",
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--text-muted)";
+            e.currentTarget.style.color = "var(--text-muted)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--border)";
+            e.currentTarget.style.color = "var(--text-dim)";
+          }}
+        >
+          <LogOut size={14} />
+          Salir
+        </button>
         <div style={cardStyle}>
           {/* Header */}
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
@@ -1548,6 +1582,7 @@ export default function Onboarding() {
 // ============================================
 
 const containerStyle: React.CSSProperties = {
+  position: "relative",
   minHeight: "100vh",
   display: "flex",
   justifyContent: "center",

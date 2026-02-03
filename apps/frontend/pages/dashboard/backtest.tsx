@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useAuth } from '../../contexts/AuthContext';
-import { getPortfoliosByEmail, getBacktestPrices } from '../../lib/api';
+import { getPortfoliosByEmail, getBacktestPrices, getPortfolioSummary, getPortfolioConfiguration } from '../../lib/api';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import BacktestConfigForm from '../../components/backtest/BacktestConfig';
 import BacktestProgress from '../../components/backtest/BacktestProgress';
@@ -27,20 +27,51 @@ export default function BacktestPage() {
   const [error, setError] = useState('');
   const [dateWarning, setDateWarning] = useState('');
   const [downloadProgress, setDownloadProgress] = useState<{ current: string; done: string[]; total: number }>({ current: '', done: [], total: 0 });
+  const [userDefaults, setUserDefaults] = useState<{
+    symbols?: string[];
+    initialCapital?: number;
+    monthlyContribution?: number;
+    leverageMin?: number;
+    leverageMax?: number;
+    leverageTarget?: number;
+  } | undefined>(undefined);
+  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
   const workerRef = useRef<Worker | null>(null);
 
-  // Load portfolio ID
+  // Load portfolio ID and user defaults
   useEffect(() => {
     async function load() {
-      const urlPId = router.query.portfolioId as string;
-      if (urlPId) {
-        setPortfolioId(urlPId);
-      } else if (user?.email) {
+      let pId = router.query.portfolioId as string;
+      if (!pId && user?.email) {
         try {
           const portfolios = await getPortfoliosByEmail(user.email);
-          if (portfolios?.length > 0) setPortfolioId(portfolios[0].id);
+          if (portfolios?.length > 0) pId = portfolios[0].id;
         } catch { /* ignore */ }
       }
+      if (pId) {
+        setPortfolioId(pId);
+        // Load user's portfolio data for defaults
+        try {
+          const [summary, config] = await Promise.all([
+            getPortfolioSummary(pId),
+            getPortfolioConfiguration(pId),
+          ]);
+          // Extract symbols from user's positions
+          const userSymbols = summary.positions
+            ?.map((p: { asset: { symbol: string } }) => p.asset.symbol)
+            .filter(Boolean) || [];
+
+          setUserDefaults({
+            symbols: userSymbols.length > 0 ? userSymbols : undefined,
+            initialCapital: config.initialCapital,
+            monthlyContribution: config.monthlyContribution ?? undefined,
+            leverageMin: config.leverageMin,
+            leverageMax: config.leverageMax,
+            leverageTarget: config.leverageTarget,
+          });
+        } catch { /* ignore - will use defaults */ }
+      }
+      setDefaultsLoaded(true);
     }
     if (!authLoading && user) load();
   }, [user, authLoading, router.query.portfolioId]);
@@ -190,8 +221,13 @@ export default function BacktestPage() {
             )}
 
             {/* State machine */}
-            {stage === 'config' && (
-              <BacktestConfigForm onSubmit={handleSubmit} loading={false} />
+            {stage === 'config' && !defaultsLoaded && (
+              <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                Cargando configuración...
+              </div>
+            )}
+            {stage === 'config' && defaultsLoaded && (
+              <BacktestConfigForm onSubmit={handleSubmit} loading={false} userDefaults={userDefaults} />
             )}
 
             {stage === 'loading-prices' && (

@@ -5,13 +5,25 @@ import { Tooltip } from '../Tooltip';
 import { searchSymbols, type SymbolSearchResult } from '../../lib/api';
 import type { BacktestConfig as BacktestConfigType } from '../../lib/backtest/types';
 
+interface UserDefaults {
+  symbols?: string[];
+  initialCapital?: number;
+  monthlyContribution?: number;
+  leverageMin?: number;
+  leverageMax?: number;
+  leverageTarget?: number;
+}
+
 interface Props {
   onSubmit: (config: BacktestConfigType) => void;
   loading: boolean;
+  userDefaults?: UserDefaults;
 }
 
+const FALLBACK_SYMBOLS = ['SPY', 'TLT', 'QQQ', 'GLD', 'BTC-USD', 'SLV', '^STOXX50E'];
+
 const DEFAULT_CONFIG: BacktestConfigType = {
-  symbols: ['SPY', 'TLT', 'QQQ', 'GLD'],
+  symbols: FALLBACK_SYMBOLS,
   initialCapital: 60000,
   monthlyContribution: 2000,
   leverageMin: 2.5,
@@ -90,9 +102,30 @@ const TIPS = {
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-export default function BacktestConfig({ onSubmit, loading }: Props) {
+export default function BacktestConfig({ onSubmit, loading, userDefaults }: Props) {
+  const [hasAppliedDefaults, setHasAppliedDefaults] = useState(false);
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Apply user defaults when they arrive (async)
+  useEffect(() => {
+    if (userDefaults && !hasAppliedDefaults) {
+      const userSymbols = userDefaults.symbols && userDefaults.symbols.length > 0
+        ? userDefaults.symbols
+        : FALLBACK_SYMBOLS;
+
+      setConfig((prev) => ({
+        ...prev,
+        symbols: userSymbols,
+        initialCapital: userDefaults.initialCapital ?? prev.initialCapital,
+        monthlyContribution: userDefaults.monthlyContribution ?? prev.monthlyContribution,
+        leverageMin: userDefaults.leverageMin ?? prev.leverageMin,
+        leverageMax: userDefaults.leverageMax ?? prev.leverageMax,
+        leverageTarget: userDefaults.leverageTarget ?? prev.leverageTarget,
+      }));
+      setHasAppliedDefaults(true);
+    }
+  }, [userDefaults, hasAppliedDefaults]);
   const [searchResults, setSearchResults] = useState<SymbolSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);

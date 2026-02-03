@@ -16,6 +16,11 @@ interface MonthPoint {
 
 const fmtUsd = (v: number) => '$' + formatNumberES(v, { maximumFractionDigits: 0 });
 
+// Chart dimensions (constant)
+const CHART_WIDTH = 800;
+const CHART_HEIGHT = 280;
+const PAD = { top: 12, right: 16, bottom: 32, left: 65 };
+
 function extractMonthlyBreakdown(
   traj: WindowTrajectory,
   initialCapital: number,
@@ -76,15 +81,12 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
   const [hover, setHover] = useState<MonthPoint | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const chartWidth = 800;
-  const chartHeight = 280;
-  const pad = { top: 12, right: 16, bottom: 32, left: 65 };
-  const innerW = chartWidth - pad.left - pad.right;
-  const innerH = chartHeight - pad.top - pad.bottom;
+  const innerW = CHART_WIDTH - PAD.left - PAD.right;
+  const innerH = CHART_HEIGHT - PAD.top - PAD.bottom;
 
   const range = Math.max(yMax - yMin, 1);
-  const sx = (month: number) => pad.left + (month / maxMonth) * innerW;
-  const sy = (v: number) => pad.top + innerH - ((v - yMin) / range) * innerH;
+  const sx = (month: number) => PAD.left + (month / maxMonth) * innerW;
+  const sy = (v: number) => PAD.top + innerH - ((v - yMin) / range) * innerH;
 
   // Build area paths: stack from bottom
   // Layer 1 (bottom): initial capital — constant band from 0 to initialCapital
@@ -148,8 +150,8 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
   const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const svgX = ((e.clientX - rect.left) / rect.width) * chartWidth;
-    const month = ((svgX - pad.left) / innerW) * maxMonth;
+    const svgX = ((e.clientX - rect.left) / rect.width) * CHART_WIDTH;
+    const month = ((svgX - PAD.left) / innerW) * maxMonth;
     if (month < 0 || month > maxMonth) { setHover(null); return; }
     // Find nearest point
     let closest = points[0];
@@ -229,7 +231,7 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
       {/* SVG */}
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
         style={{ width: '100%', height: 'auto', display: 'block', cursor: 'crosshair' }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHover(null)}
@@ -237,16 +239,16 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
         {/* Grid */}
         {yTicks.map((tick) => (
           <g key={tick}>
-            <line x1={pad.left} x2={chartWidth - pad.right} y1={sy(tick)} y2={sy(tick)} stroke="var(--border)" strokeWidth="1" />
-            <text x={pad.left - 8} y={sy(tick) + 4} fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="monospace">
+            <line x1={PAD.left} x2={CHART_WIDTH - PAD.right} y1={sy(tick)} y2={sy(tick)} stroke="var(--border)" strokeWidth="1" />
+            <text x={PAD.left - 8} y={sy(tick) + 4} fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="monospace">
               ${formatNumberES(tick / 1000, { maximumFractionDigits: 0 })}K
             </text>
           </g>
         ))}
         {xLabels.map((month) => (
           <g key={month}>
-            <line x1={sx(month)} x2={sx(month)} y1={pad.top} y2={chartHeight - pad.bottom} stroke="var(--border)" strokeWidth="1" />
-            <text x={sx(month)} y={chartHeight - 10} fill="var(--text-secondary)" fontSize="10" textAnchor="middle" fontFamily="monospace">
+            <line x1={sx(month)} x2={sx(month)} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--border)" strokeWidth="1" />
+            <text x={sx(month)} y={CHART_HEIGHT - 10} fill="var(--text-secondary)" fontSize="10" textAnchor="middle" fontFamily="monospace">
               {month === 0 ? '0' : `${month / 12}a`}
             </text>
           </g>
@@ -276,15 +278,15 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
         {/* Hover crosshair + dot */}
         {hover && (
           <g>
-            <line x1={sx(hover.month)} x2={sx(hover.month)} y1={pad.top} y2={chartHeight - pad.bottom} stroke="var(--border-light)" strokeWidth="1" />
+            <line x1={sx(hover.month)} x2={sx(hover.month)} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--border-light)" strokeWidth="1" />
             <circle cx={sx(hover.month)} cy={sy(hover.equity)} r="4" fill="var(--text-muted)" stroke="var(--bg-body)" strokeWidth="1.5" />
             <circle cx={sx(hover.month)} cy={sy(hover.initialCapital + hover.cumulativeContributions)} r="3" fill="var(--text-secondary)" stroke="var(--bg-body)" strokeWidth="1.5" />
           </g>
         )}
 
         {/* Axis borders */}
-        <line x1={pad.left} x2={pad.left} y1={pad.top} y2={chartHeight - pad.bottom} stroke="var(--border)" strokeWidth="1" />
-        <line x1={pad.left} x2={chartWidth - pad.right} y1={chartHeight - pad.bottom} y2={chartHeight - pad.bottom} stroke="var(--border)" strokeWidth="1" />
+        <line x1={PAD.left} x2={PAD.left} y1={PAD.top} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--border)" strokeWidth="1" />
+        <line x1={PAD.left} x2={CHART_WIDTH - PAD.right} y1={CHART_HEIGHT - PAD.bottom} y2={CHART_HEIGHT - PAD.bottom} stroke="var(--border)" strokeWidth="1" />
       </svg>
     </div>
   );

@@ -20,15 +20,16 @@ interface HoverData {
 const fmtUsd = (v: number) => '$' + formatNumberES(v, { maximumFractionDigits: 0 });
 const fmtPct = (v: number) => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
 
+// Chart dimensions (constant)
+const CHART_WIDTH = 800;
+const CHART_HEIGHT = 420;
+const PADDING = { top: 16, right: 20, bottom: 36, left: 65 };
+const INNER_WIDTH = CHART_WIDTH - PADDING.left - PADDING.right;
+const INNER_HEIGHT = CHART_HEIGHT - PADDING.top - PADDING.bottom;
+
 export default function TrajectoryChart({ result }: Props) {
   const [hover, setHover] = useState<HoverData | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-
-  const chartWidth = 800;
-  const chartHeight = 420;
-  const padding = { top: 16, right: 20, bottom: 36, left: 65 };
-  const innerWidth = chartWidth - padding.left - padding.right;
-  const innerHeight = chartHeight - padding.top - padding.bottom;
 
   const p10Traj = result.trajectories[result.p10.windowIndex];
   const p50Traj = result.trajectories[result.p50.windowIndex];
@@ -54,8 +55,8 @@ export default function TrajectoryChart({ result }: Props) {
     minY = Math.max(0, minY * 0.9);
     maxY = maxY * 1.1;
 
-    const sx = (month: number) => padding.left + (month / maxMo) * innerWidth;
-    const sy = (equity: number) => padding.top + innerHeight - ((equity - minY) / (maxY - minY)) * innerHeight;
+    const sx = (month: number) => PADDING.left + (month / maxMo) * INNER_WIDTH;
+    const sy = (equity: number) => PADDING.top + INNER_HEIGHT - ((equity - minY) / (maxY - minY)) * INNER_HEIGHT;
 
     const toPath = (states: { equity: number }[]): string => {
       const step = Math.max(1, Math.floor(states.length / 120));
@@ -98,10 +99,10 @@ export default function TrajectoryChart({ result }: Props) {
       paths: allPaths, p10Path: p10P, p50Path: p50P, p90Path: p90P,
       p50AreaPath: p50Area, yMin: minY, yMax: maxY, maxMonths: maxMo, yTicks: ticks,
     };
-  }, [result, innerWidth, innerHeight, p10Traj, p50Traj, p90Traj]);
+  }, [result, p10Traj, p50Traj, p90Traj]);
 
-  const scaleX = useCallback((month: number) => padding.left + (month / maxMonths) * innerWidth, [maxMonths, innerWidth]);
-  const scaleY = useCallback((equity: number) => padding.top + innerHeight - ((equity - yMin) / (yMax - yMin)) * innerHeight, [yMin, yMax, innerHeight]);
+  const scaleX = useCallback((month: number) => PADDING.left + (month / maxMonths) * INNER_WIDTH, [maxMonths]);
+  const scaleY = useCallback((equity: number) => PADDING.top + INNER_HEIGHT - ((equity - yMin) / (yMax - yMin)) * INNER_HEIGHT, [yMin, yMax]);
 
   const getEquityAtMonth = useCallback((traj: typeof p50Traj, month: number) => {
     if (!traj) return 0;
@@ -114,9 +115,9 @@ export default function TrajectoryChart({ result }: Props) {
   const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const scaleRatio = chartWidth / rect.width;
+    const scaleRatio = CHART_WIDTH / rect.width;
     const svgX = (e.clientX - rect.left) * scaleRatio;
-    const month = ((svgX - padding.left) / innerWidth) * maxMonths;
+    const month = ((svgX - PADDING.left) / INNER_WIDTH) * maxMonths;
 
     if (month < 0 || month > maxMonths) { setHover(null); return; }
 
@@ -132,7 +133,7 @@ export default function TrajectoryChart({ result }: Props) {
       p50Return: (p50Eq - initialCapital) / initialCapital,
       p90Return: (p90Eq - initialCapital) / initialCapital,
     });
-  }, [maxMonths, innerWidth, p10Traj, p50Traj, p90Traj, getEquityAtMonth, initialCapital]);
+  }, [maxMonths, p10Traj, p50Traj, p90Traj, getEquityAtMonth, initialCapital]);
 
   // Info panel values — show final values when not hovering
   const display = hover ?? {
@@ -201,7 +202,7 @@ export default function TrajectoryChart({ result }: Props) {
       {/* ── SVG Chart ── */}
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
         style={{ width: '100%', height: 'auto', display: 'block', cursor: 'crosshair' }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHover(null)}
@@ -217,12 +218,12 @@ export default function TrajectoryChart({ result }: Props) {
         {yTicks.map((tick) => (
           <g key={tick}>
             <line
-              x1={padding.left} x2={chartWidth - padding.right}
+              x1={PADDING.left} x2={CHART_WIDTH - PADDING.right}
               y1={scaleY(tick)} y2={scaleY(tick)}
               stroke="var(--border)" strokeWidth="1"
             />
             <text
-              x={padding.left - 10} y={scaleY(tick) + 4}
+              x={PADDING.left - 10} y={scaleY(tick) + 4}
               fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="monospace"
             >
               ${formatNumberES(tick / 1000, { maximumFractionDigits: 0 })}K
@@ -235,11 +236,11 @@ export default function TrajectoryChart({ result }: Props) {
           <g key={month}>
             <line
               x1={scaleX(month)} x2={scaleX(month)}
-              y1={padding.top} y2={chartHeight - padding.bottom}
+              y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom}
               stroke="var(--border)" strokeWidth="1"
             />
             <text
-              x={scaleX(month)} y={chartHeight - 12}
+              x={scaleX(month)} y={CHART_HEIGHT - 12}
               fill="var(--text-secondary)" fontSize="10" textAnchor="middle" fontFamily="monospace"
             >
               {month === 0 ? '0' : `${month / 12}a`}
@@ -265,7 +266,7 @@ export default function TrajectoryChart({ result }: Props) {
           <g>
             <line
               x1={hover.svgX} x2={hover.svgX}
-              y1={padding.top} y2={chartHeight - padding.bottom}
+              y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom}
               stroke="var(--border-light)" strokeWidth="1"
             />
             {/* Dots on P10/P50/P90 */}
@@ -276,8 +277,8 @@ export default function TrajectoryChart({ result }: Props) {
         )}
 
         {/* Axis border lines */}
-        <line x1={padding.left} x2={padding.left} y1={padding.top} y2={chartHeight - padding.bottom} stroke="var(--border)" strokeWidth="1" />
-        <line x1={padding.left} x2={chartWidth - padding.right} y1={chartHeight - padding.bottom} y2={chartHeight - padding.bottom} stroke="var(--border)" strokeWidth="1" />
+        <line x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--border)" strokeWidth="1" />
+        <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--border)" strokeWidth="1" />
       </svg>
     </div>
   );
