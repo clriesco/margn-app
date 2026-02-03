@@ -1,20 +1,22 @@
 import React, { useState, useRef } from "react";
 import { Camera, Loader2, X } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
 
 interface AvatarUploadProps {
-  userId: string;
   currentAvatarUrl?: string | null;
   onUploadComplete: (url: string | null) => void;
   size?: number;
 }
 
 export default function AvatarUpload({
-  userId,
   currentAvatarUrl,
   onUploadComplete,
   size = 96,
 }: AvatarUploadProps) {
+  const { user } = useAuth();
+  // Use Supabase auth user ID for storage path (required by RLS policy)
+  const userId = user?.id || "";
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl || null);
@@ -23,6 +25,11 @@ export default function AvatarUpload({
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (!userId) {
+      setError("Debes iniciar sesión para subir una imagen");
+      return;
+    }
 
     // Validate file type
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {

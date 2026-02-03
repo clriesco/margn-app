@@ -230,7 +230,6 @@ export default function Profile() {
                   Foto de Perfil
                 </h2>
                 <AvatarUpload
-                  userId={profile.id}
                   currentAvatarUrl={profile.avatarUrl}
                   onUploadComplete={async (url) => {
                     try {
