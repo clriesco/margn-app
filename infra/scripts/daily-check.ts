@@ -324,21 +324,6 @@ function generateAlerts(
 }
 
 /**
- * Log alert to console with formatting
- */
-function logAlert(state: PortfolioState, alert: Alert): void {
-  const priorityIcons: Record<string, string> = {
-    urgent: "🚨",
-    high: "⚠️",
-    medium: "📢",
-    low: "ℹ️",
-  };
-
-  const icon = priorityIcons[alert.priority] || "📌";
-  console.log(`   ${icon} [${alert.priority.toUpperCase()}] ${alert.message}`);
-}
-
-/**
  * Store daily check results in the database
  */
 async function storeDailyMetric(state: PortfolioState): Promise<void> {
@@ -418,93 +403,45 @@ async function runDailyCheck(): Promise<DailyCheckResult> {
       };
     }
 
-    console.log(`Found ${portfolios.length} portfolio(s) to check.\n`);
-
+    // Process portfolios silently
     for (const portfolio of portfolios) {
-      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-      console.log(`📊 Portfolio: ${portfolio.name}`);
-      console.log(`   User: ${portfolio.user.email}`);
-
       const state = await calculatePortfolioState(portfolio);
 
       if (!state) {
-        console.log(`   ⚠️  No positions found, skipping.\n`);
         continue;
       }
 
-      // Log state
-      console.log(
-        `   Equity: $${state.equity.toLocaleString(undefined, {
-          maximumFractionDigits: 0,
-        })}`
-      );
-      console.log(
-        `   Exposure: $${state.exposure.toLocaleString(undefined, {
-          maximumFractionDigits: 0,
-        })}`
-      );
-      console.log(
-        `   Leverage: ${state.leverage.toFixed(2)}x (range: ${
-          state.leverageMin
-        }x - ${state.leverageMax}x)`
-      );
-      console.log(`   Status: ${state.leverageStatus.toUpperCase()}`);
-      console.log(`   Margin Ratio: ${(state.marginRatio * 100).toFixed(1)}%`);
-
-      if (state.isContributionDay) {
-        console.log(`   📅 TODAY IS CONTRIBUTION DAY!`);
-      }
-
-      if (state.pendingContributions > 0) {
-        console.log(
-          `   💰 Pending contributions: $${state.pendingContributions.toLocaleString()}`
-        );
-      }
-
-      // Log alerts
-      if (state.alerts.length > 0) {
-        console.log(`\n   🔔 Alerts (${state.alerts.length}):`);
-        for (const alert of state.alerts) {
-          logAlert(state, alert);
-          totalAlerts++;
-        }
-      } else {
-        console.log(`\n   ✅ No alerts - portfolio is healthy.`);
-      }
+      // Count alerts
+      totalAlerts += state.alerts.length;
 
       // Store daily metric
       await storeDailyMetric(state);
 
       portfolioStates.push(state);
-      console.log("");
     }
 
     // Summary
-    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`\n📋 Daily Check Summary:`);
-    console.log(`   Portfolios checked: ${portfolioStates.length}`);
-    console.log(`   Total alerts: ${totalAlerts}`);
-
-    // Count by status
     const statusCounts = {
       low: portfolioStates.filter((s) => s.leverageStatus === "low").length,
-      in_range: portfolioStates.filter((s) => s.leverageStatus === "in_range")
-        .length,
+      in_range: portfolioStates.filter((s) => s.leverageStatus === "in_range").length,
       high: portfolioStates.filter((s) => s.leverageStatus === "high").length,
     };
-    console.log(`   Leverage status breakdown:`);
-    console.log(`     - Low: ${statusCounts.low}`);
-    console.log(`     - In Range: ${statusCounts.in_range}`);
-    console.log(`     - High: ${statusCounts.high}`);
+    const contributionDays = portfolioStates.filter((s) => s.isContributionDay).length;
+    const totalEquity = portfolioStates.reduce((sum, s) => sum + s.equity, 0);
+    const totalExposure = portfolioStates.reduce((sum, s) => sum + s.exposure, 0);
 
-    // Contribution days
-    const contributionDays = portfolioStates.filter(
-      (s) => s.isContributionDay
-    ).length;
-    if (contributionDays > 0) {
-      console.log(
-        `   📅 Contribution day for ${contributionDays} portfolio(s)`
-      );
+    console.log(`📋 Summary: ${portfolioStates.length} portfolios | Equity: $${totalEquity.toLocaleString(undefined, { maximumFractionDigits: 0 })} | Exposure: $${totalExposure.toLocaleString(undefined, { maximumFractionDigits: 0 })}`);
+    console.log(`   Status: ${statusCounts.in_range} in range, ${statusCounts.low} low, ${statusCounts.high} high | Alerts: ${totalAlerts}${contributionDays > 0 ? ` | 📅 ${contributionDays} contribution day(s)` : ""}`);
+
+    // Only log alerts if there are any
+    if (totalAlerts > 0) {
+      console.log(`\n🔔 Alerts:`);
+      for (const state of portfolioStates) {
+        for (const alert of state.alerts) {
+          const icon = alert.priority === "urgent" ? "🚨" : alert.priority === "high" ? "⚠️" : "📢";
+          console.log(`   ${icon} ${state.portfolioName}: ${alert.message}`);
+        }
+      }
     }
 
     return {
