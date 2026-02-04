@@ -370,6 +370,38 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
                 </span>
               </div>
             ))}
+            {/* Total row */}
+            {(() => {
+              const total = Object.values(manualWeights).reduce((sum, w) => sum + (w || 0), 0) * 100;
+              const isValid = Math.abs(total - 100) < 0.1;
+              return (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '1rem',
+                  marginTop: '0.75rem', paddingTop: '0.75rem',
+                  borderTop: '1px solid var(--input-border)',
+                }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: '600', minWidth: '80px' }}>Total</span>
+                  <div style={{ flex: 1 }} />
+                  <span style={{
+                    minWidth: '50px', textAlign: 'right', fontWeight: '700',
+                    color: isValid ? '#22c55e' : '#f59e0b',
+                  }}>
+                    {total.toFixed(1)}%
+                  </span>
+                </div>
+              );
+            })()}
+            {(() => {
+              const total = Object.values(manualWeights).reduce((sum, w) => sum + (w || 0), 0) * 100;
+              if (Math.abs(total - 100) >= 0.1) {
+                return (
+                  <p style={{ color: '#f59e0b', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                    Los pesos deben sumar 100% para un backtest preciso
+                  </p>
+                );
+              }
+              return null;
+            })()}
           </div>
         )}
 
@@ -454,16 +486,24 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
         </div>
       </div>
 
-      <button type="submit" disabled={loading || config.symbols.length === 0}
-        style={{
-          width: '100%', padding: '1rem',
-          background: loading ? 'var(--disabled-bg)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          color: loading ? 'var(--disabled-color)' : 'white',
-          border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600',
-          cursor: loading ? 'not-allowed' : 'pointer',
-        }}>
-        {loading ? 'Cargando precios...' : 'Ejecutar Backtest'}
-      </button>
+      {(() => {
+        const manualWeightsTotal = Object.values(manualWeights).reduce((sum, w) => sum + (w || 0), 0) * 100;
+        const manualWeightsInvalid = config.weightMode === 'manual' && Math.abs(manualWeightsTotal - 100) >= 0.1;
+        const isDisabled = loading || config.symbols.length === 0 || manualWeightsInvalid;
+
+        return (
+          <button type="submit" disabled={isDisabled}
+            style={{
+              width: '100%', padding: '1rem',
+              background: isDisabled ? 'var(--disabled-bg)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              color: isDisabled ? 'var(--disabled-color)' : 'white',
+              border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600',
+              cursor: isDisabled ? 'not-allowed' : 'pointer',
+            }}>
+            {loading ? 'Cargando precios...' : manualWeightsInvalid ? 'Ajusta los pesos a 100%' : 'Ejecutar Backtest'}
+          </button>
+        );
+      })()}
     </form>
   );
 }
