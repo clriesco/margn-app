@@ -143,9 +143,9 @@ export default function SaveStrategyButton({ result }: Props) {
         onClick={() => setShowModal(true)}
         style={{
           padding: '0.625rem 1rem',
-          background: 'var(--bg-card)',
-          color: 'var(--text-secondary)',
-          border: '1px solid var(--border)',
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: 'white',
+          border: 'none',
           borderRadius: '6px',
           cursor: 'pointer',
           fontSize: '0.875rem',

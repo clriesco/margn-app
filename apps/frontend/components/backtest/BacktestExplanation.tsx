@@ -214,11 +214,6 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
     state,
   }), [generateExplanation, state]);
 
-  // Don't render anything if idle
-  if (state === 'idle') {
-    return null;
-  }
-
   return (
     <div
       style={{
@@ -226,6 +221,7 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
         border: '1px solid var(--border)',
         borderRadius: '8px',
         padding: '1.5rem',
+        marginTop: '1.5rem',
         marginBottom: '1.5rem',
       }}
     >
@@ -234,19 +230,52 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '1rem',
+          marginBottom: state === 'idle' ? 0 : '1rem',
         }}
       >
-        <h3
-          style={{
-            color: 'var(--text-primary)',
-            fontWeight: '600',
-            fontSize: '1.125rem',
-            margin: 0,
-          }}
-        >
-          Explicación IA
-        </h3>
+        <div>
+          <h3
+            style={{
+              color: 'var(--text-primary)',
+              fontWeight: '600',
+              fontSize: '1.125rem',
+              margin: 0,
+            }}
+          >
+            Análisis IA
+          </h3>
+          {state === 'idle' && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
+              Genera una explicación de los resultados con inteligencia artificial
+            </p>
+          )}
+        </div>
+
+        {state === 'idle' && (
+          <button
+            onClick={generateExplanation}
+            style={{
+              padding: '0.625rem 1rem',
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            Explicar con IA
+          </button>
+        )}
 
         {state === 'complete' && (
           <button

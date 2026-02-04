@@ -361,30 +361,6 @@ export default function BacktestPage() {
                   border: '1px solid var(--border)',
                   borderRadius: '8px',
                 }}>
-                  <button
-                    onClick={() => explanationRef.current?.generate()}
-                    style={{
-                      padding: '0.625rem 1rem',
-                      background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                      <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                    Explicar con IA
-                  </button>
-
                   <SaveStrategyButton result={result} />
 
                   <button
@@ -411,11 +387,11 @@ export default function BacktestPage() {
                   </button>
                 </div>
 
-                {/* AI Explanation (only shows when triggered) */}
-                <BacktestExplanation ref={explanationRef} result={result} />
-
                 <TrajectoryChart result={result} />
                 <BacktestResults result={result} />
+
+                {/* AI Explanation (after results - component handles idle/active states) */}
+                <BacktestExplanation ref={explanationRef} result={result} />
               </>
             )}
           </div>

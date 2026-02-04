@@ -385,7 +385,7 @@ export default function BacktestResults({ result }: Props) {
       </div>
 
       {/* Detailed Analysis Accordions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <AccordionSection title="Desglose de equity por meses">
           <div style={{ paddingTop: '1rem' }}>
             <EquityBreakdownChart result={result} />

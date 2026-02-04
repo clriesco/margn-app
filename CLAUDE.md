@@ -569,6 +569,7 @@ Al crear un release, seguir este orden estricto:
 - **API Endpoints:** kebab-case (e.g., `/portfolios/:id/daily-metrics`).
 - **Errores backend:** NestJS exceptions (`UnauthorizedException`, `NotFoundException`, etc.). Responses: `{ statusCode, message, error }`.
 - **Errores frontend:** try/catch con mensajes user-friendly.
+- **Git:** Commit messages and release notes MUST be in English. Use conventional commits format (feat:, fix:, chore:, docs:).
 
 ---
 
