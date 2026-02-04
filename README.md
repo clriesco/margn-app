@@ -71,18 +71,20 @@ npm run prisma:generate
 
 **Backend** (`apps/backend/.env`):
 ```bash
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.uuxvjxdayeovhbduxmbu.supabase.co:5432/postgres
-DIRECT_URL=postgresql://postgres:[PASSWORD]@db.uuxvjxdayeovhbduxmbu.supabase.co:5432/postgres
-SUPABASE_URL=https://uuxvjxdayeovhbduxmbu.supabase.co
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
+DIRECT_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
+SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_ANON_KEY=<anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 FRONTEND_URL=http://localhost:3002
 PORT=3003
+ANTHROPIC_API_KEY=<anthropic-api-key>  # For AI backtest explanations
+CRON_SECRET_TOKEN=<secret-token>        # For cron job authentication
 ```
 
 **Frontend** (`apps/frontend/.env.local`):
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://uuxvjxdayeovhbduxmbu.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 NEXT_PUBLIC_API_URL=http://localhost:3003/api
 ```
