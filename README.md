@@ -130,24 +130,16 @@ npm run dev:frontend  # Frontend on http://localhost:3002
 - **Historical Data** - Monthly metrics history with pagination
 - **Interactive Charts** - SVG-based equity history visualization
 - **Historical Backtesting** - Configurable backtest simulator with:
-  - Calendar-based rolling windows (consistent across asset types)
-  - Sharpe optimization with dynamic weights
-  - P10/P50/P90 percentile results (sorted by Sharpe ratio)
-  - Proper margin call handling (equity to $0, -100% return)
-  - Repeat backtest with same configuration
-- **Saved Strategies** - Save and manage backtest configurations:
-  - Save backtest results with full configuration
-  - View strategies list with P10/P50/P90 metrics and Sharpe ratio
-  - Strategy detail page with trajectory charts
-  - Inline title editing (pencil icon, Enter to save, Esc to cancel)
-  - Apply strategy to existing portfolio
-  - New backtest from saved strategy
-  - Alphabetical sorting by name
-- **AI Analysis** - Claude-powered backtest explanations:
-  - Streaming SSE responses
-  - Correlation analysis and macro factors
-  - Scenario comparison insights
-- **Auto-fill Price Gaps** - Automatic detection and download of missing price data
+  - Calendar-based rolling windows (consistent across crypto and traditional assets)
+  - Sharpe optimization with optional dynamic monthly re-optimization
+  - P10/P50/P90 percentile results sorted by Sharpe ratio
+  - Proper margin call handling
+- **Saved Strategies** - Save backtest configurations and results:
+  - List with P10/P50/P90 metrics
+  - Trajectory charts visualization
+  - Apply strategy weights to existing portfolio
+- **AI Analysis** - Claude-powered backtest explanations with streaming responses
+- **Auto-fill Price Gaps** - Automatic detection and download of missing historical data
 
 ### 🚧 In Progress / Planned
 
@@ -358,16 +350,13 @@ The system calculates comprehensive portfolio analytics:
 ### Automated Tests
 
 ```bash
-# Run all tests
-npm run test
-
-# Backend unit tests (23 tests)
+# Backend unit tests
 npm --workspace apps/backend run test
 
-# Frontend unit tests (36 tests)
+# Frontend unit tests
 npm --workspace apps/frontend run test
 
-# E2E tests (8 tests)
+# E2E tests
 npm --workspace apps/backend run test:e2e
 ```
 
@@ -414,22 +403,15 @@ npm run lint
 ## 🔮 Roadmap
 
 ### Done
-- [x] Implement real equity calculation (track `borrowedAmount`)
-- [x] Auth guard on all endpoints
+- [x] Real equity calculation (track `borrowedAmount`)
+- [x] Auth guard and portfolio ownership validation
 - [x] Auto-fetch prices in position updates
-- [x] Metrics refresh writes to both MetricsTimeseries and DailyMetric
 - [x] Onboarding wizard with SSE progress
-- [x] Contribution history endpoint
-- [x] Help page
-- [x] Backtest simulator page
-- [x] Portfolio ownership validation (`PortfolioOwnershipGuard`)
-- [x] Configure cron jobs in production (GitHub Actions - see `infra/CRON_JOBS.md`)
-- [x] Saved strategies (save, list, detail, apply to portfolio)
-- [x] AI-powered backtest explanations (Claude Sonnet)
-- [x] Calendar-based rolling windows for backtest
-- [x] Unit tests for rebalancing service (23 tests)
-- [x] Frontend backtest tests (36 tests)
-- [x] E2E tests (8 tests)
+- [x] Backtest simulator with calendar-based rolling windows
+- [x] Saved strategies with apply to portfolio
+- [x] AI-powered backtest explanations
+- [x] Cron jobs in production (GitHub Actions)
+- [x] Test suite (67 tests: unit, integration, e2e)
 
 ### Medium Priority
 - [ ] Email/SMS notifications for urgent alerts
