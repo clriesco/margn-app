@@ -129,7 +129,25 @@ npm run dev:frontend  # Frontend on http://localhost:3002
 - **User Profile** - Personal information and notification preferences
 - **Historical Data** - Monthly metrics history with pagination
 - **Interactive Charts** - SVG-based equity history visualization
-- **Historical Backtesting** - Configurable backtest simulator with rolling windows, Sharpe optimization, and P10/P50/P90 percentile results
+- **Historical Backtesting** - Configurable backtest simulator with:
+  - Calendar-based rolling windows (consistent across asset types)
+  - Sharpe optimization with dynamic weights
+  - P10/P50/P90 percentile results (sorted by Sharpe ratio)
+  - Proper margin call handling (equity to $0, -100% return)
+  - Repeat backtest with same configuration
+- **Saved Strategies** - Save and manage backtest configurations:
+  - Save backtest results with full configuration
+  - View strategies list with P10/P50/P90 metrics and Sharpe ratio
+  - Strategy detail page with trajectory charts
+  - Inline title editing (pencil icon, Enter to save, Esc to cancel)
+  - Apply strategy to existing portfolio
+  - New backtest from saved strategy
+  - Alphabetical sorting by name
+- **AI Analysis** - Claude-powered backtest explanations:
+  - Streaming SSE responses
+  - Correlation analysis and macro factors
+  - Scenario comparison insights
+- **Auto-fill Price Gaps** - Automatic detection and download of missing price data
 
 ### 🚧 In Progress / Planned
 
@@ -178,6 +196,18 @@ Base URL: `http://localhost:3003/api`
 ### Rebalancing
 - `GET /portfolios/:portfolioId/rebalance/proposal` - Get rebalancing proposal
 - `POST /portfolios/:portfolioId/rebalance/accept` - Accept and save rebalancing
+
+### Strategies
+- `GET /strategies` - List saved strategies
+- `POST /strategies` - Save new strategy
+- `GET /strategies/:id` - Get strategy detail
+- `PATCH /strategies/:id` - Update strategy name
+- `DELETE /strategies/:id` - Delete strategy
+- `POST /strategies/:id/apply/:portfolioId` - Apply strategy to portfolio
+
+### Backtest
+- `GET /backtest/prices` - Get historical prices for backtest
+- `POST /backtest/explain` - Get AI explanation for backtest results (SSE)
 
 For complete API documentation, see `CLAUDE.md` (section "API endpoints").
 
@@ -270,6 +300,8 @@ Generates actionable recommendations based on:
 - `/dashboard/rebalance` - View and accept rebalancing proposals
 - `/dashboard/configuration` - Configure portfolio strategy
 - `/dashboard/backtest` - Historical backtest simulator with configurable parameters
+- `/dashboard/strategies` - List of saved strategies with metrics
+- `/dashboard/strategies/[id]` - Strategy detail with trajectories and apply to portfolio
 - `/dashboard/onboarding` - Portfolio creation wizard (SSE progress)
 - `/dashboard/profile` - User profile and preferences
 - `/dashboard/help` - Help and documentation
@@ -300,8 +332,7 @@ The system calculates comprehensive portfolio analytics:
 
 ## 🐛 Known Issues
 
-1. **Portfolio ownership:** Auth guard exists but individual portfolio endpoints don't verify the portfolio belongs to the requesting user
-2. **Notifications:** User preferences are stored but no email/SMS delivery is implemented (only logging)
+1. **Notifications:** User preferences are stored but no email/SMS delivery is implemented (only logging)
 
 ## 📚 Documentation
 
@@ -323,6 +354,24 @@ The system calculates comprehensive portfolio analytics:
 - **Build:** Automatic on push to main branch
 
 ## 🧪 Testing
+
+### Automated Tests
+
+```bash
+# Run all tests
+npm run test
+
+# Backend unit tests (23 tests)
+npm --workspace apps/backend run test
+
+# Frontend unit tests (36 tests)
+npm --workspace apps/frontend run test
+
+# E2E tests (8 tests)
+npm --workspace apps/backend run test:e2e
+```
+
+### Manual Testing
 
 ```bash
 # Frontend
@@ -373,14 +422,17 @@ npm run lint
 - [x] Contribution history endpoint
 - [x] Help page
 - [x] Backtest simulator page
-
-### High Priority
-- [ ] Portfolio ownership validation (verify user owns portfolio on each request)
-- [ ] Configure cron jobs in production (see `infra/CRON_JOBS.md`)
+- [x] Portfolio ownership validation (`PortfolioOwnershipGuard`)
+- [x] Configure cron jobs in production (GitHub Actions - see `infra/CRON_JOBS.md`)
+- [x] Saved strategies (save, list, detail, apply to portfolio)
+- [x] AI-powered backtest explanations (Claude Sonnet)
+- [x] Calendar-based rolling windows for backtest
+- [x] Unit tests for rebalancing service (23 tests)
+- [x] Frontend backtest tests (36 tests)
+- [x] E2E tests (8 tests)
 
 ### Medium Priority
 - [ ] Email/SMS notifications for urgent alerts
-- [ ] Add basic tests (at least for rebalancing)
 - [ ] Recommendation history (persist past recommendations)
 
 ### Low Priority
