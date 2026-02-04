@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { usePortfolioSummary } from "../lib/hooks/use-portfolio-data";
 import { getProfile, UserProfile } from "../lib/api";
 import { User, Settings, LogOut, ChevronDown } from "lucide-react";
-import { formatCurrencyES } from "../lib/number-format";
+import { formatCurrencyES, formatNumberES } from "../lib/number-format";
 
 interface TopBarProps {
   portfolioId: string | null;
@@ -21,6 +21,9 @@ export default function TopBar({
   const { summary } = usePortfolioSummary(portfolioId);
   const equity = summary?.metrics?.equity;
   const exposure = summary?.metrics?.exposure;
+  const leverage = summary?.metrics?.leverage;
+  const leverageMin = summary?.portfolio?.leverageMin;
+  const leverageMax = summary?.portfolio?.leverageMax;
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -135,6 +138,15 @@ export default function TopBar({
             </span>
           </div>
         </div>
+      )}
+
+      {/* Compact Leverage Indicator */}
+      {leverage !== undefined && leverageMin !== undefined && leverageMax !== undefined && (
+        <TopBarLeverageIndicator
+          leverage={leverage}
+          leverageMin={leverageMin}
+          leverageMax={leverageMax}
+        />
       )}
 
       {/* User dropdown */}
@@ -339,6 +351,112 @@ export default function TopBar({
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Compact leverage indicator for the top bar
+ * Bar gradient: 20% yellow→green | 60% green | 20% green→red
+ */
+function TopBarLeverageIndicator({
+  leverage,
+  leverageMin,
+  leverageMax,
+}: {
+  leverage: number;
+  leverageMin: number;
+  leverageMax: number;
+}) {
+  // Calculate marker position (0-100%)
+  let markerPercent: number;
+  if (leverage <= leverageMin) {
+    const belowMinRange = leverageMin * 0.5;
+    const minBound = leverageMin - belowMinRange;
+    if (leverage <= minBound) {
+      markerPercent = 0;
+    } else {
+      markerPercent = ((leverage - minBound) / (leverageMin - minBound)) * 20;
+    }
+  } else if (leverage >= leverageMax) {
+    const aboveMaxRange = leverageMax * 0.25;
+    const maxBound = leverageMax + aboveMaxRange;
+    if (leverage >= maxBound) {
+      markerPercent = 100;
+    } else {
+      markerPercent = 80 + ((leverage - leverageMax) / (maxBound - leverageMax)) * 20;
+    }
+  } else {
+    const rangePosition = (leverage - leverageMin) / (leverageMax - leverageMin);
+    markerPercent = 20 + rangePosition * 60;
+  }
+
+  // Status color
+  let valueColor: string;
+  if (leverage < leverageMin) {
+    valueColor = "#eab308";
+  } else if (leverage > leverageMax) {
+    valueColor = "#ef4444";
+  } else {
+    valueColor = "#22c55e";
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.625rem",
+      }}
+    >
+      <span style={{ color: "var(--text-dim)", fontSize: "0.8125rem" }}>
+        Leverage
+      </span>
+      <span
+        style={{
+          color: valueColor,
+          fontSize: "0.9375rem",
+          fontWeight: "600",
+          minWidth: "42px",
+        }}
+      >
+        {formatNumberES(leverage, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}x
+      </span>
+
+      {/* Compact bar */}
+      <div
+        style={{
+          position: "relative",
+          width: "80px",
+          height: "6px",
+          borderRadius: "3px",
+          background: `linear-gradient(to right,
+            #eab308 0%,
+            #22c55e 20%,
+            #22c55e 80%,
+            #ef4444 100%
+          )`,
+        }}
+      >
+        {/* Marker */}
+        <div
+          style={{
+            position: "absolute",
+            top: "-2px",
+            left: `${markerPercent}%`,
+            transform: "translateX(-50%)",
+            width: "10px",
+            height: "10px",
+            borderRadius: "50%",
+            background: "white",
+            border: `2px solid ${valueColor}`,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
+          }}
+        />
       </div>
     </div>
   );
