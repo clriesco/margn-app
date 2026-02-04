@@ -326,6 +326,7 @@ export function runBacktest(
 
     const states: PortfolioState[] = [state];
     const contributions: number[] = [];
+    const contributionIndices: number[] = [];
     let totalContributed = 0;
     let tradingDayInMonth = 0;
 
@@ -399,6 +400,9 @@ export function runBacktest(
         state = result.newState;
         totalContributed += config.monthlyContribution;
         contributions.push(config.monthlyContribution);
+        // Track the state index where this contribution is deployed
+        // (will be states.length after the push below)
+        contributionIndices.push(states.length);
       }
 
       states.push(state);
@@ -407,7 +411,7 @@ export function runBacktest(
 
     const metrics = calculateWindowMetrics(
       states, totalContributed, config.riskFreeRate,
-      w, startDate, endDate
+      w, startDate, endDate, contributions, contributionIndices
     );
 
     allMetrics.push(metrics);

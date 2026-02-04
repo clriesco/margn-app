@@ -7,6 +7,7 @@ import type { PortfolioState, WindowMetrics } from '../types';
 
 /**
  * Calculate all metrics for a single backtest window
+ * @param contributionIndices - Array of state indices where each contribution was deployed
  */
 export function calculateWindowMetrics(
   states: PortfolioState[],
@@ -14,7 +15,9 @@ export function calculateWindowMetrics(
   riskFreeRate: number,
   windowIndex: number,
   startDate: string,
-  endDate: string
+  endDate: string,
+  contributions: number[] = [],
+  contributionIndices: number[] = []
 ): WindowMetrics {
   if (states.length === 0) {
     return emptyMetrics(windowIndex, startDate, endDate);
@@ -75,7 +78,15 @@ export function calculateWindowMetrics(
   let currentRecovery = 0;
   let underwaterDays = 0;
 
-  for (const state of states) {
+  // Pre-compute cumulative contributions for underwater calculation
+  const cumulativeContribs: number[] = [0];
+  for (let i = 0; i < contributions.length; i++) {
+    cumulativeContribs.push(cumulativeContribs[i] + contributions[i]);
+  }
+
+  for (let i = 0; i < states.length; i++) {
+    const state = states[i];
+
     if (state.equity > peakEquity) {
       peakEquity = state.equity;
       currentRecovery = 0;
@@ -88,7 +99,19 @@ export function calculateWindowMetrics(
       }
     }
 
-    if (state.equity < totalInvested) {
+    // Calculate total invested up to this day using exact contribution indices
+    // contributionIndices[k] is the state index where contribution[k] was deployed
+    let numContribsDeployed = 0;
+    for (let k = 0; k < contributionIndices.length; k++) {
+      if (i >= contributionIndices[k]) {
+        numContribsDeployed = k + 1;
+      } else {
+        break;
+      }
+    }
+    const investedSoFar = firstEquity + cumulativeContribs[numContribsDeployed];
+
+    if (state.equity < investedSoFar) {
       underwaterDays++;
     }
   }

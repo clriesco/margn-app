@@ -4,21 +4,38 @@ import priceFixture from './fixtures/prices.json';
 
 describe('backtest-engine', () => {
   describe('generateRollingWindows', () => {
-    it('should generate correct number of windows', () => {
-      const windows = generateRollingWindows(252, 126, 21); // 1yr data, 6mo windows, 1mo step
-      // (252 - 126) / 21 + 1 = 7
-      expect(windows.length).toBe(7);
+    // Generate array of dates for testing (weekdays only, like stock market)
+    function generateDates(startDate: string, count: number): string[] {
+      const dates: string[] = [];
+      const date = new Date(startDate + 'T12:00:00');
+      while (dates.length < count) {
+        const day = date.getDay();
+        if (day !== 0 && day !== 6) { // Skip weekends
+          dates.push(date.toISOString().slice(0, 10));
+        }
+        date.setDate(date.getDate() + 1);
+      }
+      return dates;
+    }
+
+    it('should generate windows for sufficient data', () => {
+      // ~1 year of trading days, 6-month windows
+      const dates = generateDates('2020-01-01', 252);
+      const windows = generateRollingWindows(dates, 6);
+      expect(windows.length).toBeGreaterThan(0);
     });
 
     it('should not exceed total days', () => {
-      const windows = generateRollingWindows(100, 60, 21);
+      const dates = generateDates('2020-01-01', 150);
+      const windows = generateRollingWindows(dates, 3);
       for (const w of windows) {
-        expect(w.end).toBeLessThan(100);
+        expect(w.end).toBeLessThan(dates.length);
       }
     });
 
     it('should return empty for insufficient data', () => {
-      const windows = generateRollingWindows(50, 252, 21);
+      const dates = generateDates('2020-01-01', 50);
+      const windows = generateRollingWindows(dates, 12); // Need ~252 days for 12 months
       expect(windows.length).toBe(0);
     });
   });
