@@ -345,9 +345,11 @@ export default function StrategyDetailPage() {
         setStrategy(data);
 
         // Load portfolio ID
-        const portfolios = await getPortfoliosByEmail(user.email);
-        if (portfolios?.length > 0) {
-          setPortfolioId(portfolios[0].id);
+        if (user.email) {
+          const portfolios = await getPortfoliosByEmail(user.email);
+          if (portfolios?.length > 0) {
+            setPortfolioId(portfolios[0].id);
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error');
