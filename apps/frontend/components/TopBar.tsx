@@ -359,6 +359,7 @@ export default function TopBar({
 /**
  * Compact leverage indicator for the top bar
  * Bar gradient: 20% yellow→green | 60% green | 20% green→red
+ * Position: 0% if below min, 100% if above max, 20-80% if in range
  */
 function TopBarLeverageIndicator({
   leverage,
@@ -370,24 +371,14 @@ function TopBarLeverageIndicator({
   leverageMax: number;
 }) {
   // Calculate marker position (0-100%)
+  // Below min → 0%, In range → 20-80%, Above max → 100%
   let markerPercent: number;
-  if (leverage <= leverageMin) {
-    const belowMinRange = leverageMin * 0.5;
-    const minBound = leverageMin - belowMinRange;
-    if (leverage <= minBound) {
-      markerPercent = 0;
-    } else {
-      markerPercent = ((leverage - minBound) / (leverageMin - minBound)) * 20;
-    }
-  } else if (leverage >= leverageMax) {
-    const aboveMaxRange = leverageMax * 0.25;
-    const maxBound = leverageMax + aboveMaxRange;
-    if (leverage >= maxBound) {
-      markerPercent = 100;
-    } else {
-      markerPercent = 80 + ((leverage - leverageMax) / (maxBound - leverageMax)) * 20;
-    }
+  if (leverage < leverageMin) {
+    markerPercent = 0;
+  } else if (leverage > leverageMax) {
+    markerPercent = 100;
   } else {
+    // In range: map proportionally from 20% to 80%
     const rangePosition = (leverage - leverageMin) / (leverageMax - leverageMin);
     markerPercent = 20 + rangePosition * 60;
   }

@@ -2298,34 +2298,18 @@ function LeverageCard({
   leverageMax: number;
 }) {
   // Calculate marker position (0-100%)
-  // The bar represents: [min - margin, max + margin] where margin makes the zones
   // Zone 1 (0-20%): below min (yellow → green)
   // Zone 2 (20-80%): in range (green)
   // Zone 3 (80-100%): above max (green → red)
+  // Position: 0% if below min, 100% if above max, 20-80% if in range
 
   let markerPercent: number;
-  if (leverage <= leverageMin) {
-    // Below or at min: position in the first 20% (left zone)
-    // Map from 0 to leverageMin → 0% to 20%
-    const belowMinRange = leverageMin * 0.5; // How far below min we show
-    const minBound = leverageMin - belowMinRange;
-    if (leverage <= minBound) {
-      markerPercent = 0;
-    } else {
-      markerPercent = ((leverage - minBound) / (leverageMin - minBound)) * 20;
-    }
-  } else if (leverage >= leverageMax) {
-    // Above or at max: position in the last 20% (right zone)
-    // Map from leverageMax to leverageMax + margin → 80% to 100%
-    const aboveMaxRange = leverageMax * 0.25; // How far above max we show
-    const maxBound = leverageMax + aboveMaxRange;
-    if (leverage >= maxBound) {
-      markerPercent = 100;
-    } else {
-      markerPercent = 80 + ((leverage - leverageMax) / (maxBound - leverageMax)) * 20;
-    }
+  if (leverage < leverageMin) {
+    markerPercent = 0;
+  } else if (leverage > leverageMax) {
+    markerPercent = 100;
   } else {
-    // In range: position in the middle 60% (20% to 80%)
+    // In range: map proportionally from 20% to 80%
     const rangePosition = (leverage - leverageMin) / (leverageMax - leverageMin);
     markerPercent = 20 + rangePosition * 60;
   }
