@@ -353,9 +353,14 @@ describe("RebalanceService", () => {
       const proposal = await service.calculateProposal("port-1");
 
       for (const pos of proposal.positions) {
-        const expectedValue = proposal.targetExposure * pos.targetWeight;
-        expect(pos.targetValue).toBeCloseTo(expectedValue, 0);
-        expect(pos.targetQuantity).toBeCloseTo(expectedValue / pos.currentPrice, 4);
+        // Service rounds quantities for non-fractional assets, then recalculates value
+        // So we verify: targetValue = targetQuantity * price (not exposure * weight directly)
+        expect(pos.targetValue).toBeCloseTo(pos.targetQuantity * pos.currentPrice, 2);
+
+        // Raw quantity (before rounding) should be close to exposure * weight / price
+        const rawExpectedQuantity = (proposal.targetExposure * pos.targetWeight) / pos.currentPrice;
+        // Allow for rounding difference (max 0.5 shares)
+        expect(Math.abs(pos.targetQuantity - rawExpectedQuantity)).toBeLessThanOrEqual(0.5);
       }
     });
 
