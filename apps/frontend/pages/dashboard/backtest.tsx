@@ -31,20 +31,51 @@ export default function BacktestPage() {
   const [downloadProgress, setDownloadProgress] = useState<{ current: string; done: string[]; total: number }>({ current: '', done: [], total: 0 });
   const [userDefaults, setUserDefaults] = useState<{
     symbols?: string[];
+    weights?: Record<string, number>;
     initialCapital?: number;
     monthlyContribution?: number;
     leverageMin?: number;
     leverageMax?: number;
     leverageTarget?: number;
+    windowMonths?: number;
+    weightMode?: 'sharpe' | 'manual' | 'equal';
+    dynamicWeights?: boolean;
+    fromStrategy?: string;
   } | undefined>(undefined);
   const [defaultsLoaded, setDefaultsLoaded] = useState(false);
   const [priceExcludedSymbols, setPriceExcludedSymbols] = useState<string[]>([]);
   const workerRef = useRef<Worker | null>(null);
   const explanationRef = useRef<BacktestExplanationHandle>(null);
 
-  // Load portfolio ID and user defaults
+  // Load portfolio ID and user defaults (or from strategy if redirected)
   useEffect(() => {
     async function load() {
+      // Check if we have strategy config in localStorage (from strategy detail page)
+      const strategyConfigStr = localStorage.getItem('backtest_from_strategy');
+      if (strategyConfigStr) {
+        try {
+          const strategyConfig = JSON.parse(strategyConfigStr);
+          localStorage.removeItem('backtest_from_strategy'); // Clear after reading
+
+          setUserDefaults({
+            symbols: strategyConfig.symbols,
+            weights: strategyConfig.weights,
+            initialCapital: strategyConfig.initialCapital,
+            monthlyContribution: strategyConfig.monthlyContribution,
+            leverageMin: strategyConfig.leverageMin,
+            leverageMax: strategyConfig.leverageMax,
+            leverageTarget: strategyConfig.leverageTarget,
+            windowMonths: strategyConfig.windowMonths,
+            weightMode: strategyConfig.weightMode,
+            dynamicWeights: strategyConfig.dynamicWeights,
+            fromStrategy: strategyConfig.strategyName,
+          });
+          setDefaultsLoaded(true);
+          return; // Don't load portfolio defaults if we have strategy config
+        } catch { /* ignore parse errors */ }
+      }
+
+      // Normal flow: load from portfolio
       let pId = router.query.portfolioId as string;
       if (!pId && user?.email) {
         try {

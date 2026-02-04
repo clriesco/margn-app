@@ -422,6 +422,28 @@ export default function StrategyDetailPage() {
     }
   }, [strategy, router]);
 
+  const handleNewBacktest = useCallback(() => {
+    if (!strategy) return;
+
+    // Store config in localStorage and redirect to backtest page
+    const backtestConfig = {
+      strategyName: strategy.name,
+      symbols: strategy.config.symbols,
+      weights: strategy.config.weights,
+      initialCapital: strategy.config.initialCapital,
+      monthlyContribution: strategy.config.monthlyContribution,
+      leverageMin: strategy.config.leverageMin,
+      leverageMax: strategy.config.leverageMax,
+      leverageTarget: strategy.config.leverageTarget,
+      windowMonths: strategy.config.windowMonths,
+      weightMode: strategy.config.weightMode || 'manual',
+      dynamicWeights: strategy.config.dynamicWeights || false,
+    };
+
+    localStorage.setItem('backtest_from_strategy', JSON.stringify(backtestConfig));
+    router.push('/dashboard/backtest');
+  }, [strategy, router]);
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -663,22 +685,47 @@ export default function StrategyDetailPage() {
                     </div>
                   )}
 
-                  <button
-                    onClick={handleApply}
-                    disabled={applying || !portfolioId}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      background: applying ? 'var(--border)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: applying || !portfolioId ? 'not-allowed' : 'pointer',
-                      fontSize: '0.9375rem',
-                      fontWeight: '500',
-                    }}
-                  >
-                    {applying ? 'Aplicando...' : 'Aplicar a mi portfolio'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={handleNewBacktest}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '0.9375rem',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.6 2.6" />
+                        <path d="M21 3v6h-6" />
+                      </svg>
+                      Nuevo backtest
+                    </button>
+
+                    <button
+                      onClick={handleApply}
+                      disabled={applying || !portfolioId}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: applying ? 'var(--border)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: applying || !portfolioId ? 'not-allowed' : 'pointer',
+                        fontSize: '0.9375rem',
+                        fontWeight: '500',
+                      }}
+                    >
+                      {applying ? 'Aplicando...' : 'Aplicar a mi portfolio'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Delete */}

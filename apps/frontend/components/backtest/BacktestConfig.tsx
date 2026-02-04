@@ -7,11 +7,17 @@ import type { BacktestConfig as BacktestConfigType } from '../../lib/backtest/ty
 
 interface UserDefaults {
   symbols?: string[];
+  weights?: Record<string, number>;
   initialCapital?: number;
   monthlyContribution?: number;
   leverageMin?: number;
   leverageMax?: number;
   leverageTarget?: number;
+  windowMonths?: number;
+  weightMode?: 'sharpe' | 'manual' | 'equal';
+  dynamicWeights?: boolean;
+  // Source indicator - if from strategy, show a notice
+  fromStrategy?: string;
 }
 
 interface Props {
@@ -129,7 +135,16 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
         leverageMin: userDefaults.leverageMin ?? prev.leverageMin,
         leverageMax: userDefaults.leverageMax ?? prev.leverageMax,
         leverageTarget: userDefaults.leverageTarget ?? prev.leverageTarget,
+        windowMonths: userDefaults.windowMonths ?? prev.windowMonths,
+        weightMode: userDefaults.weightMode ?? prev.weightMode,
+        dynamicWeights: userDefaults.dynamicWeights ?? prev.dynamicWeights,
+        // If manual weights provided, use manual mode
+        manualWeights: userDefaults.weights,
       }));
+      // If weights provided, set them in manualWeights state
+      if (userDefaults.weights) {
+        setManualWeights(userDefaults.weights);
+      }
       setHasAppliedDefaults(true);
     }
   }, [userDefaults, hasAppliedDefaults]);
@@ -266,6 +281,25 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
 
   return (
     <form onSubmit={handleSubmit}>
+
+      {/* ── Notice when loaded from strategy ─────────────────────── */}
+      {userDefaults?.fromStrategy && (
+        <div style={{
+          padding: '1rem',
+          marginBottom: '1.5rem',
+          background: 'rgba(139, 92, 246, 0.1)',
+          border: '1px solid rgba(139, 92, 246, 0.3)',
+          borderRadius: '8px',
+          color: 'var(--text-secondary)',
+          fontSize: '0.875rem',
+        }}>
+          <strong style={{ color: '#8b5cf6' }}>Configuración cargada de estrategia:</strong>{' '}
+          {userDefaults.fromStrategy}
+          <p style={{ margin: '0.5rem 0 0', color: 'var(--text-muted)' }}>
+            Puedes modificar los parámetros antes de ejecutar el backtest.
+          </p>
+        </div>
+      )}
 
       {/* ── Activos ──────────────────────────────────────────────── */}
       <div style={sectionStyle}>
