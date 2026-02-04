@@ -270,11 +270,10 @@ export default function Help() {
                     Importante
                   </p>
                   <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
-                    Las contribuciones se registran pero{" "}
-                    <strong>no se despliegan automáticamente</strong>. El
-                    sistema evalúa señales de mercado (drawdown, desviación de
-                    pesos, volatilidad) para decidir cuándo desplegar el capital.
-                    Esto reduce el riesgo de liquidación.
+                    Las contribuciones se añaden directamente al equity. El
+                    sistema evalúa el <strong>leverage actual</strong> para decidir
+                    si aumentar exposición (si leverage {"<"} mínimo) o mantenerla
+                    constante (si está en rango o por encima).
                   </p>
                 </div>
               </div>
@@ -328,11 +327,10 @@ export default function Help() {
                 marginBottom: "0.75rem",
               }}
             >
-              ¿Cuándo se despliegan las contribuciones?
+              ¿Cómo se gestionan las contribuciones?
             </h3>
             <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
-              Las contribuciones se despliegan cuando se activa una de estas
-              señales:
+              La gestión de contribuciones se basa en el leverage actual:
             </p>
             <div
               style={{
@@ -343,22 +341,22 @@ export default function Help() {
             >
               {[
                 {
-                  title: "Drawdown > 12%",
+                  title: "Leverage < Mínimo",
                   description:
-                    "El equity ha caído más del 12% desde su pico. Esto indica una oportunidad de compra.",
-                  color: "#f59e0b",
+                    "El leverage está por debajo del mínimo configurado. Se aumenta la exposición (reborrow) hasta alcanzar el leverage objetivo.",
+                  color: "#eab308",
                 },
                 {
-                  title: "Desviación de pesos > 5%",
+                  title: "Leverage en Rango",
                   description:
-                    "Los pesos actuales se desvían más del 5% de los pesos objetivo. Necesita rebalanceo.",
-                  color: "#3b82f6",
-                },
-                {
-                  title: "Volatilidad < 18%",
-                  description:
-                    "La volatilidad de 63 días es menor al 18%. Mercado estable, buen momento para entrar.",
+                    "El leverage está entre el mínimo y máximo. La exposición se mantiene constante, el equity aumenta con la contribución.",
                   color: "#22c55e",
+                },
+                {
+                  title: "Leverage > Máximo",
+                  description:
+                    "El leverage está por encima del máximo. La contribución se usa como colateral adicional sin aumentar exposición, reduciendo el leverage.",
+                  color: "#ef4444",
                 },
               ].map((signal, idx) => (
                 <div
@@ -589,9 +587,9 @@ export default function Help() {
                 El sistema calcula automáticamente:
                 <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
                   <li>Estado actual vs. estado objetivo</li>
-                  <li>Señales de despliegue (drawdown, desviación, volatilidad)</li>
-                  <li>Fracción de despliegue (puede ser parcial con factor 0.5)</li>
-                  <li>Optimización de pesos (Sharpe Ratio después de 3 meses)</li>
+                  <li>Leverage actual y si está fuera del rango configurado</li>
+                  <li>Exposición objetivo según el leverage</li>
+                  <li>Optimización de pesos (Sharpe Ratio si está habilitado)</li>
                 </ul>
               </Step>
               <Step number={3}>
@@ -835,50 +833,34 @@ export default function Help() {
               {[
                 {
                   type: "Leverage Bajo",
-                  priority: "urgente",
+                  priority: "alta",
                   description:
-                    "El leverage está por debajo del mínimo (2.5x). Necesitas reborrow y comprar más activos.",
+                    "El leverage está por debajo del mínimo configurado. Necesitas reborrow y comprar más activos para aumentar la exposición.",
                   action: "Ir a Rebalancear",
-                  color: "#ef4444",
+                  color: "#eab308",
                 },
                 {
                   type: "Leverage Alto",
-                  priority: "alta",
+                  priority: "urgente",
                   description:
-                    "El leverage está por encima del máximo (4.0x). Necesitas una aportación extra como colateral.",
+                    "El leverage está por encima del máximo configurado. Necesitas una aportación extra como colateral para reducir el leverage.",
                   action: "Ir a Añadir Aportación (extra)",
-                  color: "#f59e0b",
-                },
-                {
-                  type: "Señal de Despliegue",
-                  priority: "media",
-                  description:
-                    "Se ha activado una señal (drawdown, desviación, volatilidad). Es momento de desplegar capital.",
-                  action: "Ir a Rebalancear",
-                  color: "#3b82f6",
+                  color: "#ef4444",
                 },
                 {
                   type: "Rebalanceo Necesario",
                   priority: "media",
                   description:
-                    "Los pesos actuales se desvían significativamente de los objetivos.",
+                    "Los pesos actuales se desvían significativamente de los objetivos. Considera rebalancear.",
                   action: "Ir a Rebalancear",
                   color: "#3b82f6",
                 },
                 {
                   type: "Aportación Debida",
-                  priority: "baja",
+                  priority: "media",
                   description:
                     "Es el día programado para tu aportación mensual.",
                   action: "Ir a Añadir Aportación",
-                  color: "#22c55e",
-                },
-                {
-                  type: "En Rango",
-                  priority: "baja",
-                  description:
-                    "Todo está bien. El portfolio está dentro de los parámetros configurados.",
-                  action: null,
                   color: "#22c55e",
                 },
               ].map((rec, idx) => (
@@ -1175,21 +1157,21 @@ function WorkflowDiagram() {
       id: "check-signals",
       x: width / 2,
       y: 320,
-      label: "Evaluar\nSeñales",
+      label: "¿Leverage\n< Mínimo?",
       type: "decision",
     },
     {
       id: "signal-yes",
       x: width / 2 - spacingX,
       y: 480,
-      label: "Señal\nActivada",
+      label: "Aumentar\nExposición",
       type: "signal",
     },
     {
       id: "signal-no",
       x: width / 2 + spacingX,
       y: 480,
-      label: "Sin Señal\nEsperar",
+      label: "Mantener\nExposición",
       type: "wait",
     },
     {
@@ -1394,7 +1376,7 @@ function WorkflowDiagram() {
           x="0"
           y="0"
           width="280"
-          height="160"
+          height="120"
           rx="8"
           fill="rgba(15, 23, 42, 0.8)"
           stroke="#1e293b"
@@ -1408,12 +1390,12 @@ function WorkflowDiagram() {
           fontWeight="700"
           textAnchor="middle"
         >
-          Señales de Despliegue:
+          Lógica de Rebalanceo:
         </text>
         {[
-          "• Drawdown > 12%",
-          "• Desviación pesos > 5%",
-          "• Volatilidad < 18%",
+          "• Leverage < Min → Aumentar exposición",
+          "• Leverage en rango → Mantener",
+          "• Leverage > Max → Solo colateral",
         ].map((text, idx) => (
           <text
             key={idx}
