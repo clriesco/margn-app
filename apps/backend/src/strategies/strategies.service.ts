@@ -36,7 +36,7 @@ export class StrategiesService {
   async findAllByUser(userId: string) {
     const strategies = await this.prisma.savedStrategy.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { name: 'asc' },
     });
 
     return strategies.map((s) => {
@@ -101,6 +101,27 @@ export class StrategiesService {
       metrics: JSON.parse(strategy.metricsJson),
       trajectories: JSON.parse(strategy.trajectoriesJson),
     };
+  }
+
+  async updateName(userId: string, strategyId: string, name: string) {
+    const strategy = await this.prisma.savedStrategy.findUnique({
+      where: { id: strategyId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Strategy not found');
+    }
+
+    if (strategy.userId !== userId) {
+      throw new ForbiddenException('You do not own this strategy');
+    }
+
+    const updated = await this.prisma.savedStrategy.update({
+      where: { id: strategyId },
+      data: { name },
+    });
+
+    return { id: updated.id, name: updated.name };
   }
 
   async delete(userId: string, strategyId: string) {

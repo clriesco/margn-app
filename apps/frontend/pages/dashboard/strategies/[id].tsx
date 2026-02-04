@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
+import { Pencil } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import DashboardSidebar from '../../../components/DashboardSidebar';
 import { formatNumberES } from '../../../lib/number-format';
@@ -316,6 +317,10 @@ export default function StrategyDetailPage() {
   const [applyResult, setApplyResult] = useState<{ success: boolean; message: string } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -422,6 +427,55 @@ export default function StrategyDetailPage() {
     }
   }, [strategy, router]);
 
+  const startEditingName = useCallback(() => {
+    if (!strategy) return;
+    setEditedName(strategy.name);
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  }, [strategy]);
+
+  const cancelEditingName = useCallback(() => {
+    setEditingName(false);
+    setEditedName('');
+  }, []);
+
+  const saveEditedName = useCallback(async () => {
+    if (!strategy || !editedName.trim()) return;
+
+    const token = localStorage.getItem('supabase_token');
+    if (!token) return;
+
+    setSavingName(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/strategies/${strategy.id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: editedName.trim() }),
+      });
+
+      if (!response.ok) throw new Error('Error saving name');
+
+      setStrategy((prev) => prev ? { ...prev, name: editedName.trim() } : null);
+      setEditingName(false);
+    } catch {
+      // Keep editing mode open on error
+    } finally {
+      setSavingName(false);
+    }
+  }, [strategy, editedName]);
+
+  const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEditedName();
+    } else if (e.key === 'Escape') {
+      cancelEditingName();
+    }
+  }, [saveEditedName, cancelEditingName]);
+
   const handleNewBacktest = useCallback(() => {
     if (!strategy) return;
 
@@ -516,9 +570,52 @@ export default function StrategyDetailPage() {
                 </div>
 
                 <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-                  <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-                    {strategy.name}
-                  </h1>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    {editingName ? (
+                      <input
+                        ref={nameInputRef}
+                        type="text"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        onKeyDown={handleNameKeyDown}
+                        onBlur={cancelEditingName}
+                        disabled={savingName}
+                        style={{
+                          fontSize: '1.875rem',
+                          fontWeight: '700',
+                          color: 'var(--text-primary)',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--accent)',
+                          borderRadius: '4px',
+                          padding: '0.125rem 0.5rem',
+                          outline: 'none',
+                          width: '100%',
+                          maxWidth: '500px',
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+                          {strategy.name}
+                        </h1>
+                        <button
+                          onClick={startEditingName}
+                          title="Editar nombre"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            color: 'var(--text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                     Creada: {formatDate(strategy.createdAt)}
                   </p>

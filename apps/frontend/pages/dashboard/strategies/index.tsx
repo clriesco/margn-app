@@ -309,6 +309,12 @@ export default function StrategiesPage() {
                             <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: strategy.metrics.p90.cagr >= 0 ? '#34d399' : '#f87171' }}>{fmtPct(strategy.metrics.p90.cagr)}</td>
                           </tr>
                           <tr>
+                            <td style={{ padding: '0.375rem 0.5rem', color: 'var(--text-muted)' }}>Sharpe</td>
+                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-primary)' }}>{strategy.metrics.p10.sharpe.toFixed(2)}</td>
+                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-primary)' }}>{strategy.metrics.p50.sharpe.toFixed(2)}</td>
+                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-primary)' }}>{strategy.metrics.p90.sharpe.toFixed(2)}</td>
+                          </tr>
+                          <tr>
                             <td style={{ padding: '0.375rem 0.5rem', color: 'var(--text-muted)' }}>Max DD</td>
                             <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: '#f87171' }}>{fmtPct(strategy.metrics.p10.maxDrawdownEquity)}</td>
                             <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: '#f87171' }}>{fmtPct(strategy.metrics.p50.maxDrawdownEquity)}</td>

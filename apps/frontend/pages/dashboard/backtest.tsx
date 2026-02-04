@@ -205,7 +205,9 @@ export default function BacktestPage() {
       };
 
       worker.onerror = (e) => {
-        setError(`Error del worker: ${e.message}`);
+        const errorMsg = e.message || e.error?.message || 'Error desconocido al cargar el worker';
+        console.error('Worker error:', e);
+        setError(`Error del worker: ${errorMsg}`);
         setStage('config');
         worker.terminate();
         workerRef.current = null;

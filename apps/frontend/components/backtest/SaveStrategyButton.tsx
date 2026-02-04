@@ -204,6 +204,14 @@ export default function SaveStrategyButton({ result }: Props) {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !saving) {
+                    e.preventDefault();
+                    handleSave();
+                  } else if (e.key === 'Escape') {
+                    setShowModal(false);
+                  }
+                }}
                 placeholder="Ej: BTC-GLD-SPY Conservador"
                 style={{
                   width: '100%',
