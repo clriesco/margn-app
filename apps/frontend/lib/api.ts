@@ -333,6 +333,7 @@ export interface PortfolioConfiguration {
   volatilityRedeployThreshold: number;
   gradualDeployFactor: number;
   useDynamicSharpeRebalance: boolean;
+  sharpeWeightsLookbackMonths: number;
   meanReturnShrinkage: number;
   riskFreeRate: number;
   maxWeight: number;
@@ -360,6 +361,7 @@ export interface UpdatePortfolioConfigurationDto {
   volatilityRedeployThreshold?: number;
   gradualDeployFactor?: number;
   useDynamicSharpeRebalance?: boolean;
+  sharpeWeightsLookbackMonths?: number;
   meanReturnShrinkage?: number;
   riskFreeRate?: number;
   maxWeight?: number;
