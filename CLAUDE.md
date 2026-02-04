@@ -533,11 +533,18 @@ npm run prisma:studio    # GUI de Prisma
 
 ### Pre-push: pasar CI localmente
 
-Antes de hacer `git push`, ejecutar el lint del backend para evitar fallos en CI:
+**OBLIGATORIO** antes de hacer `git push`, ejecutar lint y build para evitar fallos en CI:
 
 ```bash
+# Backend lint
 npm --workspace apps/backend run lint
+
+# Frontend lint + build (incluye verificación de tipos)
+npm --workspace apps/frontend run lint
+npm --workspace apps/frontend run build
 ```
+
+No pushear si alguno de estos comandos falla.
 
 ### Proceso de release
 
