@@ -22,6 +22,30 @@ export function calculateWindowMetrics(
 
   const firstEquity = states[0].equity;
   const lastState = states[states.length - 1];
+
+  // Check for margin call - if so, return catastrophic metrics
+  const marginCall = states.some((s) => s.marginCall);
+
+  if (marginCall) {
+    const totalInvested = firstEquity + totalContributed;
+    return {
+      windowIndex,
+      startDate,
+      endDate,
+      finalCapital: 0,
+      totalContributed,
+      absoluteReturn: -totalInvested,
+      returnPercent: -1, // -100%
+      cagr: -1, // -100%
+      sharpe: -Infinity,
+      maxDrawdownEquity: -1, // -100%
+      recoveryDays: states.length,
+      underwaterDays: states.length,
+      marginCall: true,
+      finalLeverage: 0,
+    };
+  }
+
   const finalCapital = lastState.equity;
   const absoluteReturn = finalCapital - totalContributed - firstEquity;
   const totalInvested = firstEquity + totalContributed;
@@ -69,9 +93,6 @@ export function calculateWindowMetrics(
     }
   }
 
-  // Margin call detection
-  const marginCall = states.some((s) => s.marginCall);
-
   return {
     windowIndex,
     startDate,
@@ -85,7 +106,7 @@ export function calculateWindowMetrics(
     maxDrawdownEquity: maxDrawdown,
     recoveryDays: maxRecoveryDays,
     underwaterDays,
-    marginCall,
+    marginCall: false,
     finalLeverage: lastState.leverage,
   };
 }

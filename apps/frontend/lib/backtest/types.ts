@@ -92,6 +92,28 @@ export interface WindowMetrics {
   finalLeverage: number;
 }
 
+/** Per-symbol date range information */
+export interface SymbolDateRange {
+  symbol: string;
+  firstDate: string;
+  lastDate: string;
+  dayCount: number;
+}
+
+/** Information about data coverage and limitations */
+export interface DataCoverageInfo {
+  /** Date range info for each symbol (including excluded) */
+  symbolRanges: SymbolDateRange[];
+  /** Common date range after alignment */
+  commonFirstDate: string;
+  commonLastDate: string;
+  commonDayCount: number;
+  /** Maximum possible windows if all data was available */
+  maxPossibleWindows: number;
+  /** The symbol(s) limiting the common range */
+  limitingSymbols: string[];
+}
+
 export interface BacktestResult {
   config: BacktestConfig;
   weightsUsed: Record<string, number>;
@@ -104,6 +126,8 @@ export interface BacktestResult {
   trajectories: WindowTrajectory[];
   /** Symbols excluded from the backtest due to insufficient date coverage */
   excludedSymbols?: string[];
+  /** Data coverage information - present when there are limitations */
+  dataCoverage?: DataCoverageInfo;
 }
 
 export interface BacktestProgress {

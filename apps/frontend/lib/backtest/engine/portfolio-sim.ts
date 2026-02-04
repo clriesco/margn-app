@@ -31,6 +31,22 @@ export function simulateDay(
   const newMarginRatio = newExposure > 0 ? newEquity / newExposure : 1;
   const marginCall = newMarginRatio <= maintenanceMarginRatio;
 
+  // If margin call, portfolio is liquidated - equity goes to 0
+  if (marginCall) {
+    return {
+      day: state.day + 1,
+      date,
+      equity: 0,
+      exposure: 0,
+      leverage: 0,
+      borrowedAmount: 0,
+      positions: {},
+      peakEquity: newPeakEquity,
+      marginRatio: 0,
+      marginCall: true,
+    };
+  }
+
   return {
     day: state.day + 1,
     date,
@@ -41,7 +57,7 @@ export function simulateDay(
     positions: newPositions,
     peakEquity: newPeakEquity,
     marginRatio: newMarginRatio,
-    marginCall,
+    marginCall: false,
   };
 }
 

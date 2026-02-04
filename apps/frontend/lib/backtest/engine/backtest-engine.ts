@@ -6,6 +6,7 @@
 import type {
   BacktestConfig, PriceData, BacktestProgress,
   BacktestResult, WindowMetrics, WindowTrajectory, PortfolioState,
+  SymbolDateRange, DataCoverageInfo,
 } from '../types';
 import { calculateReturnsAndCovariance, optimizeSharpeNelderMead } from './optimizer';
 import { createInitialState, simulateDay } from './portfolio-sim';
@@ -13,18 +14,91 @@ import { rebalancePortfolio, type RebalanceParams } from './rebalancer';
 import { calculateWindowMetrics, selectPercentileWindow } from './metrics';
 
 /**
- * Generate rolling window start indices
- * Each window starts 1 month (~21 trading days) apart
+ * Add months to a date (calendar months)
+ */
+function addMonths(date: Date, months: number): Date {
+  const result = new Date(date);
+  result.setMonth(result.getMonth() + months);
+  return result;
+}
+
+/**
+ * Binary search to find first index where dates[i] >= targetDate
+ */
+function findFirstDateIndex(dates: string[], targetDate: string): number {
+  let lo = 0, hi = dates.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (dates[mid] < targetDate) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/**
+ * Binary search to find last index where dates[i] <= targetDate
+ */
+function findLastDateIndex(dates: string[], targetDate: string): number {
+  let lo = 0, hi = dates.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (dates[mid] <= targetDate) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo - 1;
+}
+
+/**
+ * Generate rolling windows based on calendar months.
+ * Each window spans `windowMonths` calendar months, stepping 1 month at a time.
+ * Returns indices into the dates array for the first trading day >= window start
+ * and last trading day <= window end.
  */
 export function generateRollingWindows(
-  totalDays: number,
-  windowDays: number,
-  stepDays: number = 21
-): { start: number; end: number }[] {
-  const windows: { start: number; end: number }[] = [];
-  for (let start = 0; start + windowDays <= totalDays; start += stepDays) {
-    windows.push({ start, end: start + windowDays - 1 });
+  dates: string[],
+  windowMonths: number
+): { start: number; end: number; startDate: string; endDate: string }[] {
+  if (dates.length === 0) return [];
+
+  const windows: { start: number; end: number; startDate: string; endDate: string }[] = [];
+
+  // Parse first and last available dates
+  const firstDate = new Date(dates[0]);
+  const lastDate = new Date(dates[dates.length - 1]);
+
+  // Start from the first day of the month of the first available date
+  let windowStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+
+  while (true) {
+    // Window end is windowMonths later, last day of that month
+    const windowEndMonth = addMonths(windowStart, windowMonths);
+    windowEndMonth.setDate(0); // Last day of previous month = last day of window
+
+    // If window end exceeds our data, stop
+    if (windowEndMonth > lastDate) break;
+
+    // Format dates for comparison (YYYY-MM-DD)
+    const startStr = windowStart.toISOString().slice(0, 10);
+    const endStr = windowEndMonth.toISOString().slice(0, 10);
+
+    // Find actual trading day indices
+    const startIdx = findFirstDateIndex(dates, startStr);
+    const endIdx = findLastDateIndex(dates, endStr);
+
+    // Only add if we have valid indices and at least some data in the window
+    if (startIdx < dates.length && endIdx >= 0 && startIdx <= endIdx) {
+      windows.push({
+        start: startIdx,
+        end: endIdx,
+        startDate: dates[startIdx],
+        endDate: dates[endIdx],
+      });
+    }
+
+    // Move to next month
+    windowStart = addMonths(windowStart, 1);
   }
+
   return windows;
 }
 
@@ -94,11 +168,21 @@ export function runBacktest(
   onProgress?: (progress: BacktestProgress) => void
 ): BacktestResult {
   let { symbols } = config;
+  const originalSymbols = [...symbols];
 
-  // 1. Filter out symbols with no price data and report per-symbol coverage
+  // 1. Collect date range info for ALL symbols (for diagnostics)
+  const symbolRanges: SymbolDateRange[] = [];
   const symbolDayCounts: Record<string, number> = {};
+
   for (const s of symbols) {
-    symbolDayCounts[s] = Object.keys(priceData[s] || {}).length;
+    const dates = Object.keys(priceData[s] || {}).sort();
+    symbolDayCounts[s] = dates.length;
+    symbolRanges.push({
+      symbol: s,
+      firstDate: dates[0] || '—',
+      lastDate: dates[dates.length - 1] || '—',
+      dayCount: dates.length,
+    });
   }
 
   const emptySymbols = symbols.filter((s) => symbolDayCounts[s] === 0);
@@ -115,8 +199,9 @@ export function runBacktest(
   }
 
   // 1b. Align prices to common dates, dropping assets with insufficient history
-  const windowDays = Math.round(config.windowMonths * 21);
-  const { prices, dates, excludedSymbols } = alignPrices(priceData, symbols, windowDays);
+  // Estimate minimum days needed: ~21 trading days per month
+  const minDaysNeeded = Math.round(config.windowMonths * 21);
+  const { prices, dates, excludedSymbols } = alignPrices(priceData, symbols, minDaysNeeded);
 
   if (excludedSymbols.length > 0) {
     // Remove excluded symbols from the working set
@@ -185,8 +270,8 @@ export function runBacktest(
     }
   }
 
-  // 3. Generate rolling windows
-  const windows = generateRollingWindows(totalDays, windowDays);
+  // 3. Generate rolling windows (calendar months)
+  const windows = generateRollingWindows(dates, config.windowMonths);
 
   if (windows.length === 0) {
     const ranges = symbols.map((s) => {
@@ -195,7 +280,7 @@ export function runBacktest(
     });
     throw new Error(
       `Datos insuficientes para ventanas de ${config.windowMonths} meses. ` +
-      `Hay ${totalDays} días comunes, se necesitan ${windowDays}.\n\n` +
+      `Rango disponible: ${dates[0]} a ${dates[dates.length - 1]}.\n\n` +
       `Datos por activo:\n${ranges.join('\n')}\n\n` +
       `Prueba con un rango de fechas más amplio o ventanas más cortas.`
     );
@@ -217,7 +302,7 @@ export function runBacktest(
   };
 
   for (let w = 0; w < windows.length; w++) {
-    const { start } = windows[w];
+    const { start, end, startDate, endDate } = windows[w];
 
     // Initial prices at window start
     const initialPrices: Record<string, number> = {};
@@ -228,7 +313,7 @@ export function runBacktest(
       config.leverageTarget,
       weightsUsed,
       initialPrices,
-      dates[start]
+      startDate
     );
 
     const states: PortfolioState[] = [state];
@@ -236,31 +321,31 @@ export function runBacktest(
     let totalContributed = 0;
     let tradingDayInMonth = 0;
 
-    // Simulate day by day
-    for (let d = 1; d < windowDays && start + d < totalDays; d++) {
+    // Simulate day by day within the window
+    for (let idx = start + 1; idx <= end; idx++) {
       // Apply daily returns
       const returns: Record<string, number> = {};
       for (const s of symbols) {
-        const prev = prices[s][start + d - 1];
-        const curr = prices[s][start + d];
+        const prev = prices[s][idx - 1];
+        const curr = prices[s][idx];
         returns[s] = prev > 0 ? curr / prev - 1 : 0;
       }
 
-      state = simulateDay(state, returns, dates[start + d], config.maintenanceMarginRatio);
+      state = simulateDay(state, returns, dates[idx], config.maintenanceMarginRatio);
       tradingDayInMonth++;
 
       // Monthly rebalance (~21 trading days)
       if (tradingDayInMonth >= 21) {
         tradingDayInMonth = 0;
         const currentPrices: Record<string, number> = {};
-        for (const s of symbols) currentPrices[s] = prices[s][start + d];
+        for (const s of symbols) currentPrices[s] = prices[s][idx];
 
         // Re-optimize weights if dynamic weights enabled
         let currentWeights = weightsUsed;
         if (config.dynamicWeights && config.weightMode === 'sharpe') {
           const lookbackDays = (config.dynamicWeightsLookback || 12) * 21;
-          const lookbackStart = Math.max(0, start + d - lookbackDays);
-          const lookbackEnd = start + d;
+          const lookbackStart = Math.max(0, idx - lookbackDays);
+          const lookbackEnd = idx;
 
           // Extract price data for the lookback window
           const lookbackPrices: Record<string, number[]> = {};
@@ -314,15 +399,15 @@ export function runBacktest(
 
     const metrics = calculateWindowMetrics(
       states, totalContributed, config.riskFreeRate,
-      w, dates[start], dates[Math.min(start + windowDays - 1, totalDays - 1)]
+      w, startDate, endDate
     );
 
     allMetrics.push(metrics);
     allTrajectories.push({
       states,
       contributions,
-      startDate: dates[start],
-      endDate: dates[Math.min(start + windowDays - 1, totalDays - 1)],
+      startDate,
+      endDate,
     });
 
     // Report progress
@@ -355,6 +440,79 @@ export function runBacktest(
   // Combine all excluded symbols (no data + insufficient dates)
   const allExcluded = [...emptySymbols, ...excludedSymbols];
 
+  // 6. Calculate data coverage info
+  // Find max possible windows based on calendar months (not trading days)
+  // Use the symbol with the widest date range
+  const validRanges = symbolRanges.filter((r) => r.firstDate !== '—' && r.lastDate !== '—');
+  let maxPossibleWindows = windows.length;
+
+  if (validRanges.length > 0) {
+    const earliestFirst = validRanges.reduce((min, r) => r.firstDate < min ? r.firstDate : min, validRanges[0].firstDate);
+    const latestLast = validRanges.reduce((max, r) => r.lastDate > max ? r.lastDate : max, validRanges[0].lastDate);
+
+    // Calculate months between earliest first and latest last
+    const startDate = new Date(earliestFirst);
+    const endDate = new Date(latestLast);
+    const totalMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+      (endDate.getMonth() - startDate.getMonth());
+
+    // Max windows = total months - window months + 1 (if positive)
+    maxPossibleWindows = Math.max(0, totalMonths - config.windowMonths + 1);
+  }
+
+  // Identify limiting symbols (those whose date range actually constrains the common range)
+  // Use a tolerance of 10 days to account for holidays/weekends (crypto trades 365, stocks don't)
+  const LIMITING_TOLERANCE_DAYS = 10;
+  const limitingSymbols: string[] = [];
+
+  if (symbols.length > 0 && dates.length > 0) {
+    const includedRanges = symbolRanges.filter((r) => !allExcluded.includes(r.symbol));
+
+    if (includedRanges.length > 1) {
+      // Find the symbol(s) with the LATEST first date (they limit the start)
+      const sortedByFirstDate = [...includedRanges].sort((a, b) => a.firstDate.localeCompare(b.firstDate));
+      const latestFirstDate = sortedByFirstDate[sortedByFirstDate.length - 1].firstDate;
+      const earliestFirstDate = sortedByFirstDate[0].firstDate;
+
+      // Find the symbol(s) with the EARLIEST last date (they limit the end)
+      const sortedByLastDate = [...includedRanges].sort((a, b) => a.lastDate.localeCompare(b.lastDate));
+      const earliestLastDate = sortedByLastDate[0].lastDate;
+      const latestLastDate = sortedByLastDate[sortedByLastDate.length - 1].lastDate;
+
+      // Helper to calculate day difference between two date strings
+      const dayDiff = (d1: string, d2: string) => {
+        const t1 = new Date(d1).getTime();
+        const t2 = new Date(d2).getTime();
+        return Math.abs(t2 - t1) / (1000 * 60 * 60 * 24);
+      };
+
+      // Mark symbols as limiting if they significantly constrain the range
+      for (const r of includedRanges) {
+        const isLimitingStart = r.firstDate === latestFirstDate &&
+          dayDiff(earliestFirstDate, latestFirstDate) > LIMITING_TOLERANCE_DAYS;
+        const isLimitingEnd = r.lastDate === earliestLastDate &&
+          dayDiff(earliestLastDate, latestLastDate) > LIMITING_TOLERANCE_DAYS;
+
+        if (isLimitingStart || isLimitingEnd) {
+          limitingSymbols.push(r.symbol);
+        }
+      }
+    }
+  }
+
+  // Build coverage info if there are limitations
+  let dataCoverage: DataCoverageInfo | undefined;
+  if (windows.length < maxPossibleWindows || allExcluded.length > 0 || limitingSymbols.length > 0) {
+    dataCoverage = {
+      symbolRanges,
+      commonFirstDate: dates[0] || '—',
+      commonLastDate: dates[dates.length - 1] || '—',
+      commonDayCount: totalDays,
+      maxPossibleWindows,
+      limitingSymbols,
+    };
+  }
+
   return {
     config,
     weightsUsed,
@@ -364,5 +522,6 @@ export function runBacktest(
     marginCallCount,
     trajectories: allTrajectories,
     excludedSymbols: allExcluded.length > 0 ? allExcluded : undefined,
+    dataCoverage,
   };
 }

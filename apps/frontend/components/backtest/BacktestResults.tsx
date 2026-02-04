@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import type { BacktestResult, WindowMetrics } from '../../lib/backtest/types';
+import React, { useState } from 'react';
+import type { BacktestResult, DataCoverageInfo } from '../../lib/backtest/types';
 import { formatNumberES } from '../../lib/number-format';
 import EquityBreakdownChart from './EquityBreakdownChart';
 
@@ -87,6 +87,114 @@ function EquityPieChart({ label, initialCapital, totalContributed, finalCapital 
   );
 }
 
+// ---------------------------------------------------------------------------
+// Data Coverage Panel - shows when rolling windows are limited
+// ---------------------------------------------------------------------------
+function DataCoveragePanel({ coverage, actualWindows, excludedSymbols }: {
+  coverage: DataCoverageInfo;
+  actualWindows: number;
+  excludedSymbols?: string[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const excluded = new Set(excludedSymbols || []);
+
+  // Sort: limiting symbols first, then by day count ascending
+  const sortedRanges = [...coverage.symbolRanges].sort((a, b) => {
+    const aLimiting = coverage.limitingSymbols.includes(a.symbol) ? 0 : 1;
+    const bLimiting = coverage.limitingSymbols.includes(b.symbol) ? 0 : 1;
+    if (aLimiting !== bLimiting) return aLimiting - bLimiting;
+    return a.dayCount - b.dayCount;
+  });
+
+  const windowDiff = coverage.maxPossibleWindows - actualWindows;
+  const pctReduction = coverage.maxPossibleWindows > 0
+    ? Math.round((windowDiff / coverage.maxPossibleWindows) * 100)
+    : 0;
+
+  return (
+    <div style={{
+      background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.4)', borderRadius: '6px',
+      padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.875rem',
+    }}>
+      <div
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div style={{ color: '#2563eb' }}>
+          <strong>Cobertura de datos limitada:</strong> {actualWindows} de {coverage.maxPossibleWindows} ventanas posibles ({pctReduction}% menos)
+        </div>
+        <span style={{ color: '#2563eb', fontSize: '0.75rem' }}>{expanded ? '▲ Ocultar' : '▼ Ver detalle'}</span>
+      </div>
+
+      {expanded && (
+        <div style={{ marginTop: '0.75rem' }}>
+          {/* Common range */}
+          <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+            Rango común: <strong style={{ color: 'var(--text-secondary)' }}>{coverage.commonFirstDate}</strong> a <strong style={{ color: 'var(--text-secondary)' }}>{coverage.commonLastDate}</strong> ({coverage.commonDayCount} días)
+          </div>
+
+          {/* Limiting symbols callout */}
+          {coverage.limitingSymbols.length > 0 && (
+            <div style={{ color: '#b45309', marginBottom: '0.75rem' }}>
+              Activos que limitan el rango: <strong>{coverage.limitingSymbols.join(', ')}</strong>
+            </div>
+          )}
+
+          {/* Per-symbol table */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+            <thead>
+              <tr>
+                <th style={{ padding: '0.375rem 0.5rem', textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-light)' }}>Activo</th>
+                <th style={{ padding: '0.375rem 0.5rem', textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-light)' }}>Primera fecha</th>
+                <th style={{ padding: '0.375rem 0.5rem', textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-light)' }}>Última fecha</th>
+                <th style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-light)' }}>Días</th>
+                <th style={{ padding: '0.375rem 0.5rem', textAlign: 'center', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-light)' }}>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedRanges.map((r) => {
+                const isExcluded = excluded.has(r.symbol);
+                const isLimiting = coverage.limitingSymbols.includes(r.symbol);
+                const rowColor = isExcluded ? '#dc2626' : isLimiting ? '#b45309' : 'var(--text-secondary)';
+
+                return (
+                  <tr key={r.symbol} style={{ opacity: isExcluded ? 0.6 : 1 }}>
+                    <td style={{ padding: '0.375rem 0.5rem', color: rowColor, fontWeight: isLimiting ? '600' : '400', borderBottom: '1px solid var(--border)' }}>
+                      {r.symbol}
+                    </td>
+                    <td style={{ padding: '0.375rem 0.5rem', color: rowColor, borderBottom: '1px solid var(--border)' }}>
+                      {r.firstDate}
+                    </td>
+                    <td style={{ padding: '0.375rem 0.5rem', color: rowColor, borderBottom: '1px solid var(--border)' }}>
+                      {r.lastDate}
+                    </td>
+                    <td style={{ padding: '0.375rem 0.5rem', color: rowColor, textAlign: 'right', borderBottom: '1px solid var(--border)' }}>
+                      {r.dayCount}
+                    </td>
+                    <td style={{ padding: '0.375rem 0.5rem', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>
+                      {isExcluded ? (
+                        <span style={{ color: '#dc2626', fontSize: '0.75rem' }}>Excluido</span>
+                      ) : isLimiting ? (
+                        <span style={{ color: '#b45309', fontSize: '0.75rem' }}>Limitante</span>
+                      ) : (
+                        <span style={{ color: '#059669', fontSize: '0.75rem' }}>OK</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginTop: '0.5rem', marginBottom: 0 }}>
+            El backtest usa solo fechas donde todos los activos tienen datos. Activos con menos historial reducen el número de ventanas disponibles.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MetricRow({ label, p10, p50, p90, format, coloring, idx }: {
   label: string;
   p10: number; p50: number; p90: number;
@@ -119,9 +227,9 @@ export default function BacktestResults({ result }: Props) {
   const [showDetail, setShowDetail] = useState(false);
   const { p10, p50, p90 } = result;
 
-  const fmtUsd = (v: number) => '$' + formatNumberES(v, { maximumFractionDigits: 0 });
-  const fmtPct = (v: number) => (v * 100).toFixed(1) + '%';
-  const fmtNum = (v: number) => v.toFixed(2);
+  const fmtUsd = (v: number) => v === 0 ? '$0' : '$' + formatNumberES(v, { maximumFractionDigits: 0 });
+  const fmtPct = (v: number) => v <= -1 ? '-100%' : (v * 100).toFixed(1) + '%';
+  const fmtNum = (v: number) => !isFinite(v) ? (v < 0 ? 'MARGIN CALL' : '—') : v.toFixed(2);
   const fmtDays = (v: number) => String(Math.round(v));
 
   const sortedWindows = [...result.windows].sort((a, b) => b.sharpe - a.sharpe);
@@ -157,6 +265,11 @@ export default function BacktestResults({ result }: Props) {
             Activos excluidos (sin datos o fechas insuficientes): <strong>{result.excludedSymbols.join(', ')}</strong>.
             Los pesos se renormalizaron entre los activos restantes.
           </div>
+        )}
+
+        {/* Data coverage info - show when there are limitations */}
+        {result.dataCoverage && result.totalWindows < result.dataCoverage.maxPossibleWindows && (
+          <DataCoveragePanel coverage={result.dataCoverage} actualWindows={result.totalWindows} excludedSymbols={result.excludedSymbols} />
         )}
 
         {/* Weights used */}
