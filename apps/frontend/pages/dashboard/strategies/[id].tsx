@@ -739,6 +739,24 @@ export default function StrategyDetailPage() {
                           <td style={{ padding: '0.75rem', textAlign: 'right', color: '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p50.maxDrawdownEquity)}</td>
                           <td style={{ padding: '0.75rem', textAlign: 'right', color: '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p90.maxDrawdownEquity)}</td>
                         </tr>
+                        <tr>
+                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Retorno</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p10.returnPercent >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p10.returnPercent)}</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p50.returnPercent >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p50.returnPercent)}</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p90.returnPercent >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p90.returnPercent)}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Recovery</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p10.recoveryDays} días</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p50.recoveryDays} días</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p90.recoveryDays} días</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Bajo el agua</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p10.underwaterDays} días</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p50.underwaterDays} días</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p90.underwaterDays} días</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
