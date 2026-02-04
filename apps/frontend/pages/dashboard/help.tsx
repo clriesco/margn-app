@@ -16,6 +16,8 @@ import {
   CheckCircle,
   ArrowRight,
   Info,
+  BarChart3,
+  Bookmark,
 } from "lucide-react";
 
 /**
@@ -133,6 +135,8 @@ export default function Help() {
                 { id: "rebalancing", label: "5. Rebalanceo" },
                 { id: "new-assets", label: "6. Añadir Activos" },
                 { id: "recommendations", label: "7. Recomendaciones" },
+                { id: "backtest", label: "8. Backtest" },
+                { id: "strategies", label: "9. Estrategias" },
               ].map((item) => (
                 <a
                   key={item.id}
@@ -937,6 +941,375 @@ export default function Help() {
             </div>
           </Section>
 
+          {/* Section 8: Backtest */}
+          <Section id="backtest" title="8. Simulador de Backtest" icon={BarChart3}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
+              El backtest permite simular cómo habría funcionado tu estrategia de
+              inversión con datos históricos reales. Esto te ayuda a evaluar
+              diferentes configuraciones antes de aplicarlas a tu portfolio real.
+            </p>
+
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: "600",
+                color: "var(--text-primary)",
+                marginTop: "1.5rem",
+                marginBottom: "0.75rem",
+              }}
+            >
+              Cómo usar el backtest
+            </h3>
+            <StepList>
+              <Step number={1}>
+                Ve a <strong>Backtest</strong> en el menú lateral
+              </Step>
+              <Step number={2}>
+                <strong>Configura los parámetros:</strong>
+                <ul style={{ marginTop: "0.75rem", paddingLeft: "1.5rem" }}>
+                  <li>
+                    <strong>Activos:</strong> Selecciona los símbolos a incluir
+                    (ej: SPY, GLD, BTC-USD)
+                  </li>
+                  <li>
+                    <strong>Capital inicial:</strong> Monto con el que empezarías
+                  </li>
+                  <li>
+                    <strong>Aportación mensual:</strong> Contribución periódica
+                  </li>
+                  <li>
+                    <strong>Leverage:</strong> Rango mínimo, máximo y objetivo
+                  </li>
+                  <li>
+                    <strong>Período:</strong> Fecha de inicio y fin de la simulación
+                  </li>
+                  <li>
+                    <strong>Ventana:</strong> Duración de cada simulación (36-84 meses)
+                  </li>
+                </ul>
+              </Step>
+              <Step number={3}>
+                <strong>Selecciona el modo de pesos:</strong>
+                <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
+                  <li>
+                    <strong>Sharpe:</strong> Optimización automática basada en
+                    Sharpe Ratio
+                  </li>
+                  <li>
+                    <strong>Equal:</strong> Pesos iguales para todos los activos
+                  </li>
+                  <li>
+                    <strong>Manual:</strong> Pesos personalizados que tú defines
+                  </li>
+                </ul>
+              </Step>
+              <Step number={4}>
+                Haz clic en <strong>Ejecutar Backtest</strong> y espera a que
+                se complete la simulación
+              </Step>
+            </StepList>
+
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: "600",
+                color: "var(--text-primary)",
+                marginTop: "1.5rem",
+                marginBottom: "0.75rem",
+              }}
+            >
+              Interpretando los resultados
+            </h3>
+            <div
+              style={{
+                display: "grid",
+                gap: "0.75rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              {[
+                {
+                  title: "Percentiles P10, P50, P90",
+                  description:
+                    "El backtest ejecuta múltiples ventanas temporales. P10 es el peor 10%, P50 es la mediana, y P90 es el mejor 10%. Esto te da una visión realista del rango de resultados posibles.",
+                  color: "#3b82f6",
+                },
+                {
+                  title: "CAGR (Retorno Anualizado)",
+                  description:
+                    "Tasa de crecimiento anual compuesto. Un CAGR del 15% significa que tu inversión creció en promedio un 15% cada año.",
+                  color: "#22c55e",
+                },
+                {
+                  title: "Sharpe Ratio",
+                  description:
+                    "Mide el retorno ajustado por riesgo. Un Sharpe > 1 es bueno, > 2 es excelente. Compara cuánto rendimiento obtienes por cada unidad de riesgo.",
+                  color: "#8b5cf6",
+                },
+                {
+                  title: "Max Drawdown",
+                  description:
+                    "La máxima caída desde un pico hasta un valle. Un drawdown del -30% significa que en el peor momento perdiste 30% desde tu máximo.",
+                  color: "#ef4444",
+                },
+                {
+                  title: "Días Bajo el Agua",
+                  description:
+                    "Número de días en que tu equity estuvo por debajo de lo que habías invertido. Menos días = recuperación más rápida.",
+                  color: "#f59e0b",
+                },
+              ].map((metric, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: "var(--hover-bg)",
+                    border: "1px solid rgba(148, 163, 184, 0.2)",
+                    borderRadius: "8px",
+                    padding: "1rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        background: metric.color,
+                      }}
+                    />
+                    <strong style={{ color: "var(--text-primary)" }}>
+                      {metric.title}
+                    </strong>
+                  </div>
+                  <p
+                    style={{
+                      color: "var(--text-secondary)",
+                      fontSize: "0.875rem",
+                      margin: 0,
+                    }}
+                  >
+                    {metric.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                background: "rgba(59, 130, 246, 0.1)",
+                border: "1px solid rgba(59, 130, 246, 0.3)",
+                borderRadius: "8px",
+                padding: "1rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.75rem",
+                }}
+              >
+                <Info size={20} color="#60a5fa" style={{ flexShrink: 0 }} />
+                <div>
+                  <p
+                    style={{
+                      color: "#60a5fa",
+                      fontWeight: "600",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Pesos Dinámicos
+                  </p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
+                    Activa la opción <strong>Pesos dinámicos</strong> para que el
+                    optimizador recalcule los pesos mensualmente usando una ventana
+                    histórica móvil. Esto adapta la estrategia a las condiciones
+                    cambiantes del mercado.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          {/* Section 9: Strategies */}
+          <Section id="strategies" title="9. Gestión de Estrategias" icon={Bookmark}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
+              Las estrategias te permiten guardar configuraciones de backtest para
+              reutilizarlas, compararlas y refinarlas con el tiempo.
+            </p>
+
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: "600",
+                color: "var(--text-primary)",
+                marginTop: "1.5rem",
+                marginBottom: "0.75rem",
+              }}
+            >
+              Guardar una estrategia
+            </h3>
+            <StepList>
+              <Step number={1}>
+                Ejecuta un backtest con la configuración que quieras guardar
+              </Step>
+              <Step number={2}>
+                Una vez completado, haz clic en <strong>Guardar Estrategia</strong>
+              </Step>
+              <Step number={3}>
+                Asigna un <strong>nombre descriptivo</strong> (ej: "SPY+GLD
+                Conservador 3x")
+              </Step>
+              <Step number={4}>
+                Opcionalmente añade una <strong>descripción</strong> explicando
+                la lógica de la estrategia
+              </Step>
+              <Step number={5}>
+                Confirma para guardar. La estrategia aparecerá en tu lista.
+              </Step>
+            </StepList>
+
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: "600",
+                color: "var(--text-primary)",
+                marginTop: "1.5rem",
+                marginBottom: "0.75rem",
+              }}
+            >
+              Gestionar estrategias
+            </h3>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
+              Desde la página de <strong>Estrategias</strong> puedes:
+            </p>
+            <ul
+              style={{
+                color: "var(--text-secondary)",
+                paddingLeft: "1.5rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <li>
+                <strong>Ver todas tus estrategias:</strong> Lista con nombre,
+                activos, período y métricas principales
+              </li>
+              <li>
+                <strong>Ver detalles:</strong> Haz clic en una estrategia para
+                ver la configuración completa y los resultados del backtest
+              </li>
+              <li>
+                <strong>Repetir backtest:</strong> Ejecuta de nuevo el backtest
+                con la misma configuración (útil si hay datos nuevos)
+              </li>
+              <li>
+                <strong>Usar como base:</strong> Crea una nueva estrategia
+                partiendo de una existente y modifica los parámetros
+              </li>
+              <li>
+                <strong>Eliminar:</strong> Borra estrategias que ya no necesites
+              </li>
+            </ul>
+
+            <div
+              style={{
+                background: "rgba(34, 197, 94, 0.1)",
+                border: "1px solid rgba(34, 197, 94, 0.3)",
+                borderRadius: "8px",
+                padding: "1rem",
+                marginTop: "1rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.75rem",
+                }}
+              >
+                <CheckCircle size={20} color="#22c55e" style={{ flexShrink: 0 }} />
+                <div>
+                  <p
+                    style={{
+                      color: "#22c55e",
+                      fontWeight: "600",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Buenas prácticas
+                  </p>
+                  <ul
+                    style={{
+                      color: "var(--text-secondary)",
+                      fontSize: "0.9375rem",
+                      paddingLeft: "1.25rem",
+                      margin: 0,
+                    }}
+                  >
+                    <li>
+                      Nombra las estrategias de forma descriptiva (activos +
+                      característica principal)
+                    </li>
+                    <li>
+                      Prueba múltiples combinaciones de activos y leverage
+                    </li>
+                    <li>
+                      Compara el Sharpe ratio entre estrategias, no solo el
+                      retorno
+                    </li>
+                    <li>
+                      Presta atención al max drawdown para evaluar el riesgo real
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: "rgba(139, 92, 246, 0.1)",
+                border: "1px solid rgba(139, 92, 246, 0.3)",
+                borderRadius: "8px",
+                padding: "1rem",
+                marginTop: "1rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.75rem",
+                }}
+              >
+                <AlertCircle size={20} color="#a78bfa" style={{ flexShrink: 0 }} />
+                <div>
+                  <p
+                    style={{
+                      color: "#a78bfa",
+                      fontWeight: "600",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Limitaciones del backtest
+                  </p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
+                    Los resultados pasados no garantizan resultados futuros. El
+                    backtest no incluye costes de financiación del margen ni
+                    comisiones de broker. Úsalo como herramienta de evaluación,
+                    no como predicción.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Section>
+
           {/* Quick Actions */}
           <div
             style={{
@@ -979,6 +1352,16 @@ export default function Help() {
                   label: "Rebalancear",
                   path: `/dashboard/rebalance?portfolioId=${portfolioId}`,
                   icon: Scale,
+                },
+                {
+                  label: "Backtest",
+                  path: `/dashboard/backtest?portfolioId=${portfolioId}`,
+                  icon: BarChart3,
+                },
+                {
+                  label: "Estrategias",
+                  path: `/dashboard/strategies?portfolioId=${portfolioId}`,
+                  icon: Bookmark,
                 },
                 {
                   label: "Configuración",
