@@ -18,6 +18,31 @@ import {
 } from "../../lib/number-format";
 
 /**
+ * Determine if an asset supports fractional shares (for display purposes)
+ */
+function isFractionalAsset(symbol: string, assetType?: string): boolean {
+  if (symbol.endsWith('=X')) return true;  // Forex
+  if (symbol.includes('-USD')) {
+    const base = symbol.split('-')[0];
+    if (base.length <= 5) return true;  // Crypto
+  }
+  if (assetType === 'crypto' || assetType === 'forex') return true;
+  return false;
+}
+
+/**
+ * Format quantity based on asset type
+ * Fractional assets: up to 6 decimals, whole share assets: 0 decimals
+ */
+function formatQuantity(quantity: number, symbol: string, assetType?: string): string {
+  const fractional = isFractionalAsset(symbol, assetType);
+  return formatNumberES(quantity, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: fractional ? 6 : 0,
+  });
+}
+
+/**
  * Rebalance page - Shows algorithm-calculated optimal allocation
  * Implements the full rebalancing logic from BacktestHistorical.ipynb
  */
@@ -527,16 +552,14 @@ export default function Rebalance() {
                                     color: "var(--text-primary)",
                                   }}
                                 >
-                                  {formatNumberES(Math.abs(pos.deltaQuantity), {
-                                    maximumFractionDigits: 6,
-                                  })}{" "}
+                                  {formatQuantity(Math.abs(pos.deltaQuantity), pos.assetSymbol, pos.assetType)}{" "}
                                   <span
                                     style={{
                                       color: "var(--text-on-glass-muted)",
                                       fontSize: "0.9rem",
                                     }}
                                   >
-                                    unidades
+                                    {isFractionalAsset(pos.assetSymbol, pos.assetType) ? "unidades" : "acciones"}
                                   </span>
                                 </div>
                                 <div
@@ -569,17 +592,13 @@ export default function Rebalance() {
                         >
                           <span>
                             Actual:{" "}
-                            {formatNumberES(pos.currentQuantity, {
-                              maximumFractionDigits: 6,
-                            })}{" "}
+                            {formatQuantity(pos.currentQuantity, pos.assetSymbol, pos.assetType)}{" "}
                             ({formatCurrencyES(pos.currentValue)})
                           </span>
                           <span>→</span>
                           <span>
                             Objetivo:{" "}
-                            {formatNumberES(pos.targetQuantity, {
-                              maximumFractionDigits: 6,
-                            })}{" "}
+                            {formatQuantity(pos.targetQuantity, pos.assetSymbol, pos.assetType)}{" "}
                             ({formatCurrencyES(pos.targetValue)})
                           </span>
                         </div>

@@ -209,6 +209,7 @@ export interface ProposalPosition {
   assetId: string;
   assetSymbol: string;
   assetName: string;
+  assetType: string;
   currentQuantity: number;
   currentValue: number;
   targetQuantity: number;

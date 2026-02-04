@@ -65,6 +65,7 @@ export interface ProposalPosition {
   assetId: string;
   assetSymbol: string;
   assetName: string;
+  assetType: string;
   currentQuantity: number;
   currentValue: number;
   targetQuantity: number;
@@ -75,6 +76,27 @@ export interface ProposalPosition {
   currentWeight: number;
   currentPrice: number;
   action: "BUY" | "SELL" | "HOLD";
+}
+
+/**
+ * Determine if an asset supports fractional shares
+ * Crypto and forex support fractions, stocks/ETFs/commodities require whole shares
+ */
+function isFractionalAsset(symbol: string, assetType?: string): boolean {
+  // 1. Forex: suffix =X (Yahoo Finance convention)
+  if (symbol.endsWith('=X')) return true;  // EURUSD=X, GBPUSD=X
+
+  // 2. Crypto: pattern XXX-USD with short base symbol (≤5 chars)
+  if (symbol.includes('-USD')) {
+    const base = symbol.split('-')[0];
+    if (base.length <= 5) return true;  // BTC-USD, ETH-USD, SOL-USD
+  }
+
+  // 3. Use assetType from database if available
+  if (assetType === 'crypto' || assetType === 'forex') return true;
+
+  // 4. Everything else: whole shares (stocks, ETFs, commodities, bonds)
+  return false;
 }
 
 /**
@@ -942,6 +964,7 @@ export class RebalanceService {
 
   /**
    * Calculate target positions for each asset
+   * Rounds non-fractional assets (stocks, ETFs) to whole shares
    */
   private calculateTargetPositions(
     currentState: any,
@@ -964,16 +987,27 @@ export class RebalanceService {
       const currentQuantity = positionQuantities[asset.symbol] || 0;
       const currentWeight = exposure > 0 ? currentValue / exposure : 0;
 
-      const targetValue = targetExposure * weight;
-      const targetQuantity = targetValue / price;
+      // Calculate raw target quantity
+      let targetQuantity = (targetExposure * weight) / price;
+
+      // Round to whole shares for non-fractional assets
+      const fractional = isFractionalAsset(asset.symbol, asset.assetType);
+      if (!fractional) {
+        targetQuantity = Math.round(targetQuantity);
+      }
+
+      // Recalculate target value based on (possibly rounded) quantity
+      const targetValue = targetQuantity * price;
 
       const deltaQuantity = targetQuantity - currentQuantity;
       const deltaValue = targetValue - currentValue;
 
+      // Adjust threshold for action based on asset type
+      const threshold = fractional ? 0.0001 : 0.5;
       let action: "BUY" | "SELL" | "HOLD" = "HOLD";
-      if (deltaQuantity > 0.0001) {
+      if (deltaQuantity > threshold) {
         action = "BUY";
-      } else if (deltaQuantity < -0.0001) {
+      } else if (deltaQuantity < -threshold) {
         action = "SELL";
       }
 
@@ -981,6 +1015,7 @@ export class RebalanceService {
         assetId: asset.id,
         assetSymbol: asset.symbol,
         assetName: asset.name,
+        assetType: asset.assetType || 'unknown',
         currentQuantity,
         currentValue,
         targetQuantity,
