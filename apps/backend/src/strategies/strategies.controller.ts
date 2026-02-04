@@ -19,7 +19,7 @@ import { StrategiesService } from './strategies.service';
 class UpdateStrategyNameDto {
   @IsString()
   @MinLength(1)
-  name: string;
+  name!: string;
 }
 
 @Controller('strategies')
