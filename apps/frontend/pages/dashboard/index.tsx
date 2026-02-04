@@ -940,13 +940,10 @@ function Dashboard() {
                     value={formatCurrencyES(summary.metrics.exposure)}
                     subtitle="Total de posiciones"
                   />
-                  <MetricCard
-                    title="Leverage"
-                    value={`${formatNumberES(summary.metrics.leverage, {
-                      minimumFractionDigits: 1,
-                      maximumFractionDigits: 1,
-                    })}x`}
-                    subtitle={`Rango: ${formatNumberES(summary.portfolio.leverageMin, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}x – ${formatNumberES(summary.portfolio.leverageMax, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}x`}
+                  <LeverageCard
+                    leverage={summary.metrics.leverage}
+                    leverageMin={summary.portfolio.leverageMin}
+                    leverageMax={summary.portfolio.leverageMax}
                   />
                   <MetricCard
                     title="Retornos"
@@ -2282,6 +2279,146 @@ function MetricCard({
         {value}
       </p>
       <p style={{ color: "var(--text-dim)", fontSize: "0.75rem" }}>{subtitle}</p>
+    </div>
+  );
+}
+
+/**
+ * Leverage card with visual indicator bar
+ * Bar gradient: 20% yellow→green | 60% green | 20% green→red
+ * Marker position: left edge if < min, right edge if > max, proportional otherwise
+ */
+function LeverageCard({
+  leverage,
+  leverageMin,
+  leverageMax,
+}: {
+  leverage: number;
+  leverageMin: number;
+  leverageMax: number;
+}) {
+  // Calculate marker position (0-100%)
+  // The bar represents: [min - margin, max + margin] where margin makes the zones
+  // Zone 1 (0-20%): below min (yellow → green)
+  // Zone 2 (20-80%): in range (green)
+  // Zone 3 (80-100%): above max (green → red)
+
+  let markerPercent: number;
+  if (leverage <= leverageMin) {
+    // Below or at min: position in the first 20% (left zone)
+    // Map from 0 to leverageMin → 0% to 20%
+    const belowMinRange = leverageMin * 0.5; // How far below min we show
+    const minBound = leverageMin - belowMinRange;
+    if (leverage <= minBound) {
+      markerPercent = 0;
+    } else {
+      markerPercent = ((leverage - minBound) / (leverageMin - minBound)) * 20;
+    }
+  } else if (leverage >= leverageMax) {
+    // Above or at max: position in the last 20% (right zone)
+    // Map from leverageMax to leverageMax + margin → 80% to 100%
+    const aboveMaxRange = leverageMax * 0.25; // How far above max we show
+    const maxBound = leverageMax + aboveMaxRange;
+    if (leverage >= maxBound) {
+      markerPercent = 100;
+    } else {
+      markerPercent = 80 + ((leverage - leverageMax) / (maxBound - leverageMax)) * 20;
+    }
+  } else {
+    // In range: position in the middle 60% (20% to 80%)
+    const rangePosition = (leverage - leverageMin) / (leverageMax - leverageMin);
+    markerPercent = 20 + rangePosition * 60;
+  }
+
+  // Determine status color for the value text
+  let valueColor: string;
+  if (leverage < leverageMin) {
+    valueColor = "#eab308"; // Yellow
+  } else if (leverage > leverageMax) {
+    valueColor = "#ef4444"; // Red
+  } else {
+    valueColor = "#22c55e"; // Green
+  }
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-card)",
+        border: "1px solid var(--border)",
+        borderRadius: "8px",
+        padding: "1.25rem",
+      }}
+    >
+      <p
+        style={{
+          color: "var(--text-muted)",
+          fontSize: "0.8125rem",
+          marginBottom: "0.5rem",
+          fontWeight: "500",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+        }}
+      >
+        Leverage
+      </p>
+      <p
+        style={{
+          fontSize: "1.75rem",
+          fontWeight: "700",
+          color: valueColor,
+          marginBottom: "0.5rem",
+        }}
+      >
+        {formatNumberES(leverage, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}x
+      </p>
+
+      {/* Leverage bar */}
+      <div
+        style={{
+          position: "relative",
+          height: "8px",
+          borderRadius: "4px",
+          marginBottom: "0.5rem",
+          background: `linear-gradient(to right,
+            #eab308 0%,
+            #22c55e 20%,
+            #22c55e 80%,
+            #ef4444 100%
+          )`,
+        }}
+      >
+        {/* Marker */}
+        <div
+          style={{
+            position: "absolute",
+            top: "-3px",
+            left: `${markerPercent}%`,
+            transform: "translateX(-50%)",
+            width: "14px",
+            height: "14px",
+            borderRadius: "50%",
+            background: "white",
+            border: `3px solid ${valueColor}`,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+          }}
+        />
+      </div>
+
+      {/* Range labels */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          color: "var(--text-dim)",
+          fontSize: "0.6875rem",
+        }}
+      >
+        <span>{formatNumberES(leverageMin, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}x</span>
+        <span>{formatNumberES(leverageMax, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}x</span>
+      </div>
     </div>
   );
 }
