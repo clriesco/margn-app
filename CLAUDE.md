@@ -539,6 +539,19 @@ Antes de hacer `git push`, ejecutar el lint del backend para evitar fallos en CI
 npm --workspace apps/backend run lint
 ```
 
+### Proceso de release
+
+Al crear un release, seguir este orden estricto:
+
+1. Actualizar `version` en los 3 `package.json`:
+   - `/package.json` (raíz)
+   - `/apps/frontend/package.json`
+   - `/apps/backend/package.json`
+2. Commit con mensaje `chore: bump version to X.Y.Z`
+3. Push a main
+4. Crear tag: `git tag vX.Y.Z && git push origin vX.Y.Z`
+5. Crear release en GitHub: `gh release create vX.Y.Z --title "vX.Y.Z" --notes "..."`
+
 ---
 
 ## Convenciones
