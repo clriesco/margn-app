@@ -18,6 +18,7 @@ import {
   BarChart3,
   Sun,
   Moon,
+  Bookmark,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import TopBar from "./TopBar";
@@ -102,6 +103,12 @@ export default function DashboardSidebar({
       icon: BarChart3,
       path: "/dashboard/backtest",
       color: "#f59e0b",
+    },
+    {
+      label: "Estrategias",
+      icon: Bookmark,
+      path: "/dashboard/strategies",
+      color: "#8b5cf6",
     },
     {
       label: "Configuración",

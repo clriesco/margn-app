@@ -11,7 +11,6 @@ interface Props {
 function valueColor(v: number, positive: 'green' | 'red' | 'neutral'): string {
   if (positive === 'neutral') return 'var(--text-secondary)';
   if (positive === 'green') return v >= 0 ? '#34d399' : '#f87171';
-  // positive === 'red' means higher = worse (e.g. drawdown is already negative)
   return v <= 0 ? '#f87171' : '#34d399';
 }
 
@@ -36,10 +35,9 @@ function EquityPieChart({ label, initialCapital, totalContributed, finalCapital 
   const fmtUsd = (v: number) => '$' + formatNumberES(v, { maximumFractionDigits: 0 });
   const fmtPct = (v: number) => (v >= 0 ? '+' : '') + (v * 100 / Math.max(initialCapital + totalContributed, 1)).toFixed(0) + '%';
 
-  // SVG arc math
   const size = 140;
   const cx = size / 2, cy = size / 2, r = size / 2 - 4;
-  let cumAngle = -Math.PI / 2; // start at top
+  let cumAngle = -Math.PI / 2;
 
   const arcs = slices.map((slice) => {
     const fraction = Math.abs(slice.value) / total;
@@ -66,12 +64,10 @@ function EquityPieChart({ label, initialCapital, totalContributed, finalCapital 
           <path key={arc.name} d={arc.d} fill={arc.color} stroke="var(--bg-card)" strokeWidth="2" />
         ))}
       </svg>
-      {/* Total + return below the pie */}
       <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
         <div style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '1rem' }}>{fmtUsd(finalCapital)}</div>
         <div style={{ color: returns >= 0 ? '#34d399' : '#f87171', fontSize: '0.8125rem', fontWeight: '500' }}>{fmtPct(returns)}</div>
       </div>
-      {/* Legend */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.5rem', width: '100%' }}>
         {arcs.map((arc) => (
           <div key={arc.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem' }}>
@@ -88,7 +84,7 @@ function EquityPieChart({ label, initialCapital, totalContributed, finalCapital 
 }
 
 // ---------------------------------------------------------------------------
-// Data Coverage Panel - shows when rolling windows are limited
+// Data Coverage Panel
 // ---------------------------------------------------------------------------
 function DataCoveragePanel({ coverage, actualWindows, excludedSymbols }: {
   coverage: DataCoverageInfo;
@@ -98,7 +94,6 @@ function DataCoveragePanel({ coverage, actualWindows, excludedSymbols }: {
   const [expanded, setExpanded] = useState(false);
   const excluded = new Set(excludedSymbols || []);
 
-  // Sort: limiting symbols first, then by day count ascending
   const sortedRanges = [...coverage.symbolRanges].sort((a, b) => {
     const aLimiting = coverage.limitingSymbols.includes(a.symbol) ? 0 : 1;
     const bLimiting = coverage.limitingSymbols.includes(b.symbol) ? 0 : 1;
@@ -128,19 +123,16 @@ function DataCoveragePanel({ coverage, actualWindows, excludedSymbols }: {
 
       {expanded && (
         <div style={{ marginTop: '0.75rem' }}>
-          {/* Common range */}
           <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
             Rango común: <strong style={{ color: 'var(--text-secondary)' }}>{coverage.commonFirstDate}</strong> a <strong style={{ color: 'var(--text-secondary)' }}>{coverage.commonLastDate}</strong> ({coverage.commonDayCount} días)
           </div>
 
-          {/* Limiting symbols callout */}
           {coverage.limitingSymbols.length > 0 && (
             <div style={{ color: '#b45309', marginBottom: '0.75rem' }}>
               Activos que limitan el rango: <strong>{coverage.limitingSymbols.join(', ')}</strong>
             </div>
           )}
 
-          {/* Per-symbol table */}
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
             <thead>
               <tr>
@@ -222,9 +214,64 @@ function MetricRow({ label, p10, p50, p90, format, coloring, idx }: {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Accordion Section
+// ---------------------------------------------------------------------------
+function AccordionSection({ title, children, defaultOpen = false }: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div style={{
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
+      borderRadius: '8px',
+      overflow: 'hidden',
+    }}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          padding: '1rem 1.25rem',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.9375rem' }}>
+          {title}
+        </span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--text-muted)"
+          strokeWidth="2"
+          style={{
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease',
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div style={{ padding: '0 1.25rem 1.25rem', borderTop: '1px solid var(--border)' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BacktestResults({ result }: Props) {
-  const [showBreakdown, setShowBreakdown] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
   const { p10, p50, p90 } = result;
 
   const fmtUsd = (v: number) => v === 0 ? '$0' : '$' + formatNumberES(v, { maximumFractionDigits: 0 });
@@ -267,7 +314,7 @@ export default function BacktestResults({ result }: Props) {
           </div>
         )}
 
-        {/* Data coverage info - show when there are limitations */}
+        {/* Data coverage info */}
         {result.dataCoverage && result.totalWindows < result.dataCoverage.maxPossibleWindows && (
           <DataCoveragePanel coverage={result.dataCoverage} actualWindows={result.totalWindows} excludedSymbols={result.excludedSymbols} />
         )}
@@ -320,7 +367,7 @@ export default function BacktestResults({ result }: Props) {
         <h3 style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '1.125rem', marginBottom: '1.25rem' }}>
           Composición del Capital Final
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
           {([
             { label: 'P10', metrics: p10 },
             { label: 'P50', metrics: p50 },
@@ -337,69 +384,46 @@ export default function BacktestResults({ result }: Props) {
         </div>
       </div>
 
-      {/* Breakdown toggle */}
-      <button
-        onClick={() => setShowBreakdown(!showBreakdown)}
-        style={{
-          width: '100%', padding: '0.75rem',
-          background: 'var(--hover-bg)', color: 'var(--text-muted)',
-          border: '1px solid var(--border)', borderRadius: '8px',
-          cursor: 'pointer', fontSize: '0.875rem', marginBottom: '1rem',
-        }}
-      >
-        {showBreakdown ? 'Ocultar desglose del equity' : 'Ver desglose del equity por meses'}
-      </button>
+      {/* Detailed Analysis Accordions */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <AccordionSection title="Desglose de equity por meses">
+          <div style={{ paddingTop: '1rem' }}>
+            <EquityBreakdownChart result={result} />
+          </div>
+        </AccordionSection>
 
-      {showBreakdown && <EquityBreakdownChart result={result} />}
-
-      {/* Detail toggle */}
-      <button
-        onClick={() => setShowDetail(!showDetail)}
-        style={{
-          width: '100%', padding: '0.75rem',
-          background: 'var(--hover-bg)', color: 'var(--text-muted)',
-          border: '1px solid var(--border)', borderRadius: '8px',
-          cursor: 'pointer', fontSize: '0.875rem', marginBottom: '1rem',
-        }}
-      >
-        {showDetail ? 'Ocultar detalle por ventana' : `Ver detalle por ventana (${result.totalWindows})`}
-      </button>
-
-      {/* Detail table */}
-      {showDetail && (
-        <div style={{
-          background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '1rem', overflowX: 'auto',
-        }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
-            <thead>
-              <tr>
-                {['#', 'Inicio', 'Fin', 'Capital', 'Sharpe', 'CAGR', 'Max DD', 'Margin Call'].map((h) => (
-                  <th key={h} style={{ padding: '0.5rem', color: 'var(--text-muted)', textAlign: 'right', borderBottom: '1px solid var(--border-light)' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedWindows.map((w, i) => (
-                <tr key={w.windowIndex} className="table-row-hoverable" style={{ background: i % 2 === 1 ? "var(--hover-bg)" : "transparent", transition: "background 0.15s ease" }}>
-                  <td style={{ padding: '0.5rem', color: 'var(--text-muted)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{i + 1}</td>
-                  <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{w.startDate}</td>
-                  <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{w.endDate}</td>
-                  <td style={{ padding: '0.5rem', color: valueColor(w.finalCapital, 'green'), textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtUsd(w.finalCapital)}</td>
-                  <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtNum(w.sharpe)}</td>
-                  <td style={{ padding: '0.5rem', color: valueColor(w.cagr, 'green'), textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtPct(w.cagr)}</td>
-                  <td style={{ padding: '0.5rem', color: valueColor(w.maxDrawdownEquity, 'red'), textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtPct(w.maxDrawdownEquity)}</td>
-                  <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>
-                    {w.marginCall ? 'Sí' : 'No'}
-                  </td>
+        <AccordionSection title={`Detalle por ventana (${result.totalWindows})`}>
+          <div style={{ paddingTop: '1rem', overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+              <thead>
+                <tr>
+                  {['#', 'Inicio', 'Fin', 'Capital', 'Sharpe', 'CAGR', 'Max DD', 'Margin Call'].map((h) => (
+                    <th key={h} style={{ padding: '0.5rem', color: 'var(--text-muted)', textAlign: 'right', borderBottom: '1px solid var(--border-light)' }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {sortedWindows.map((w, i) => (
+                  <tr key={w.windowIndex} className="table-row-hoverable" style={{ background: i % 2 === 1 ? "var(--hover-bg)" : "transparent", transition: "background 0.15s ease" }}>
+                    <td style={{ padding: '0.5rem', color: 'var(--text-muted)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{i + 1}</td>
+                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{w.startDate}</td>
+                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{w.endDate}</td>
+                    <td style={{ padding: '0.5rem', color: valueColor(w.finalCapital, 'green'), textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtUsd(w.finalCapital)}</td>
+                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtNum(w.sharpe)}</td>
+                    <td style={{ padding: '0.5rem', color: valueColor(w.cagr, 'green'), textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtPct(w.cagr)}</td>
+                    <td style={{ padding: '0.5rem', color: valueColor(w.maxDrawdownEquity, 'red'), textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{fmtPct(w.maxDrawdownEquity)}</td>
+                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>
+                      {w.marginCall ? 'Sí' : 'No'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AccordionSection>
+      </div>
     </div>
   );
 }

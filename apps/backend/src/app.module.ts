@@ -10,6 +10,7 @@ import { PortfoliosModule } from "./portfolios/portfolios.module";
 import { PositionsModule } from "./positions/positions.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RebalanceModule } from "./rebalance/rebalance.module";
+import { StrategiesModule } from "./strategies/strategies.module";
 import { UsersModule } from "./users/users.module";
 
 @Module({
@@ -22,6 +23,7 @@ import { UsersModule } from "./users/users.module";
     PortfoliosModule,
     RebalanceModule,
     BacktestModule,
+    StrategiesModule,
     CronModule,
   ],
   controllers: [AppController],

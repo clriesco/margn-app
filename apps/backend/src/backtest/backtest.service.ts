@@ -1,9 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
+interface DateGap {
+  from: Date;
+  to: Date;
+}
+
 @Injectable()
 export class BacktestService {
+  private readonly logger = new Logger(BacktestService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -48,6 +55,8 @@ export class BacktestService {
         asset.earliestKnownDate
       );
 
+      let finalCached = cached;
+
       if (needsDownload) {
         const earliestFromYahoo = await this.downloadAndCachePrices(
           asset.id,
@@ -71,23 +80,33 @@ export class BacktestService {
         }
 
         // Re-fetch from DB after download
-        const refreshed = await this.prisma.assetPrice.findMany({
+        finalCached = await this.prisma.assetPrice.findMany({
           where: {
             assetId: asset.id,
             date: { gte: fromDate, lte: toDate },
           },
           orderBy: { date: 'asc' },
         });
+      }
 
-        result[symbol] = this.toDateMap(refreshed);
-        if (refreshed.length > 0) {
-          firstDates.push(refreshed[0].date);
-        }
-      } else {
-        result[symbol] = this.toDateMap(cached);
-        if (cached.length > 0) {
-          firstDates.push(cached[0].date);
-        }
+      // Detect and fill gaps in the middle of the data
+      const gaps = this.detectGaps(finalCached, asset.assetType);
+      if (gaps.length > 0) {
+        await this.fillGaps(asset.id, symbol, gaps);
+
+        // Re-fetch from DB after filling gaps
+        finalCached = await this.prisma.assetPrice.findMany({
+          where: {
+            assetId: asset.id,
+            date: { gte: fromDate, lte: toDate },
+          },
+          orderBy: { date: 'asc' },
+        });
+      }
+
+      result[symbol] = this.toDateMap(finalCached);
+      if (finalCached.length > 0) {
+        firstDates.push(finalCached[0].date);
       }
 
       // Rate limit between symbols
@@ -248,5 +267,86 @@ export class BacktestService {
 
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Detect gaps in the cached price data.
+   * A gap is when consecutive dates differ by more than the allowed threshold.
+   * - Stocks: max 5 days (weekends + holidays)
+   * - Crypto: max 2 days (trades 24/7)
+   */
+  private detectGaps(
+    cached: { date: Date }[],
+    assetType: string
+  ): DateGap[] {
+    if (cached.length < 2) return [];
+
+    // Max allowed gap depends on asset type
+    const maxGapDays = assetType === 'crypto' ? 2 : 5;
+    const maxGapMs = maxGapDays * 24 * 60 * 60 * 1000;
+
+    const gaps: DateGap[] = [];
+
+    for (let i = 1; i < cached.length; i++) {
+      const prevDate = cached[i - 1].date;
+      const currDate = cached[i].date;
+      const diffMs = currDate.getTime() - prevDate.getTime();
+
+      if (diffMs > maxGapMs) {
+        // Found a gap - download from day after prev to day before curr
+        const gapFrom = new Date(prevDate.getTime() + 24 * 60 * 60 * 1000);
+        const gapTo = new Date(currDate.getTime() - 24 * 60 * 60 * 1000);
+
+        if (gapFrom <= gapTo) {
+          gaps.push({ from: gapFrom, to: gapTo });
+        }
+      }
+    }
+
+    return gaps;
+  }
+
+  /**
+   * Fill detected gaps by downloading missing date ranges from Yahoo Finance.
+   * Returns the number of gaps filled.
+   */
+  private async fillGaps(
+    assetId: string,
+    symbol: string,
+    gaps: DateGap[]
+  ): Promise<number> {
+    if (gaps.length === 0) return 0;
+
+    this.logger.log(
+      `[${symbol}] Rellenando ${gaps.length} hueco(s) en datos históricos`
+    );
+
+    let filledCount = 0;
+
+    for (const gap of gaps) {
+      this.logger.debug(
+        `[${symbol}] Descargando hueco: ${gap.from.toISOString().split('T')[0]} a ${gap.to.toISOString().split('T')[0]}`
+      );
+
+      const result = await this.downloadAndCachePrices(
+        assetId,
+        symbol,
+        gap.from,
+        gap.to
+      );
+
+      if (result) {
+        filledCount++;
+      }
+
+      // Rate limit between gap downloads
+      await this.delay(300);
+    }
+
+    this.logger.log(
+      `[${symbol}] Rellenados ${filledCount}/${gaps.length} huecos`
+    );
+
+    return filledCount;
   }
 }

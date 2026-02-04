@@ -62,9 +62,11 @@ export function generateRollingWindows(
 
   const windows: { start: number; end: number; startDate: string; endDate: string }[] = [];
 
-  // Parse first and last available dates
-  const firstDate = new Date(dates[0]);
-  const lastDate = new Date(dates[dates.length - 1]);
+  // Parse first and last available dates (ensure consistent local time parsing)
+  const firstDateStr = dates[0];
+  const lastDateStr = dates[dates.length - 1];
+  const firstDate = new Date(firstDateStr + 'T00:00:00');
+  const lastDate = new Date(lastDateStr + 'T00:00:00');
 
   // Start from the first day of the month of the first available date
   let windowStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
@@ -85,14 +87,20 @@ export function generateRollingWindows(
     const startIdx = findFirstDateIndex(dates, startStr);
     const endIdx = findLastDateIndex(dates, endStr);
 
-    // Only add if we have valid indices and at least some data in the window
+    // Only add if we have valid indices
     if (startIdx < dates.length && endIdx >= 0 && startIdx <= endIdx) {
-      windows.push({
-        start: startIdx,
-        end: endIdx,
-        startDate: dates[startIdx],
-        endDate: dates[endIdx],
-      });
+      // Verify the window isn't truncated: actual end date should be within 7 days of expected
+      const actualEndDate = new Date(dates[endIdx] + 'T00:00:00');
+      const daysDiff = Math.abs(windowEndMonth.getTime() - actualEndDate.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (daysDiff <= 7) {
+        windows.push({
+          start: startIdx,
+          end: endIdx,
+          startDate: dates[startIdx],
+          endDate: dates[endIdx],
+        });
+      }
     }
 
     // Move to next month

@@ -26,7 +26,8 @@ model User {
   notifyOnLeverageAlerts  Boolean @default(true) @map("notify_on_leverage_alerts")
   notifyOnRebalance       Boolean @default(true) @map("notify_on_rebalance")
 
-  portfolios Portfolio[]
+  portfolios      Portfolio[]
+  savedStrategies SavedStrategy[]
 
   @@map("users")
 }
@@ -231,4 +232,29 @@ model DailyMetric {
   @@unique([portfolioId, date])
   @@index([portfolioId, date])
   @@map("daily_metrics")
+}
+
+// Saved backtest strategies
+model SavedStrategy {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Backtest configuration (JSON)
+  // { symbols, weights, initialCapital, monthlyContribution, leverageTarget, leverageMin, leverageMax, windowMonths, ... }
+  configJson String @map("config_json") @db.Text
+
+  // Summary metrics for P10/P50/P90 (JSON)
+  // { p10: { finalCapital, cagr, sharpe, maxDrawdown, ... }, p50: {...}, p90: {...}, totalWindows, marginCallCount }
+  metricsJson String @map("metrics_json") @db.Text
+
+  // Daily equity trajectories for P10/P50/P90 (JSON)
+  // { p10: [{ date, equity }, ...], p50: [...], p90: [...] }
+  trajectoriesJson String @map("trajectories_json") @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("saved_strategies")
 }

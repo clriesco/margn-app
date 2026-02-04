@@ -5,8 +5,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getPortfoliosByEmail, getBacktestPrices, getPortfolioSummary, getPortfolioConfiguration } from '../../lib/api';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import BacktestConfigForm from '../../components/backtest/BacktestConfig';
+import BacktestExplanation, { BacktestExplanationHandle } from '../../components/backtest/BacktestExplanation';
 import BacktestProgress from '../../components/backtest/BacktestProgress';
 import BacktestResults from '../../components/backtest/BacktestResults';
+import SaveStrategyButton from '../../components/backtest/SaveStrategyButton';
 import TrajectoryChart from '../../components/backtest/TrajectoryChart';
 import type {
   BacktestConfig,
@@ -38,6 +40,7 @@ export default function BacktestPage() {
   const [defaultsLoaded, setDefaultsLoaded] = useState(false);
   const [priceExcludedSymbols, setPriceExcludedSymbols] = useState<string[]>([]);
   const workerRef = useRef<Worker | null>(null);
+  const explanationRef = useRef<BacktestExplanationHandle>(null);
 
   // Load portfolio ID and user defaults
   useEffect(() => {
@@ -316,19 +319,72 @@ export default function BacktestPage() {
 
             {stage === 'results' && result && (
               <>
+                {/* Actions Bar */}
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                  marginBottom: '1.5rem',
+                  padding: '1rem 1.25rem',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                }}>
+                  <button
+                    onClick={() => explanationRef.current?.generate()}
+                    style={{
+                      padding: '0.625rem 1rem',
+                      background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    Explicar con IA
+                  </button>
+
+                  <SaveStrategyButton result={result} />
+
+                  <button
+                    onClick={() => { setStage('config'); setResult(null); setProgress(null); }}
+                    style={{
+                      padding: '0.625rem 1rem',
+                      background: 'var(--bg-card)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.6 2.6" />
+                      <path d="M21 3v6h-6" />
+                    </svg>
+                    Nueva simulación
+                  </button>
+                </div>
+
+                {/* AI Explanation (only shows when triggered) */}
+                <BacktestExplanation ref={explanationRef} result={result} />
+
                 <TrajectoryChart result={result} />
                 <BacktestResults result={result} />
-                <button
-                  onClick={() => { setStage('config'); setResult(null); setProgress(null); }}
-                  style={{
-                    width: '100%', padding: '0.875rem',
-                    background: 'var(--hover-bg)', color: 'var(--text-muted)',
-                    border: '1px solid var(--border)', borderRadius: '8px',
-                    cursor: 'pointer', fontSize: '0.9375rem', marginTop: '1rem',
-                  }}
-                >
-                  Nueva simulacion
-                </button>
               </>
             )}
           </div>
