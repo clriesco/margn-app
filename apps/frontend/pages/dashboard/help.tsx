@@ -18,6 +18,7 @@ import {
   Info,
   BarChart3,
   Bookmark,
+  LayoutDashboard,
 } from "lucide-react";
 
 /**
@@ -1341,7 +1342,7 @@ export default function Help() {
                 {
                   label: "Dashboard",
                   path: `/dashboard?portfolioId=${portfolioId}`,
-                  icon: Settings,
+                  icon: LayoutDashboard,
                 },
                 {
                   label: "Añadir Aportación",
