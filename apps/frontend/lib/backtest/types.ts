@@ -15,17 +15,17 @@ export interface BacktestConfig {
   windowMonths: number; // 36, 48, 60, 72, 84
   weightMode: 'sharpe' | 'manual' | 'equal';
   manualWeights?: Record<string, number>;
-  // Strategy params
-  drawdownRedeployThreshold: number;
-  weightDeviationThreshold: number;
-  volatilityRedeployThreshold: number;
-  volatilityLookbackDays: number;
-  gradualDeployFactor: number;
+  /** Re-optimize weights monthly using rolling window (only for sharpe mode) */
+  dynamicWeights?: boolean;
+  /** Lookback months for dynamic weight optimization */
+  dynamicWeightsLookback?: number;
+  // Sharpe optimization params
   meanReturnShrinkage: number;
   riskFreeRate: number;
-  maintenanceMarginRatio: number;
   maxWeight: number;
   minWeight: number;
+  // Risk params
+  maintenanceMarginRatio: number;
 }
 
 export interface PriceData {
@@ -65,6 +65,7 @@ export interface RebalanceResult {
   deployed: number;
   borrowChange: number;
   signals: DeploySignals;
+  reborrowed?: boolean;
 }
 
 export interface WindowTrajectory {

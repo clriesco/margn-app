@@ -36,6 +36,7 @@ export default function BacktestPage() {
     leverageTarget?: number;
   } | undefined>(undefined);
   const [defaultsLoaded, setDefaultsLoaded] = useState(false);
+  const [priceExcludedSymbols, setPriceExcludedSymbols] = useState<string[]>([]);
   const workerRef = useRef<Worker | null>(null);
 
   // Load portfolio ID and user defaults
@@ -91,12 +92,14 @@ export default function BacktestPage() {
   const handleSubmit = useCallback(async (config: BacktestConfig) => {
     setError('');
     setDateWarning('');
+    setPriceExcludedSymbols([]);
     setStage('loading-prices');
 
     try {
       // 1. Fetch prices per symbol so user can see progress
       const allPrices: Record<string, Record<string, number>> = {};
       const firstDates: string[] = [];
+      const symbolsWithoutPrices: string[] = [];
       setDownloadProgress({ current: '', done: [], total: config.symbols.length });
 
       for (let i = 0; i < config.symbols.length; i++) {
@@ -108,12 +111,24 @@ export default function BacktestPage() {
         );
 
         if (!symbolPrices[symbol] || Object.keys(symbolPrices[symbol]).length === 0) {
-          throw new Error(`No se encontraron precios para ${symbol}`);
+          // No prices found - exclude this symbol but continue
+          symbolsWithoutPrices.push(symbol);
+          continue;
         }
 
         allPrices[symbol] = symbolPrices[symbol];
         firstDates.push(ecd);
       }
+
+      // Check if we have at least one symbol with prices
+      const symbolsWithPrices = config.symbols.filter(s => !symbolsWithoutPrices.includes(s));
+      if (symbolsWithPrices.length === 0) {
+        throw new Error('Ningún activo tiene datos de precios. Verifica que los tickers son correctos.');
+      }
+
+      // Update config to only include symbols with prices
+      config.symbols = symbolsWithPrices;
+      setPriceExcludedSymbols(symbolsWithoutPrices);
 
       setDownloadProgress({ current: '', done: config.symbols, total: config.symbols.length });
 
@@ -134,7 +149,16 @@ export default function BacktestPage() {
         if (msg.type === 'progress') {
           setProgress(msg.progress!);
         } else if (msg.type === 'result') {
-          setResult(msg.result!);
+          // Combine price-excluded symbols with backtest-excluded symbols
+          const backResult = msg.result!;
+          const allExcluded = [
+            ...symbolsWithoutPrices,
+            ...(backResult.excludedSymbols || []),
+          ];
+          if (allExcluded.length > 0) {
+            backResult.excludedSymbols = allExcluded;
+          }
+          setResult(backResult);
           setStage('results');
           worker.terminate();
           workerRef.current = null;

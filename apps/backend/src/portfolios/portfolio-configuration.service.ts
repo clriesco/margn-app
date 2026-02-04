@@ -121,6 +121,7 @@ export class PortfolioConfigurationService {
 
       // Optimization parameters
       useDynamicSharpeRebalance: portfolio.useDynamicSharpeRebalance,
+      sharpeWeightsLookbackMonths: portfolio.sharpeWeightsLookbackMonths,
       meanReturnShrinkage: portfolio.meanReturnShrinkage,
       riskFreeRate: portfolio.riskFreeRate,
 
@@ -237,6 +238,9 @@ export class PortfolioConfigurationService {
     // Optimization parameters
     if (dto.useDynamicSharpeRebalance !== undefined) {
       updateData.useDynamicSharpeRebalance = dto.useDynamicSharpeRebalance;
+    }
+    if (dto.sharpeWeightsLookbackMonths !== undefined) {
+      updateData.sharpeWeightsLookbackMonths = dto.sharpeWeightsLookbackMonths;
     }
     if (dto.meanReturnShrinkage !== undefined) {
       updateData.meanReturnShrinkage = dto.meanReturnShrinkage;

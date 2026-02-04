@@ -26,22 +26,19 @@ const DEFAULT_CONFIG: BacktestConfigType = {
   symbols: FALLBACK_SYMBOLS,
   initialCapital: 60000,
   monthlyContribution: 2000,
-  leverageMin: 2.5,
+  leverageMin: 2.0,
   leverageMax: 4.0,
   leverageTarget: 3.0,
   startDate: '2015-01-01',
-  endDate: '2024-12-31',
+  endDate: new Date().toISOString().split('T')[0],
   windowMonths: 60,
   weightMode: 'sharpe',
-  drawdownRedeployThreshold: 0.12,
-  weightDeviationThreshold: 0.05,
-  volatilityRedeployThreshold: 0.18,
-  volatilityLookbackDays: 63,
-  gradualDeployFactor: 0.5,
-  meanReturnShrinkage: 0.6,
+  dynamicWeights: false,
+  dynamicWeightsLookback: 12,
+  meanReturnShrinkage: 0.85,
   riskFreeRate: 0.02,
   maintenanceMarginRatio: 0.05,
-  maxWeight: 0.4,
+  maxWeight: 0.3,
   minWeight: 0,
 };
 
@@ -97,6 +94,16 @@ const TIPS = {
     'Reparte el capital en partes iguales entre todos los activos. Simple y sin optimización.',
   weightManual:
     'Tú defines exactamente qué porcentaje va a cada activo.',
+  dynamicWeights:
+    'Re-optimiza los pesos cada mes usando una ventana rolling de datos recientes. '
+    + 'Más realista pero más lento.\n\n'
+    + '- Desactivado: calcula los pesos una vez al inicio usando todo el histórico\n'
+    + '- Activado: recalcula mensualmente con los últimos N meses',
+  dynamicWeightsLookback:
+    'Meses de datos históricos para la optimización mensual de pesos. '
+    + 'Valores típicos: 6-24 meses.\n\n'
+    + '- Menos meses = más reactivo a cambios recientes\n'
+    + '- Más meses = más estable pero menos adaptativo',
 };
 
 // ---------------------------------------------------------------------------
@@ -200,11 +207,19 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
       removeSymbol(config.symbols[config.symbols.length - 1]);
       return;
     }
+    if (e.key === 'Tab' && searchQuery.trim() !== '') {
+      e.preventDefault();
+      addSymbol(searchQuery.trim().toUpperCase());
+      return;
+    }
     if (e.key === 'Enter') {
       e.preventDefault();
       if (showDropdown && searchResults.length > 0) {
         const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
         handleSelectResult(searchResults[idx]);
+      } else if (searchQuery.trim() !== '') {
+        // If no dropdown results, add the raw text as symbol
+        addSymbol(searchQuery.trim().toUpperCase());
       }
       return;
     }
@@ -406,23 +421,49 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
         )}
 
         {config.weightMode === 'sharpe' && (
-          <div style={gridStyle}>
-            <div>
-              <Label text="Peso Mín. (%)" tooltip={TIPS.pesoMin} />
-              <NumberInput value={config.minWeight * 100} onChange={(v) => update('minWeight', v / 100)}
-                min={0} max={50} step={1} decimals={0} style={inputStyle} />
+          <>
+            {/* Dynamic weights toggle */}
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: '0.75rem',
+              marginBottom: '1rem', cursor: 'pointer',
+            }}>
+              <input
+                type="checkbox"
+                checked={config.dynamicWeights || false}
+                onChange={(e) => update('dynamicWeights', e.target.checked)}
+                style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+              />
+              <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>
+                Re-optimizar pesos mensualmente
+              </span>
+              <Tooltip text={TIPS.dynamicWeights} />
+            </label>
+
+            <div style={gridStyle}>
+              <div>
+                <Label text="Peso Mín. (%)" tooltip={TIPS.pesoMin} />
+                <NumberInput value={config.minWeight * 100} onChange={(v) => update('minWeight', v / 100)}
+                  min={0} max={50} step={1} decimals={0} style={inputStyle} />
+              </div>
+              <div>
+                <Label text="Peso Máx. (%)" tooltip={TIPS.pesoMax} />
+                <NumberInput value={config.maxWeight * 100} onChange={(v) => update('maxWeight', v / 100)}
+                  min={10} max={100} step={5} decimals={0} style={inputStyle} />
+              </div>
+              <div>
+                <Label text="Shrinkage de retornos" tooltip={TIPS.shrinkage} />
+                <NumberInput value={config.meanReturnShrinkage} onChange={(v) => update('meanReturnShrinkage', v)}
+                  min={0} max={1} step={0.1} decimals={1} style={inputStyle} />
+              </div>
+              {config.dynamicWeights && (
+                <div>
+                  <Label text="Lookback (meses)" tooltip={TIPS.dynamicWeightsLookback} />
+                  <NumberInput value={config.dynamicWeightsLookback || 12} onChange={(v) => update('dynamicWeightsLookback', v)}
+                    min={3} max={36} step={1} decimals={0} style={inputStyle} />
+                </div>
+              )}
             </div>
-            <div>
-              <Label text="Peso Máx. (%)" tooltip={TIPS.pesoMax} />
-              <NumberInput value={config.maxWeight * 100} onChange={(v) => update('maxWeight', v / 100)}
-                min={10} max={100} step={5} decimals={0} style={inputStyle} />
-            </div>
-            <div>
-              <Label text="Shrinkage de retornos" tooltip={TIPS.shrinkage} />
-              <NumberInput value={config.meanReturnShrinkage} onChange={(v) => update('meanReturnShrinkage', v)}
-                min={0} max={1} step={0.1} decimals={1} style={inputStyle} />
-            </div>
-          </div>
+          </>
         )}
       </div>
 

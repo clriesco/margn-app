@@ -105,6 +105,9 @@ export function runBacktest(
   if (emptySymbols.length > 0 && emptySymbols.length < symbols.length) {
     // Drop symbols with no data and continue
     symbols = symbols.filter((s) => symbolDayCounts[s] > 0);
+    console.warn(
+      `[Backtest] Activos sin datos de precios: ${emptySymbols.join(', ')}`
+    );
   } else if (emptySymbols.length === symbols.length) {
     throw new Error(
       'Ningún activo tiene datos de precios. Verifica que los tickers son correctos.'
@@ -210,11 +213,6 @@ export function runBacktest(
     leverageMin: config.leverageMin,
     leverageMax: config.leverageMax,
     leverageTarget: config.leverageTarget,
-    drawdownRedeployThreshold: config.drawdownRedeployThreshold,
-    weightDeviationThreshold: config.weightDeviationThreshold,
-    volatilityRedeployThreshold: config.volatilityRedeployThreshold,
-    volatilityLookbackDays: config.volatilityLookbackDays,
-    gradualDeployFactor: config.gradualDeployFactor,
     maintenanceMarginRatio: config.maintenanceMarginRatio,
   };
 
@@ -257,11 +255,49 @@ export function runBacktest(
         const currentPrices: Record<string, number> = {};
         for (const s of symbols) currentPrices[s] = prices[s][start + d];
 
+        // Re-optimize weights if dynamic weights enabled
+        let currentWeights = weightsUsed;
+        if (config.dynamicWeights && config.weightMode === 'sharpe') {
+          const lookbackDays = (config.dynamicWeightsLookback || 12) * 21;
+          const lookbackStart = Math.max(0, start + d - lookbackDays);
+          const lookbackEnd = start + d;
+
+          // Extract price data for the lookback window
+          const lookbackPrices: Record<string, number[]> = {};
+          for (const s of symbols) {
+            lookbackPrices[s] = prices[s].slice(lookbackStart, lookbackEnd + 1);
+          }
+
+          // Only re-optimize if we have enough data (at least 63 days)
+          if (lookbackPrices[symbols[0]].length >= 63) {
+            try {
+              const { meanReturns, covMatrix } = calculateReturnsAndCovariance(
+                lookbackPrices, symbols, config.meanReturnShrinkage
+              );
+
+              const optWeights = optimizeSharpeNelderMead(meanReturns, covMatrix, {
+                leverage: config.leverageTarget,
+                riskFreeRate: config.riskFreeRate,
+                minWeight: config.minWeight,
+                maxWeight: config.maxWeight,
+                meanReturnShrinkage: config.meanReturnShrinkage,
+              });
+
+              currentWeights = {};
+              for (let i = 0; i < symbols.length; i++) {
+                currentWeights[symbols[i]] = optWeights[i];
+              }
+            } catch {
+              // Keep previous weights if optimization fails
+            }
+          }
+        }
+
         const equityHistory = states.map((s) => s.equity);
         const result = rebalancePortfolio(
           state,
           config.monthlyContribution,
-          weightsUsed,
+          currentWeights,
           equityHistory,
           currentPrices,
           rebalanceParams
@@ -316,6 +352,9 @@ export function runBacktest(
   const p90 = selectPercentileWindow(allMetrics, 0.9);
   const marginCallCount = allMetrics.filter((m) => m.marginCall).length;
 
+  // Combine all excluded symbols (no data + insufficient dates)
+  const allExcluded = [...emptySymbols, ...excludedSymbols];
+
   return {
     config,
     weightsUsed,
@@ -324,6 +363,6 @@ export function runBacktest(
     totalWindows: allMetrics.length,
     marginCallCount,
     trajectories: allTrajectories,
-    excludedSymbols: excludedSymbols.length > 0 ? excludedSymbols : undefined,
+    excludedSymbols: allExcluded.length > 0 ? allExcluded : undefined,
   };
 }

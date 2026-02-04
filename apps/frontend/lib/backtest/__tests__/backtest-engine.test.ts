@@ -51,11 +51,6 @@ describe('backtest-engine', () => {
       endDate: '2020-02-14',
       windowMonths: 1, // 21 trading days
       weightMode: 'equal',
-      drawdownRedeployThreshold: 0.12,
-      weightDeviationThreshold: 0.05,
-      volatilityRedeployThreshold: 0.18,
-      volatilityLookbackDays: 63,
-      gradualDeployFactor: 0.5,
       meanReturnShrinkage: 0.6,
       riskFreeRate: 0.02,
       maintenanceMarginRatio: 0.05,

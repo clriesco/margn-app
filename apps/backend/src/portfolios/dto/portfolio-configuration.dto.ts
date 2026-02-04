@@ -139,6 +139,12 @@ export class UpdatePortfolioConfigurationDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(60)
+  sharpeWeightsLookbackMonths?: number; // 0 = use all history
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   @Max(1)
   meanReturnShrinkage?: number;
 
@@ -191,6 +197,7 @@ export interface PortfolioConfigurationResponse {
 
   // Optimization parameters
   useDynamicSharpeRebalance: boolean;
+  sharpeWeightsLookbackMonths: number;
   meanReturnShrinkage: number;
   riskFreeRate: number;
 

@@ -72,9 +72,10 @@ model Portfolio {
   gradualDeployFactor         Float @default(0.5) @map("gradual_deploy_factor")
 
   // Optimization parameters
-  useDynamicSharpeRebalance Boolean @default(true) @map("use_dynamic_sharpe_rebalance")
-  meanReturnShrinkage       Float   @default(0.6) @map("mean_return_shrinkage")
-  riskFreeRate              Float   @default(0.02) @map("risk_free_rate")
+  useDynamicSharpeRebalance   Boolean @default(true) @map("use_dynamic_sharpe_rebalance")
+  sharpeWeightsLookbackMonths Int     @default(0) @map("sharpe_weights_lookback_months") // 0 = use all history
+  meanReturnShrinkage         Float   @default(0.6) @map("mean_return_shrinkage")
+  riskFreeRate                Float   @default(0.02) @map("risk_free_rate")
 
   user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   positions         PortfolioPosition[]
@@ -88,12 +89,14 @@ model Portfolio {
 
 // Asset model (gold, BTC, indices, etc.)
 model Asset {
-  id           String   @id @default(uuid())
-  symbol       String   @unique
-  name         String
-  assetType    String   @map("asset_type") // 'crypto', 'commodity', 'index', etc.
-  metadataJson String?  @map("metadata_json") @db.Text
-  createdAt    DateTime @default(now()) @map("created_at")
+  id                 String    @id @default(uuid())
+  symbol             String    @unique
+  name               String
+  assetType          String    @map("asset_type") // 'crypto', 'commodity', 'index', etc.
+  metadataJson       String?   @map("metadata_json") @db.Text
+  createdAt          DateTime  @default(now()) @map("created_at")
+  // Earliest date with data available from Yahoo (null = unknown, needs download)
+  earliestKnownDate  DateTime? @map("earliest_known_date") @db.Date
 
   positions          PortfolioPosition[]
   prices             AssetPrice[]

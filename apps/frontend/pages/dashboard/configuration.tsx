@@ -54,6 +54,7 @@ export default function Configuration() {
     leverageMax: 4.0,
     leverageTarget: 3.0,
     useDynamicSharpeRebalance: true,
+    sharpeWeightsLookbackMonths: 0,
     meanReturnShrinkage: 0.6,
     riskFreeRate: 0.02,
     maintenanceMarginRatio: 0.05,
@@ -100,6 +101,8 @@ export default function Configuration() {
             leverageTarget: configData.leverageTarget || 3.0,
             useDynamicSharpeRebalance:
               configData.useDynamicSharpeRebalance ?? true,
+            sharpeWeightsLookbackMonths:
+              configData.sharpeWeightsLookbackMonths ?? 0,
             meanReturnShrinkage: configData.meanReturnShrinkage || 0.6,
             riskFreeRate: configData.riskFreeRate || 0.02,
             maintenanceMarginRatio: configData.maintenanceMarginRatio || 0.05,
@@ -809,6 +812,18 @@ export default function Configuration() {
                   }
                 >
                   <div style={gridStyle}>
+                    <InputField
+                      label="Lookback (meses)"
+                      value={formData.sharpeWeightsLookbackMonths}
+                      onChange={(v) =>
+                        handleInputChange("sharpeWeightsLookbackMonths", v)
+                      }
+                      type="number"
+                      min={0}
+                      max={60}
+                      step={1}
+                      help="Meses de histórico para optimización Sharpe. 0 = usar todo el histórico disponible. Valores típicos: 12-24 meses. Menos meses = más reactivo, más meses = más estable."
+                    />
                     <InputField
                       label="Shrinkage Retornos"
                       value={formData.meanReturnShrinkage}

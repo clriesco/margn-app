@@ -532,9 +532,22 @@ export class RebalanceService {
     targetWeights: Record<string, number>,
     config: any
   ): Promise<Record<string, number>> {
-    // Get ALL historical prices for assets (accumulated history like notebook)
+    // Get historical prices for assets
+    // If sharpeWeightsLookbackMonths > 0, use only that many months of data
+    // Otherwise use all available history
     const assetReturns: Record<string, number[]> = {};
     const assetSymbols: string[] = [];
+
+    // Calculate lookback date if configured
+    const lookbackMonths = config.sharpeWeightsLookbackMonths || 0;
+    let lookbackDate: Date | null = null;
+    if (lookbackMonths > 0) {
+      lookbackDate = new Date();
+      lookbackDate.setMonth(lookbackDate.getMonth() - lookbackMonths);
+      console.log(`[Sharpe Optimization] Using ${lookbackMonths} months lookback (from ${lookbackDate.toISOString().split('T')[0]})`);
+    } else {
+      console.log(`[Sharpe Optimization] Using all available history`);
+    }
 
     // Use all assets passed in (should include all portfolio positions)
     // This allows Sharpe optimization to find the best allocation
@@ -542,7 +555,10 @@ export class RebalanceService {
 
     for (const asset of assetsToConsider) {
       const prices = await this.prisma.assetPrice.findMany({
-        where: { assetId: asset.id },
+        where: {
+          assetId: asset.id,
+          ...(lookbackDate && { date: { gte: lookbackDate } }),
+        },
         orderBy: { date: "asc" }, // Ascending to get chronological order
       });
 

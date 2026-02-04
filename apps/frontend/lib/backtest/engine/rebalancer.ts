@@ -1,59 +1,59 @@
 /**
  * Monthly rebalance + DCA logic
- * Handles deploy signals, contribution deployment, reborrow/sell, and position rebalancing
+ * Simplified: contribution always goes to equity, only reborrow when leverage < min
  */
 
-import type { PortfolioState, RebalanceResult } from '../types';
-import { calculateDeploySignals, type SignalParams } from './signals';
+import type { PortfolioState, RebalanceResult, DeploySignals } from '../types';
 
-export interface RebalanceParams extends SignalParams {
+export interface RebalanceParams {
   leverageMin: number;
   leverageMax: number;
   leverageTarget: number;
+  maintenanceMarginRatio: number;
 }
 
 /**
- * Perform monthly rebalance with optional DCA contribution
+ * Perform monthly rebalance with DCA contribution
+ *
+ * Logic:
+ * 1. Add full contribution to equity
+ * 2. If leverage < min → reborrow to target (increase exposure)
+ * 3. If leverage >= min → keep exposure constant (contribution reduces leverage)
+ * 4. Rebalance positions toward target weights
  */
 export function rebalancePortfolio(
   state: PortfolioState,
   contribution: number,
   targetWeights: Record<string, number>,
-  equityHistory: number[],
+  _equityHistory: number[], // kept for API compatibility
   currentPrices: Record<string, number>,
   params: RebalanceParams
 ): RebalanceResult {
-  // 1. Calculate deploy signals
-  const signals = calculateDeploySignals(
-    state, equityHistory, targetWeights, params
-  );
+  // 1. Add full contribution to equity
+  const newEquity = state.equity + contribution;
 
-  // 2. Deploy fraction of contribution
-  const deployed = contribution * signals.deployFraction;
-
-  // 3. New equity after contribution deployment
-  const newEquity = state.equity + deployed;
-
-  // 4. Determine target exposure based on leverage bounds
-  let targetExposure: number;
+  // 2. Calculate current leverage after contribution
   const currentLeverage = newEquity > 0 ? state.exposure / newEquity : 0;
 
+  // 3. Determine target exposure
+  let targetExposure: number;
+  let reborrowed = false;
+
   if (currentLeverage < params.leverageMin) {
-    // Leverage too low: reborrow to target
+    // Leverage too low (market went up): reborrow to target
     targetExposure = newEquity * params.leverageTarget;
-  } else if (currentLeverage > params.leverageMax) {
-    // Leverage too high: sell down to max
-    targetExposure = newEquity * params.leverageMax;
+    reborrowed = true;
   } else {
-    // In range: add deployed contribution to exposure
-    targetExposure = state.exposure + deployed;
+    // Leverage in range or above: keep exposure constant
+    // Contribution just reduces leverage (acts as buffer)
+    targetExposure = state.exposure;
   }
 
-  // 5. Calculate new borrowedAmount
+  // 4. Calculate new borrowedAmount
   const newBorrowedAmount = targetExposure - newEquity;
   const borrowChange = newBorrowedAmount - state.borrowedAmount;
 
-  // 6. Rebalance positions toward target weights
+  // 5. Rebalance positions toward target weights
   const newPositions: Record<string, { quantity: number; value: number }> = {};
   for (const [symbol, weight] of Object.entries(targetWeights)) {
     const targetValue = targetExposure * weight;
@@ -78,10 +78,22 @@ export function rebalancePortfolio(
     marginCall: newMarginRatio <= params.maintenanceMarginRatio,
   };
 
+  // Simplified signals (for compatibility)
+  const signals: DeploySignals = {
+    drawdownTriggered: false,
+    weightDeviationTriggered: false,
+    volatilityTriggered: false,
+    deployFraction: 1.0, // Always deploy full contribution
+    drawdown: state.peakEquity > 0 ? state.equity / state.peakEquity - 1 : 0,
+    weightDeviation: 0,
+    realizedVolatility: null,
+  };
+
   return {
     newState,
-    deployed,
+    deployed: contribution,
     borrowChange,
     signals,
+    reborrowed,
   };
 }

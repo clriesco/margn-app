@@ -32,7 +32,7 @@ export class BacktestService {
         });
       }
 
-      // Get cached prices
+      // Get cached prices for the requested range
       const cached = await this.prisma.assetPrice.findMany({
         where: {
           assetId: asset.id,
@@ -41,17 +41,34 @@ export class BacktestService {
         orderBy: { date: 'asc' },
       });
 
-      // Check for gaps - do we have data for the full range?
-      // Use tolerance: last cached date within 5 days of toDate is fine (weekends/holidays)
-      // and first cached date within 5 days of fromDate
-      const TOLERANCE_MS = 5 * 24 * 60 * 60 * 1000;
-      const needsDownload = cached.length === 0 ||
-        cached[0].date.getTime() > fromDate.getTime() + TOLERANCE_MS ||
-        cached[cached.length - 1].date.getTime() < toDate.getTime() - TOLERANCE_MS ||
-        this.hasGaps(cached);
+      const needsDownload = this.checkNeedsDownload(
+        cached,
+        fromDate,
+        toDate,
+        asset.earliestKnownDate
+      );
 
       if (needsDownload) {
-        await this.downloadAndCachePrices(asset.id, symbol, fromDate, toDate);
+        const earliestFromYahoo = await this.downloadAndCachePrices(
+          asset.id,
+          symbol,
+          fromDate,
+          toDate
+        );
+
+        // Update earliestKnownDate if we got data and it's earlier than what we knew
+        if (earliestFromYahoo) {
+          const shouldUpdate =
+            !asset.earliestKnownDate ||
+            earliestFromYahoo.getTime() < asset.earliestKnownDate.getTime();
+
+          if (shouldUpdate) {
+            await this.prisma.asset.update({
+              where: { id: asset.id },
+              data: { earliestKnownDate: earliestFromYahoo },
+            });
+          }
+        }
 
         // Re-fetch from DB after download
         const refreshed = await this.prisma.assetPrice.findMany({
@@ -68,7 +85,9 @@ export class BacktestService {
         }
       } else {
         result[symbol] = this.toDateMap(cached);
-        firstDates.push(cached[0].date);
+        if (cached.length > 0) {
+          firstDates.push(cached[0].date);
+        }
       }
 
       // Rate limit between symbols
@@ -78,20 +97,73 @@ export class BacktestService {
     }
 
     // Earliest common date is the latest of all first-available dates
-    const earliestCommonDate = firstDates.length > 0
-      ? new Date(Math.max(...firstDates.map(d => d.getTime())))
-          .toISOString().split('T')[0]
-      : from;
+    const earliestCommonDate =
+      firstDates.length > 0
+        ? new Date(Math.max(...firstDates.map((d) => d.getTime())))
+            .toISOString()
+            .split('T')[0]
+        : from;
 
     return { prices: result, earliestCommonDate };
   }
 
+  /**
+   * Determine if we need to download data from Yahoo
+   */
+  private checkNeedsDownload(
+    cached: { date: Date }[],
+    fromDate: Date,
+    toDate: Date,
+    earliestKnownDate: Date | null
+  ): boolean {
+    const TOLERANCE_MS = 5 * 24 * 60 * 60 * 1000; // 5 days for weekends/holidays
+
+    // No cached data at all
+    if (cached.length === 0) {
+      return true;
+    }
+
+    const firstCachedDate = cached[0].date;
+    const lastCachedDate = cached[cached.length - 1].date;
+
+    // Check if we're missing data at the END of the range
+    if (lastCachedDate.getTime() < toDate.getTime() - TOLERANCE_MS) {
+      return true;
+    }
+
+    // Check if we're missing data at the START of the range
+    if (firstCachedDate.getTime() > fromDate.getTime() + TOLERANCE_MS) {
+      // We might be missing data at the start, but only if:
+      // 1. We don't know the earliest available date yet (need to try download)
+      // 2. OR the earliest known date is earlier than our first cached date (we have a gap)
+      if (!earliestKnownDate) {
+        // Don't know earliest date yet - need to try downloading
+        return true;
+      }
+
+      // If our first cached date is close to the earliest known date,
+      // there's no point downloading - Yahoo doesn't have older data
+      if (firstCachedDate.getTime() <= earliestKnownDate.getTime() + TOLERANCE_MS) {
+        return false;
+      }
+
+      // Our first cached date is significantly after earliest known - we're missing data
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Download prices from Yahoo and cache them
+   * Returns the earliest date received from Yahoo (or null if download failed)
+   */
   private async downloadAndCachePrices(
     assetId: string,
     symbol: string,
     from: Date,
     to: Date
-  ): Promise<void> {
+  ): Promise<Date | null> {
     const startTs = Math.floor(from.getTime() / 1000);
     const endTs = Math.floor(to.getTime() / 1000);
 
@@ -99,25 +171,30 @@ export class BacktestService {
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
     });
 
     if (!response.ok) {
-      console.error(`[BacktestService] Failed to fetch ${symbol}: HTTP ${response.status}`);
-      return;
+      console.error(
+        `[BacktestService] Failed to fetch ${symbol}: HTTP ${response.status}`
+      );
+      return null;
     }
 
     const data = await response.json();
     const chartResult = data.chart?.result?.[0];
-    if (!chartResult?.timestamp) return;
+    if (!chartResult?.timestamp) return null;
 
     const timestamps = chartResult.timestamp;
     const adjCloses = chartResult.indicators?.adjclose?.[0]?.adjclose;
     const closes = chartResult.indicators?.quote?.[0]?.close;
     const priceArray = adjCloses || closes;
 
-    if (!priceArray) return;
+    if (!priceArray || timestamps.length === 0) return null;
+
+    let earliestDate: Date | null = null;
 
     for (let i = 0; i < timestamps.length; i++) {
       const price = priceArray[i];
@@ -126,29 +203,34 @@ export class BacktestService {
       const date = new Date(timestamps[i] * 1000);
       date.setUTCHours(0, 0, 0, 0);
 
+      // Track earliest date from Yahoo
+      if (!earliestDate || date.getTime() < earliestDate.getTime()) {
+        earliestDate = date;
+      }
+
       try {
         await this.prisma.assetPrice.upsert({
           where: { assetId_date: { assetId, date } },
-          create: { assetId, date, close: price, adjClose: adjCloses ? price : null, source: 'yfinance' },
+          create: {
+            assetId,
+            date,
+            close: price,
+            adjClose: adjCloses ? price : null,
+            source: 'yfinance',
+          },
           update: { close: price, adjClose: adjCloses ? price : null },
         });
       } catch {
         // Skip duplicates or constraint errors
       }
     }
+
+    return earliestDate;
   }
 
-  private hasGaps(prices: { date: Date }[]): boolean {
-    if (prices.length < 2) return false;
-    for (let i = 1; i < prices.length; i++) {
-      const diff = (prices[i].date.getTime() - prices[i - 1].date.getTime()) / (1000 * 60 * 60 * 24);
-      // More than 8 calendar days gap (accounts for weekends + long holidays like Thanksgiving, Christmas)
-      if (diff > 8) return true;
-    }
-    return false;
-  }
-
-  private toDateMap(prices: { date: Date; close: number }[]): Record<string, number> {
+  private toDateMap(
+    prices: { date: Date; close: number }[]
+  ): Record<string, number> {
     const map: Record<string, number> = {};
     for (const p of prices) {
       const dateStr = p.date.toISOString().split('T')[0];

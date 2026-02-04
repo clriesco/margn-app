@@ -154,7 +154,7 @@ export default function BacktestResults({ result }: Props) {
             background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px',
             padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.875rem', color: '#92400e',
           }}>
-            Activos excluidos por fechas insuficientes: <strong>{result.excludedSymbols.join(', ')}</strong>.
+            Activos excluidos (sin datos o fechas insuficientes): <strong>{result.excludedSymbols.join(', ')}</strong>.
             Los pesos se renormalizaron entre los activos restantes.
           </div>
         )}
