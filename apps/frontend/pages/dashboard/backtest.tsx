@@ -364,6 +364,46 @@ export default function BacktestPage() {
                   <SaveStrategyButton result={result} />
 
                   <button
+                    onClick={() => {
+                      // Store current config to pre-fill the form
+                      const configToReuse = {
+                        strategyName: 'Backtest anterior',
+                        symbols: result.config.symbols,
+                        weights: result.weightsUsed,
+                        initialCapital: result.config.initialCapital,
+                        monthlyContribution: result.config.monthlyContribution,
+                        leverageMin: result.config.leverageMin,
+                        leverageMax: result.config.leverageMax,
+                        leverageTarget: result.config.leverageTarget,
+                        windowMonths: result.config.windowMonths,
+                        weightMode: result.config.weightMode || 'sharpe',
+                        dynamicWeights: result.config.dynamicWeights || false,
+                      };
+                      localStorage.setItem('backtest_from_strategy', JSON.stringify(configToReuse));
+                      window.location.reload();
+                    }}
+                    style={{
+                      padding: '0.625rem 1rem',
+                      background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.6 2.6" />
+                      <path d="M21 3v6h-6" />
+                    </svg>
+                    Repetir con misma config
+                  </button>
+
+                  <button
                     onClick={() => { setStage('config'); setResult(null); setProgress(null); }}
                     style={{
                       padding: '0.625rem 1rem',
@@ -380,8 +420,8 @@ export default function BacktestPage() {
                     }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.6 2.6" />
-                      <path d="M21 3v6h-6" />
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                     Nueva simulación
                   </button>
