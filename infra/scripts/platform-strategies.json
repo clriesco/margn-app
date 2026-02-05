@@ -1,0 +1,134 @@
+[
+  {
+    "name": "Refugio Estable",
+    "description": "Portfolio conservador con fuerte exposición a oro y bonos. Pesos fijos diseñados para preservar capital con baja volatilidad.",
+    "riskProfileId": "conservative",
+    "weights": { "GLD": 0.4, "TLT": 0.35, "SPY": 0.25 },
+    "leverageMin": 1.5,
+    "leverageMax": 2.0,
+    "leverageTarget": 1.75,
+    "weightMode": "manual",
+    "dynamicWeights": false
+  },
+  {
+    "name": "Dividendos Protegidos",
+    "description": "Pesos iguales entre ETFs de dividendo, oro, bonos y equity. Máxima simplicidad con diversificación automática.",
+    "riskProfileId": "conservative",
+    "weights": { "VYM": 0.25, "GLD": 0.25, "IEF": 0.25, "SPY": 0.25 },
+    "leverageMin": 1.5,
+    "leverageMax": 2.0,
+    "leverageTarget": 1.75,
+    "weightMode": "equal",
+    "dynamicWeights": false
+  },
+  {
+    "name": "Baja Volatilidad",
+    "description": "Activos de mínima volatilidad con pesos optimizados por Sharpe. El optimizador encuentra la asignación de menor riesgo.",
+    "riskProfileId": "conservative",
+    "weights": { "USMV": 0.34, "GLD": 0.33, "TLT": 0.33 },
+    "leverageMin": 1.5,
+    "leverageMax": 2.0,
+    "leverageTarget": 1.75,
+    "weightMode": "sharpe",
+    "dynamicWeights": false
+  },
+  {
+    "name": "Equilibrio Clásico",
+    "description": "Distribución balanceada entre equity, oro, crypto y bonos. Pesos fijos para el clásico portfolio diversificado.",
+    "riskProfileId": "moderate",
+    "weights": { "SPY": 0.35, "GLD": 0.3, "BTC-USD": 0.2, "TLT": 0.15 },
+    "leverageMin": 2.0,
+    "leverageMax": 3.0,
+    "leverageTarget": 2.5,
+    "weightMode": "manual",
+    "dynamicWeights": false
+  },
+  {
+    "name": "Crecimiento Balanceado",
+    "description": "Tech, equity, oro y crypto con pesos optimizados por Sharpe. El motor de optimización maximiza el retorno ajustado al riesgo.",
+    "riskProfileId": "moderate",
+    "weights": { "QQQ": 0.25, "SPY": 0.25, "GLD": 0.25, "BTC-USD": 0.25 },
+    "leverageMin": 2.0,
+    "leverageMax": 3.0,
+    "leverageTarget": 2.5,
+    "weightMode": "sharpe",
+    "dynamicWeights": false
+  },
+  {
+    "name": "Multi-Activo Global",
+    "description": "Diversificación global con re-optimización mensual por Sharpe. Se adapta automáticamente a las condiciones del mercado.",
+    "riskProfileId": "moderate",
+    "weights": { "VT": 0.25, "GLD": 0.25, "BTC-USD": 0.25, "IEF": 0.25 },
+    "leverageMin": 2.0,
+    "leverageMax": 3.0,
+    "leverageTarget": 2.5,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
+    "name": "Crecimiento Tech",
+    "description": "Apuesta por tecnología con exposición crypto moderada. Pesos fijos para máximo control sobre la asignación.",
+    "riskProfileId": "growth",
+    "weights": { "QQQ": 0.35, "SPY": 0.3, "GLD": 0.2, "BTC-USD": 0.15 },
+    "leverageMin": 2.0,
+    "leverageMax": 3.5,
+    "leverageTarget": 2.75,
+    "weightMode": "manual",
+    "dynamicWeights": false
+  },
+  {
+    "name": "Crypto + Equity",
+    "description": "Renta variable, Bitcoin y oro con re-optimización mensual por Sharpe. Se adapta a la volatilidad crypto automáticamente.",
+    "riskProfileId": "growth",
+    "weights": { "SPY": 0.25, "QQQ": 0.25, "GLD": 0.25, "BTC-USD": 0.25 },
+    "leverageMin": 2.0,
+    "leverageMax": 3.5,
+    "leverageTarget": 2.75,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
+    "name": "Máxima Diversificación",
+    "description": "5 activos con pesos iguales (20% cada uno). Reduce riesgo idiosincrático con diversificación máxima y simplicidad.",
+    "riskProfileId": "growth",
+    "weights": { "SPY": 0.2, "QQQ": 0.2, "GLD": 0.2, "BTC-USD": 0.2, "TLT": 0.2 },
+    "leverageMin": 2.0,
+    "leverageMax": 3.5,
+    "leverageTarget": 2.75,
+    "weightMode": "equal",
+    "dynamicWeights": false
+  },
+  {
+    "name": "Crypto Dominante",
+    "description": "Mayor exposición a Bitcoin (30%) con soporte en equity y oro. Pesos fijos para alta tolerancia al riesgo.",
+    "riskProfileId": "aggressive",
+    "weights": { "BTC-USD": 0.3, "QQQ": 0.25, "SPY": 0.25, "GLD": 0.2 },
+    "leverageMin": 2.5,
+    "leverageMax": 4.0,
+    "leverageTarget": 3.25,
+    "weightMode": "manual",
+    "dynamicWeights": false
+  },
+  {
+    "name": "All-In Crecimiento",
+    "description": "Activos de alto crecimiento con pesos optimizados por Sharpe. El optimizador busca la máxima eficiencia del portfolio.",
+    "riskProfileId": "aggressive",
+    "weights": { "QQQ": 0.25, "SPY": 0.25, "BTC-USD": 0.25, "GLD": 0.25 },
+    "leverageMin": 2.5,
+    "leverageMax": 4.0,
+    "leverageTarget": 3.25,
+    "weightMode": "sharpe",
+    "dynamicWeights": false
+  },
+  {
+    "name": "Tech Apalancado",
+    "description": "Nasdaq, S&P 500, Bitcoin y oro con re-optimización mensual por Sharpe. Leverage elevado con rebalanceo dinámico.",
+    "riskProfileId": "aggressive",
+    "weights": { "QQQ": 0.25, "SPY": 0.25, "BTC-USD": 0.25, "GLD": 0.25 },
+    "leverageMin": 2.5,
+    "leverageMax": 4.0,
+    "leverageTarget": 3.25,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  }
+]

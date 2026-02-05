@@ -1,3 +1,4 @@
+import { detectRiskProfile } from '@leveraged-dca/shared';
 import {
   Injectable,
   NotFoundException,
@@ -16,6 +17,13 @@ export class StrategiesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, dto: CreateStrategyDto) {
+    const config = dto.config;
+    const riskProfileId = detectRiskProfile({
+      leverageMin: config.leverageMin,
+      leverageMax: config.leverageMax,
+      leverageTarget: config.leverageTarget,
+    });
+
     const strategy = await this.prisma.savedStrategy.create({
       data: {
         userId,
@@ -23,6 +31,9 @@ export class StrategiesService {
         configJson: JSON.stringify(dto.config),
         metricsJson: JSON.stringify(dto.metrics),
         trajectoriesJson: JSON.stringify(dto.trajectories),
+        description: dto.description || null,
+        riskProfileId,
+        isPublic: dto.isPublic ?? false,
       },
     });
 
@@ -41,12 +52,15 @@ export class StrategiesService {
 
     return strategies.map((s) => {
       const config = JSON.parse(s.configJson);
-      const metrics = JSON.parse(s.metricsJson);
+      const metrics = s.metricsJson ? JSON.parse(s.metricsJson) : null;
 
       return {
         id: s.id,
         name: s.name,
         createdAt: s.createdAt,
+        isPublic: s.isPublic,
+        riskProfileId: s.riskProfileId,
+        description: s.description,
         config: {
           symbols: config.symbols,
           weights: config.weights,
@@ -54,28 +68,91 @@ export class StrategiesService {
           weightMode: config.weightMode,
           dynamicWeights: config.dynamicWeights,
         },
-        metrics: {
-          p10: {
-            finalCapital: metrics.p10.finalCapital,
-            cagr: metrics.p10.cagr,
-            sharpe: metrics.p10.sharpe,
-            maxDrawdownEquity: metrics.p10.maxDrawdownEquity,
-          },
-          p50: {
-            finalCapital: metrics.p50.finalCapital,
-            cagr: metrics.p50.cagr,
-            sharpe: metrics.p50.sharpe,
-            maxDrawdownEquity: metrics.p50.maxDrawdownEquity,
-          },
-          p90: {
-            finalCapital: metrics.p90.finalCapital,
-            cagr: metrics.p90.cagr,
-            sharpe: metrics.p90.sharpe,
-            maxDrawdownEquity: metrics.p90.maxDrawdownEquity,
-          },
-          totalWindows: metrics.totalWindows,
-          marginCallCount: metrics.marginCallCount,
+        metrics: metrics
+          ? {
+              p10: {
+                finalCapital: metrics.p10.finalCapital,
+                cagr: metrics.p10.cagr,
+                sharpe: metrics.p10.sharpe,
+                maxDrawdownEquity: metrics.p10.maxDrawdownEquity,
+              },
+              p50: {
+                finalCapital: metrics.p50.finalCapital,
+                cagr: metrics.p50.cagr,
+                sharpe: metrics.p50.sharpe,
+                maxDrawdownEquity: metrics.p50.maxDrawdownEquity,
+              },
+              p90: {
+                finalCapital: metrics.p90.finalCapital,
+                cagr: metrics.p90.cagr,
+                sharpe: metrics.p90.sharpe,
+                maxDrawdownEquity: metrics.p90.maxDrawdownEquity,
+              },
+              totalWindows: metrics.totalWindows,
+              marginCallCount: metrics.marginCallCount,
+            }
+          : null,
+      };
+    });
+  }
+
+  async findAllPublic(filters?: {
+    riskProfileId?: string;
+    type?: 'platform' | 'community';
+    excludeUserId?: string;
+  }) {
+    const where: Record<string, unknown> = { isPublic: true };
+
+    if (filters?.riskProfileId) {
+      where.riskProfileId = filters.riskProfileId;
+    }
+
+    if (filters?.type === 'platform') {
+      where.isPlatform = true;
+    } else if (filters?.type === 'community') {
+      where.isPlatform = false;
+      // Exclude the current user's own strategies from community tab
+      if (filters?.excludeUserId) {
+        where.userId = { not: filters.excludeUserId };
+      }
+    }
+
+    const strategies = await this.prisma.savedStrategy.findMany({
+      where,
+      orderBy: [{ isPlatform: 'desc' }, { name: 'asc' }],
+      include: {
+        user: { select: { fullName: true } },
+      },
+    });
+
+    return strategies.map((s) => {
+      const config = JSON.parse(s.configJson);
+      const metrics = s.metricsJson ? JSON.parse(s.metricsJson) : null;
+
+      return {
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        isPlatform: s.isPlatform,
+        riskProfileId: s.riskProfileId,
+        authorName: s.user?.fullName || null,
+        config: {
+          symbols: config.symbols,
+          weights: config.weights,
+          leverageTarget: config.leverageTarget,
+          weightMode: config.weightMode,
+          dynamicWeights: config.dynamicWeights,
         },
+        metrics: metrics
+          ? {
+              p50: {
+                finalCapital: metrics.p50.finalCapital,
+                cagr: metrics.p50.cagr,
+                sharpe: metrics.p50.sharpe,
+                maxDrawdownEquity: metrics.p50.maxDrawdownEquity,
+              },
+            }
+          : null,
       };
     });
   }
@@ -89,7 +166,7 @@ export class StrategiesService {
       throw new NotFoundException('Strategy not found');
     }
 
-    if (strategy.userId !== userId) {
+    if (strategy.userId !== userId && !strategy.isPublic) {
       throw new ForbiddenException('You do not own this strategy');
     }
 
@@ -97,13 +174,26 @@ export class StrategiesService {
       id: strategy.id,
       name: strategy.name,
       createdAt: strategy.createdAt,
+      isPublic: strategy.isPublic,
+      isPlatform: strategy.isPlatform,
+      riskProfileId: strategy.riskProfileId,
+      description: strategy.description,
+      isOwner: strategy.userId === userId,
       config: JSON.parse(strategy.configJson),
-      metrics: JSON.parse(strategy.metricsJson),
-      trajectories: JSON.parse(strategy.trajectoriesJson),
+      metrics: strategy.metricsJson
+        ? JSON.parse(strategy.metricsJson)
+        : null,
+      trajectories: strategy.trajectoriesJson
+        ? JSON.parse(strategy.trajectoriesJson)
+        : null,
     };
   }
 
-  async updateName(userId: string, strategyId: string, name: string) {
+  async update(
+    userId: string,
+    strategyId: string,
+    fields: { name?: string; description?: string },
+  ) {
     const strategy = await this.prisma.savedStrategy.findUnique({
       where: { id: strategyId },
     });
@@ -116,12 +206,60 @@ export class StrategiesService {
       throw new ForbiddenException('You do not own this strategy');
     }
 
+    const data: Record<string, string> = {};
+    if (fields.name !== undefined) data.name = fields.name;
+    if (fields.description !== undefined) data.description = fields.description;
+
     const updated = await this.prisma.savedStrategy.update({
       where: { id: strategyId },
-      data: { name },
+      data,
     });
 
-    return { id: updated.id, name: updated.name };
+    return {
+      id: updated.id,
+      name: updated.name,
+      description: updated.description,
+    };
+  }
+
+  async updateVisibility(
+    userId: string,
+    strategyId: string,
+    isPublic: boolean,
+  ) {
+    const strategy = await this.prisma.savedStrategy.findUnique({
+      where: { id: strategyId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Strategy not found');
+    }
+
+    if (strategy.userId !== userId) {
+      throw new ForbiddenException('You do not own this strategy');
+    }
+
+    if (strategy.isPlatform) {
+      throw new ForbiddenException('Cannot change visibility of platform strategies');
+    }
+
+    // Auto-detect riskProfileId when making public
+    let riskProfileId = strategy.riskProfileId;
+    if (isPublic && !riskProfileId) {
+      const config = JSON.parse(strategy.configJson);
+      riskProfileId = detectRiskProfile({
+        leverageMin: config.leverageMin,
+        leverageMax: config.leverageMax,
+        leverageTarget: config.leverageTarget,
+      });
+    }
+
+    const updated = await this.prisma.savedStrategy.update({
+      where: { id: strategyId },
+      data: { isPublic, riskProfileId },
+    });
+
+    return { id: updated.id, isPublic: updated.isPublic };
   }
 
   async delete(userId: string, strategyId: string) {
@@ -158,7 +296,7 @@ export class StrategiesService {
       throw new NotFoundException('Strategy not found');
     }
 
-    if (strategy.userId !== userId) {
+    if (strategy.userId !== userId && !strategy.isPublic) {
       throw new ForbiddenException('You do not own this strategy');
     }
 

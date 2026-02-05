@@ -8,11 +8,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./",
-    "resolveJsonModule": true,
-    "declaration": true
+    "rootDir": "../..",
+    "resolveJsonModule": true
   },
   "include": ["*.ts"],
   "exclude": ["node_modules", "dist"]
 }
-

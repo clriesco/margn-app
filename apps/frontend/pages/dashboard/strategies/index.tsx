@@ -4,47 +4,61 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../../../contexts/AuthContext';
 import DashboardSidebar from '../../../components/DashboardSidebar';
-import { formatNumberES } from '../../../lib/number-format';
-import { getPortfoliosByEmail } from '../../../lib/api';
+import { StrategyCard } from '../../../components/StrategyCard';
+import {
+  getPortfoliosByEmail,
+  getPublicStrategies,
+  updateStrategyVisibility,
+  fetchAPI,
+  type PublicStrategySummary,
+} from '../../../lib/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
 
-interface ScenarioMetricsSummary {
-  finalCapital: number;
-  cagr: number;
-  sharpe: number;
-  maxDrawdownEquity: number;
-}
+type TabId = 'mine' | 'platform' | 'community';
 
-interface StrategySummary {
-  id: string;
-  name: string;
-  createdAt: string;
-  config: {
-    symbols: string[];
-    weights: Record<string, number>;
-    leverageTarget: number;
-    weightMode?: string;
-    dynamicWeights?: boolean;
-  };
-  metrics: {
-    p10: ScenarioMetricsSummary;
-    p50: ScenarioMetricsSummary;
-    p90: ScenarioMetricsSummary;
-    totalWindows: number;
-    marginCallCount: number;
-  };
-}
+const RISK_FILTERS = [
+  { id: '', label: 'Todos' },
+  { id: 'conservative', label: 'Conservador' },
+  { id: 'moderate', label: 'Moderado' },
+  { id: 'growth', label: 'Crecimiento' },
+  { id: 'aggressive', label: 'Agresivo' },
+];
 
 export default function StrategiesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [portfolioId, setPortfolioId] = useState<string | null>(null);
-  const [strategies, setStrategies] = useState<StrategySummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const initialTab = (router.query.tab as string) || 'mine';
+  const [activeTab, setActiveTab] = useState<TabId>(
+    ['mine', 'platform', 'community'].includes(initialTab) ? initialTab as TabId : 'mine'
+  );
+
+  // Sync tab from URL when query changes (e.g., browser back)
+  useEffect(() => {
+    const tab = router.query.tab as string;
+    if (tab && ['mine', 'platform', 'community'].includes(tab)) {
+      setActiveTab(tab as TabId);
+    }
+  }, [router.query.tab]);
+
+  // My strategies state
+  const [myStrategies, setMyStrategies] = useState<PublicStrategySummary[]>([]);
+  const [myLoading, setMyLoading] = useState(true);
+  const [myError, setMyError] = useState('');
+
+  // Public strategies state
+  const [publicStrategies, setPublicStrategies] = useState<PublicStrategySummary[]>([]);
+  const [publicLoading, setPublicLoading] = useState(false);
+  const [publicError, setPublicError] = useState('');
+  const [riskFilter, setRiskFilter] = useState('');
+
+  // Actions state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [togglingVisibility, setTogglingVisibility] = useState<string | null>(null);
+  const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [applyResult, setApplyResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Load portfolioId
   useEffect(() => {
@@ -67,6 +81,7 @@ export default function StrategiesPage() {
     }
   }, [authLoading, user, router]);
 
+  // Load my strategies
   useEffect(() => {
     async function loadStrategies() {
       const token = localStorage.getItem('supabase_token');
@@ -76,24 +91,43 @@ export default function StrategiesPage() {
         const response = await fetch(`${API_BASE_URL}/strategies`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         if (!response.ok) throw new Error('Error loading strategies');
-
         const data = await response.json();
-        setStrategies(data);
+        setMyStrategies(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error');
+        setMyError(err instanceof Error ? err.message : 'Error');
       } finally {
-        setLoading(false);
+        setMyLoading(false);
       }
     }
-
     if (user) loadStrategies();
   }, [user]);
 
+  // Load public strategies when switching to platform/community tab
+  useEffect(() => {
+    if (activeTab === 'mine') return;
+    const type = activeTab === 'platform' ? 'platform' : 'community';
+
+    async function load() {
+      setPublicLoading(true);
+      setPublicError('');
+      try {
+        const data = await getPublicStrategies({
+          type,
+          riskProfileId: riskFilter || undefined,
+        });
+        setPublicStrategies(data);
+      } catch (err) {
+        setPublicError(err instanceof Error ? err.message : 'Error');
+      } finally {
+        setPublicLoading(false);
+      }
+    }
+    load();
+  }, [activeTab, riskFilter]);
+
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteConfirm) return;
-
     setDeletingId(deleteConfirm.id);
     const token = localStorage.getItem('supabase_token');
     if (!token) return;
@@ -103,25 +137,43 @@ export default function StrategiesPage() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!response.ok) throw new Error('Error deleting');
-
-      setStrategies((prev) => prev.filter((s) => s.id !== deleteConfirm.id));
+      setMyStrategies((prev) => prev.filter((s) => s.id !== deleteConfirm.id));
       setDeleteConfirm(null);
-    } catch {
-      // Ignore errors
-    } finally {
+    } catch { /* ignore */ } finally {
       setDeletingId(null);
     }
   }, [deleteConfirm]);
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-  };
+  const handleToggleVisibility = useCallback(async (strategyId: string, currentPublic: boolean) => {
+    setTogglingVisibility(strategyId);
+    try {
+      await updateStrategyVisibility(strategyId, !currentPublic);
+      setMyStrategies((prev) =>
+        prev.map((s) => (s.id === strategyId ? { ...s, isPublic: !currentPublic } : s))
+      );
+    } catch { /* ignore */ } finally {
+      setTogglingVisibility(null);
+    }
+  }, []);
 
-  const fmtPct = (v: number) => (v * 100).toFixed(1) + '%';
-  const fmtUsd = (v: number) => '$' + formatNumberES(v, { maximumFractionDigits: 0 });
+  const handleApply = useCallback(async (strategyId: string) => {
+    if (!portfolioId) return;
+    setApplyingId(strategyId);
+    setApplyResult(null);
+
+    try {
+      const result = await fetchAPI(`/strategies/${strategyId}/apply/${portfolioId}`, {
+        method: 'POST',
+      });
+      setApplyResult({ success: true, message: result.message });
+      setTimeout(() => router.push('/dashboard/rebalance'), 2000);
+    } catch (err) {
+      setApplyResult({ success: false, message: err instanceof Error ? err.message : 'Error' });
+    } finally {
+      setApplyingId(null);
+    }
+  }, [portfolioId, router]);
 
   if (authLoading) {
     return (
@@ -151,214 +203,186 @@ export default function StrategiesPage() {
         <div style={{ padding: '2rem', paddingTop: '4rem' }} className="strategies-wrapper">
           <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             {/* Header */}
-            <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
               <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-                Estrategias guardadas
+                Estrategias
               </h1>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                Backtests guardados que puedes aplicar a tu portfolio
+                Gestiona tus estrategias y explora las de la plataforma y comunidad
               </p>
             </div>
 
-            {loading && (
-              <div style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                padding: '3rem',
-                textAlign: 'center',
-              }}>
-                <p style={{ color: 'var(--text-muted)' }}>Cargando estrategias...</p>
-              </div>
-            )}
-
-            {error && (
-              <div style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '8px',
-                padding: '1rem',
-                color: '#ef4444',
-                marginBottom: '1.5rem',
-              }}>
-                {error}
-              </div>
-            )}
-
-            {!loading && !error && strategies.length === 0 && (
-              <div style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                padding: '3rem',
-                textAlign: 'center',
-              }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📈</div>
-                <h3 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
-                  Sin estrategias guardadas
-                </h3>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                  Ejecuta un backtest y guárdalo como estrategia para verlo aquí.
-                </p>
-                <Link
-                  href="/dashboard/backtest"
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '0', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+              {([
+                { id: 'mine' as TabId, label: 'Mis Estrategias' },
+                { id: 'platform' as TabId, label: 'Plataforma' },
+                { id: 'community' as TabId, label: 'Comunidad' },
+              ]).map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setRiskFilter(''); router.replace({ query: { ...router.query, tab: tab.id } }, undefined, { shallow: true }); }}
                   style={{
-                    display: 'inline-block',
-                    padding: '0.75rem 1.5rem',
-                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-                    color: 'white',
-                    borderRadius: '8px',
-                    textDecoration: 'none',
-                    fontWeight: '500',
+                    padding: '0.75rem 1.25rem',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: activeTab === tab.id ? '2px solid #3b82f6' : '2px solid transparent',
+                    color: activeTab === tab.id ? '#3b82f6' : 'var(--text-muted)',
+                    fontWeight: activeTab === tab.id ? 600 : 400,
+                    fontSize: '0.9375rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
                   }}
                 >
-                  Ir a Backtest
-                </Link>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Apply result notification */}
+            {applyResult && (
+              <div style={{
+                padding: '0.75rem 1rem',
+                background: applyResult.success ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                border: `1px solid ${applyResult.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                borderRadius: '8px',
+                color: applyResult.success ? '#10b981' : '#ef4444',
+                fontSize: '0.875rem',
+                marginBottom: '1rem',
+              }}>
+                {applyResult.message}
               </div>
             )}
 
-            {!loading && strategies.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {strategies.map((strategy) => (
-                  <div
-                    key={strategy.id}
-                    style={{
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
-                      padding: '1.25rem',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                      <div>
-                        <Link
-                          href={`/dashboard/strategies/${strategy.id}`}
-                          style={{ color: 'var(--text-primary)', margin: 0, fontSize: '1.0625rem', fontWeight: '600', textDecoration: 'none' }}
-                        >
-                          {strategy.name}
-                        </Link>
-                        <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0', fontSize: '0.8125rem' }}>
-                          {formatDate(strategy.createdAt)}
-                        </p>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <div style={{
-                          padding: '0.25rem 0.75rem',
-                          background: 'var(--hover-bg)',
-                          borderRadius: '20px',
-                          fontSize: '0.75rem',
-                          color: 'var(--text-muted)',
-                        }}>
-                          {strategy.config.leverageTarget}x
-                        </div>
-                        <div style={{
-                          padding: '0.25rem 0.75rem',
-                          background: 'var(--hover-bg)',
-                          borderRadius: '20px',
-                          fontSize: '0.75rem',
-                          color: 'var(--text-muted)',
-                        }}>
-                          {strategy.config.weightMode === 'sharpe'
-                            ? (strategy.config.dynamicWeights ? 'Sharpe dinámico' : 'Sharpe')
-                            : strategy.config.weightMode === 'equal' ? 'Iguales' : 'Manual'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Weights */}
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                      {Object.entries(strategy.config.weights).map(([symbol, weight]) => (
-                        <span
-                          key={symbol}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            background: 'var(--hover-bg)',
-                            border: '1px solid var(--border-light)',
-                            borderRadius: '4px',
-                            fontSize: '0.75rem',
-                            color: 'var(--text-secondary)',
-                          }}
-                        >
-                          {symbol}: {(weight * 100).toFixed(0)}%
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Metrics table */}
-                    <div style={{ overflowX: 'auto', marginBottom: '1rem' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
-                        <thead>
-                          <tr>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontWeight: '500' }}></th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', color: '#f87171', borderBottom: '1px solid var(--border)', fontWeight: '500' }}>P10</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', color: '#60a5fa', borderBottom: '1px solid var(--border)', fontWeight: '500' }}>P50</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', color: '#34d399', borderBottom: '1px solid var(--border)', fontWeight: '500' }}>P90</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td style={{ padding: '0.375rem 0.5rem', color: 'var(--text-muted)' }}>Capital</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-primary)', fontWeight: '500' }}>{fmtUsd(strategy.metrics.p10.finalCapital)}</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-primary)', fontWeight: '500' }}>{fmtUsd(strategy.metrics.p50.finalCapital)}</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-primary)', fontWeight: '500' }}>{fmtUsd(strategy.metrics.p90.finalCapital)}</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '0.375rem 0.5rem', color: 'var(--text-muted)' }}>CAGR</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: strategy.metrics.p10.cagr >= 0 ? '#34d399' : '#f87171' }}>{fmtPct(strategy.metrics.p10.cagr)}</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: strategy.metrics.p50.cagr >= 0 ? '#34d399' : '#f87171' }}>{fmtPct(strategy.metrics.p50.cagr)}</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: strategy.metrics.p90.cagr >= 0 ? '#34d399' : '#f87171' }}>{fmtPct(strategy.metrics.p90.cagr)}</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '0.375rem 0.5rem', color: 'var(--text-muted)' }}>Sharpe</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-primary)' }}>{strategy.metrics.p10.sharpe.toFixed(2)}</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-primary)' }}>{strategy.metrics.p50.sharpe.toFixed(2)}</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: 'var(--text-primary)' }}>{strategy.metrics.p90.sharpe.toFixed(2)}</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '0.375rem 0.5rem', color: 'var(--text-muted)' }}>Max DD</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: '#f87171' }}>{fmtPct(strategy.metrics.p10.maxDrawdownEquity)}</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: '#f87171' }}>{fmtPct(strategy.metrics.p50.maxDrawdownEquity)}</td>
-                            <td style={{ padding: '0.375rem 0.5rem', textAlign: 'right', color: '#f87171' }}>{fmtPct(strategy.metrics.p90.maxDrawdownEquity)}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Link
-                        href={`/dashboard/strategies/${strategy.id}`}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          background: 'transparent',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '6px',
-                          textDecoration: 'none',
-                          fontSize: '0.875rem',
-                        }}
-                      >
-                        Ver detalle
-                      </Link>
-                      <button
-                        onClick={() => setDeleteConfirm({ id: strategy.id, name: strategy.name })}
-                        disabled={deletingId === strategy.id}
-                        style={{
-                          padding: '0.375rem 0.75rem',
-                          background: 'transparent',
-                          color: deletingId === strategy.id ? 'var(--text-muted)' : '#ef4444',
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
-                          borderRadius: '6px',
-                          cursor: deletingId === strategy.id ? 'not-allowed' : 'pointer',
-                          fontSize: '0.8125rem',
-                        }}
-                      >
-                        {deletingId === strategy.id ? 'Eliminando...' : 'Eliminar'}
-                      </button>
-                    </div>
+            {/* ============ TAB: Mis Estrategias ============ */}
+            {activeTab === 'mine' && (
+              <>
+                {myLoading && (
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '3rem', textAlign: 'center' }}>
+                    <p style={{ color: 'var(--text-muted)' }}>Cargando estrategias...</p>
                   </div>
-                ))}
-              </div>
+                )}
+
+                {myError && (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '1rem', color: '#ef4444', marginBottom: '1.5rem' }}>
+                    {myError}
+                  </div>
+                )}
+
+                {!myLoading && !myError && myStrategies.length === 0 && (
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '3rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📈</div>
+                    <h3 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
+                      Sin estrategias guardadas
+                    </h3>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                      Ejecuta un backtest y guárdalo como estrategia para verlo aquí.
+                    </p>
+                    <Link
+                      href="/dashboard/backtest"
+                      style={{
+                        display: 'inline-block',
+                        padding: '0.75rem 1.5rem',
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                        color: 'white',
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        fontWeight: '500',
+                      }}
+                    >
+                      Ir a Backtest
+                    </Link>
+                  </div>
+                )}
+
+                {!myLoading && myStrategies.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+                    {myStrategies.map((strategy) => (
+                      <StrategyCard
+                        key={strategy.id}
+                        strategy={strategy}
+                        href={`/dashboard/strategies/${strategy.id}?tab=mine`}
+                        isPublic={!!strategy.isPublic}
+                        onToggleVisibility={() => handleToggleVisibility(strategy.id, !!strategy.isPublic)}
+                        isTogglingVisibility={togglingVisibility === strategy.id}
+                        onDelete={() => setDeleteConfirm({ id: strategy.id, name: strategy.name })}
+                        isDeleting={deletingId === strategy.id}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ============ TAB: Platform / Community ============ */}
+            {(activeTab === 'platform' || activeTab === 'community') && (
+              <>
+                {/* Risk profile filter */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                  {RISK_FILTERS.map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setRiskFilter(f.id)}
+                      style={{
+                        padding: '0.375rem 0.875rem',
+                        background: riskFilter === f.id ? 'rgba(59, 130, 246, 0.15)' : 'var(--hover-bg)',
+                        border: `1px solid ${riskFilter === f.id ? 'rgba(59, 130, 246, 0.4)' : 'var(--border)'}`,
+                        borderRadius: '20px',
+                        color: riskFilter === f.id ? '#3b82f6' : 'var(--text-muted)',
+                        fontSize: '0.8125rem',
+                        fontWeight: riskFilter === f.id ? 600 : 400,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {publicLoading && (
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '3rem', textAlign: 'center' }}>
+                    <p style={{ color: 'var(--text-muted)' }}>Cargando estrategias...</p>
+                  </div>
+                )}
+
+                {publicError && (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '1rem', color: '#ef4444', marginBottom: '1.5rem' }}>
+                    {publicError}
+                  </div>
+                )}
+
+                {!publicLoading && !publicError && publicStrategies.length === 0 && (
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '3rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+                      {activeTab === 'platform' ? '📊' : '👥'}
+                    </div>
+                    <h3 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
+                      {activeTab === 'platform'
+                        ? 'No hay estrategias de plataforma'
+                        : 'No hay estrategias de la comunidad'}
+                    </h3>
+                    <p style={{ color: 'var(--text-muted)' }}>
+                      {activeTab === 'community'
+                        ? 'Las estrategias públicas de otros usuarios aparecerán aquí.'
+                        : 'Contacta al administrador.'}
+                    </p>
+                  </div>
+                )}
+
+                {!publicLoading && publicStrategies.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+                    {publicStrategies.map((strategy) => (
+                      <StrategyCard
+                        key={strategy.id}
+                        strategy={strategy}
+                        href={`/dashboard/strategies/${strategy.id}?tab=${activeTab}`}
+                        onApply={portfolioId ? () => handleApply(strategy.id) : undefined}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

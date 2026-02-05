@@ -267,7 +267,7 @@ model DailyMetric {
 // Saved backtest strategies
 model SavedStrategy {
   id        String   @id @default(uuid())
-  userId    String   @map("user_id")
+  userId    String?  @map("user_id")
   name      String
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -275,16 +275,26 @@ model SavedStrategy {
   // { symbols, weights, initialCapital, monthlyContribution, leverageTarget, leverageMin, leverageMax, windowMonths, ... }
   configJson String @map("config_json") @db.Text
 
-  // Summary metrics for P10/P50/P90 (JSON)
+  // Summary metrics for P10/P50/P90 (JSON) — nullable for platform templates without backtest
   // { p10: { finalCapital, cagr, sharpe, maxDrawdown, ... }, p50: {...}, p90: {...}, totalWindows, marginCallCount }
-  metricsJson String @map("metrics_json") @db.Text
+  metricsJson String? @map("metrics_json") @db.Text
 
-  // Daily equity trajectories for P10/P50/P90 (JSON)
+  // Daily equity trajectories for P10/P50/P90 (JSON) — nullable for platform templates without backtest
   // { p10: [{ date, equity }, ...], p50: [...], p90: [...] }
-  trajectoriesJson String @map("trajectories_json") @db.Text
+  trajectoriesJson String? @map("trajectories_json") @db.Text
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Visibility and type
+  isPublic    Boolean @default(false) @map("is_public")
+  isPlatform  Boolean @default(false) @map("is_platform")
+  description String? @db.Text
+
+  // Risk profile association
+  riskProfileId String? @map("risk_profile_id")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([isPublic, isPlatform])
+  @@index([riskProfileId])
   @@map("saved_strategies")
 }

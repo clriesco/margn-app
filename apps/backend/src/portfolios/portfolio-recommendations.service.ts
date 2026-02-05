@@ -361,59 +361,72 @@ export class PortfolioRecommendationsService {
 
     // Case 2: Leverage LOW - Need to increase exposure (reborrow)
     if (leverageStatus === "low") {
-      // Use leverage target instead of minimum to bring it to a healthy level
-      // This ensures we recommend meaningful purchases, not just to reach the bare minimum
-      const targetLeverageForReborrow = config.leverageTarget || leverageMin;
-
-      const purchases = await this.calculateSpecificPurchases(
-        portfolio,
-        currentState,
-        targetWeights,
-        latestPrices,
-        targetLeverageForReborrow
-      );
-
-      const totalPurchaseValue = purchases.reduce(
-        (sum, p) => sum + p.valueUsd,
-        0
-      );
-
-      // Only show recommendation if there are meaningful purchases to make
-      if (purchases.length > 0 && totalPurchaseValue > 1) {
+      // Special case: brand new portfolio with no positions bought yet
+      if (currentState.exposure < 1) {
         recommendations.push({
           type: "leverage_low",
           priority: "high",
-          title: `Leverage Bajo (${leverage.toFixed(2).replace(".", ",")}x)`,
-          description: `Tu leverage efectivo está por debajo del mínimo (${leverageMin
-            .toFixed(1)
-            .replace(
-              ".",
-              ","
-            )}x). Se recomienda aumentar exposición mediante reborrow hasta el leverage objetivo (${targetLeverageForReborrow
-            .toFixed(1)
-            .replace(".", ",")}x).`,
-          actions: {
-            purchases,
-            totalPurchaseValue,
-          },
+          title: "Configura tu primera compra",
+          description:
+            "Ya tienes los activos y pesos de tu portfolio configurados. Ve a Rebalanceo para ver las compras exactas que necesitas hacer.",
           actionUrl: "/dashboard/rebalance",
         });
       } else {
-        // If leverage is very close to minimum, just show a reminder
-        recommendations.push({
-          type: "leverage_low",
-          priority: "medium",
-          title: `Leverage en el Límite Inferior (${leverage
-            .toFixed(2)
-            .replace(".", ",")}x)`,
-          description: `Tu leverage está justo en el límite inferior (${leverageMin
-            .toFixed(1)
-            .replace(
-              ".",
-              ","
-            )}x). Considera aumentar exposición si el mercado lo permite.`,
-          actionUrl: "/dashboard/rebalance",
-        });
+        // Use leverage target instead of minimum to bring it to a healthy level
+        // This ensures we recommend meaningful purchases, not just to reach the bare minimum
+        const targetLeverageForReborrow =
+          config.leverageTarget || leverageMin;
+
+        const purchases = await this.calculateSpecificPurchases(
+          portfolio,
+          currentState,
+          targetWeights,
+          latestPrices,
+          targetLeverageForReborrow
+        );
+
+        const totalPurchaseValue = purchases.reduce(
+          (sum, p) => sum + p.valueUsd,
+          0
+        );
+
+        // Only show recommendation if there are meaningful purchases to make
+        if (purchases.length > 0 && totalPurchaseValue > 1) {
+          recommendations.push({
+            type: "leverage_low",
+            priority: "high",
+            title: `Leverage Bajo (${leverage.toFixed(2).replace(".", ",")}x)`,
+            description: `Tu leverage efectivo está por debajo del mínimo (${leverageMin
+              .toFixed(1)
+              .replace(
+                ".",
+                ","
+              )}x). Se recomienda aumentar exposición mediante reborrow hasta el leverage objetivo (${targetLeverageForReborrow
+              .toFixed(1)
+              .replace(".", ",")}x).`,
+            actions: {
+              purchases,
+              totalPurchaseValue,
+            },
+            actionUrl: "/dashboard/rebalance",
+          });
+        } else {
+          // If leverage is very close to minimum, just show a reminder
+          recommendations.push({
+            type: "leverage_low",
+            priority: "medium",
+            title: `Leverage en el Límite Inferior (${leverage
+              .toFixed(2)
+              .replace(".", ",")}x)`,
+            description: `Tu leverage está justo en el límite inferior (${leverageMin
+              .toFixed(1)
+              .replace(
+                ".",
+                ","
+              )}x). Considera aumentar exposición si el mercado lo permite.`,
+            actionUrl: "/dashboard/rebalance",
+          });
+        }
       }
     }
 

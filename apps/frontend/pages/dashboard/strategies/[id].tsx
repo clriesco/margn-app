@@ -6,7 +6,7 @@ import { Pencil } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import DashboardSidebar from '../../../components/DashboardSidebar';
 import { formatNumberES } from '../../../lib/number-format';
-import { getPortfoliosByEmail } from '../../../lib/api';
+import { getPortfoliosByEmail, updateStrategyVisibility } from '../../../lib/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
 
@@ -33,6 +33,11 @@ interface StrategyDetail {
   id: string;
   name: string;
   createdAt: string;
+  isPublic?: boolean;
+  isPlatform?: boolean;
+  riskProfileId?: string | null;
+  description?: string | null;
+  isOwner?: boolean;
   config: {
     symbols: string[];
     weights: Record<string, number>;
@@ -51,12 +56,12 @@ interface StrategyDetail {
     p90: ScenarioMetrics;
     totalWindows: number;
     marginCallCount: number;
-  };
+  } | null;
   trajectories: {
     p10: { points: TrajectoryPoint[] };
     p50: { points: TrajectoryPoint[] };
     p90: { points: TrajectoryPoint[] };
-  };
+  } | null;
 }
 
 // SVG Chart component for trajectories
@@ -64,7 +69,7 @@ interface StrategyDetail {
 // We normalize by progress (0-100%) so each trajectory fills the chart width
 // If a trajectory ended early (margin call), it stops at that point
 function TrajectoriesChart({ trajectories, config, height = 300 }: {
-  trajectories: StrategyDetail['trajectories'];
+  trajectories: NonNullable<StrategyDetail['trajectories']>;
   config: StrategyDetail['config'];
   height?: number;
 }) {
@@ -317,10 +322,15 @@ export default function StrategyDetailPage() {
   const [applyResult, setApplyResult] = useState<{ success: boolean; message: string } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [togglingVisibility, setTogglingVisibility] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [savingName, setSavingName] = useState(false);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState('');
+  const [savingDescription, setSavingDescription] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -420,7 +430,8 @@ export default function StrategyDetailPage() {
 
       if (!response.ok) throw new Error('Error deleting');
 
-      router.push('/dashboard/strategies');
+      const tab = router.query.tab;
+      router.push(`/dashboard/strategies${tab ? `?tab=${tab}` : ''}`);
     } catch {
       setDeleting(false);
       setShowDeleteConfirm(false);
@@ -476,6 +487,55 @@ export default function StrategyDetailPage() {
     }
   }, [saveEditedName, cancelEditingName]);
 
+  const startEditingDescription = useCallback(() => {
+    if (!strategy) return;
+    setEditedDescription(strategy.description || '');
+    setEditingDescription(true);
+    setTimeout(() => descriptionInputRef.current?.focus(), 0);
+  }, [strategy]);
+
+  const cancelEditingDescription = useCallback(() => {
+    setEditingDescription(false);
+    setEditedDescription('');
+  }, []);
+
+  const saveEditedDescription = useCallback(async () => {
+    if (!strategy) return;
+
+    const token = localStorage.getItem('supabase_token');
+    if (!token) return;
+
+    setSavingDescription(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/strategies/${strategy.id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description: editedDescription.trim() }),
+      });
+
+      if (!response.ok) throw new Error('Error saving description');
+
+      setStrategy((prev) => prev ? { ...prev, description: editedDescription.trim() || null } : null);
+      setEditingDescription(false);
+    } catch {
+      // Keep editing mode open on error
+    } finally {
+      setSavingDescription(false);
+    }
+  }, [strategy, editedDescription]);
+
+  const handleDescriptionKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      saveEditedDescription();
+    } else if (e.key === 'Escape') {
+      cancelEditingDescription();
+    }
+  }, [saveEditedDescription, cancelEditingDescription]);
+
   const handleNewBacktest = useCallback(() => {
     if (!strategy) return;
 
@@ -497,6 +557,17 @@ export default function StrategyDetailPage() {
     localStorage.setItem('backtest_from_strategy', JSON.stringify(backtestConfig));
     router.push('/dashboard/backtest');
   }, [strategy, router]);
+
+  const handleToggleVisibility = useCallback(async () => {
+    if (!strategy) return;
+    setTogglingVisibility(true);
+    try {
+      await updateStrategyVisibility(strategy.id, !strategy.isPublic);
+      setStrategy((prev) => prev ? { ...prev, isPublic: !prev.isPublic } : null);
+    } catch { /* ignore */ } finally {
+      setTogglingVisibility(false);
+    }
+  }, [strategy]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -524,6 +595,8 @@ export default function StrategyDetailPage() {
       <Head>
         <title>{strategy?.name || 'Estrategia'} | Estrategias</title>
         <style dangerouslySetInnerHTML={{ __html: `
+          .editable-row .edit-pencil { opacity: 0; transition: opacity 0.15s ease; }
+          .editable-row:hover .edit-pencil { opacity: 1; }
           @media (max-width: 768px) {
             .strategy-detail-wrapper { padding: 1rem !important; padding-top: 4rem !important; }
             .strategy-config-grid { grid-template-columns: repeat(2, 1fr) !important; }
@@ -556,7 +629,7 @@ export default function StrategyDetailPage() {
                 }}>
                   {error || 'Estrategia no encontrada'}
                 </div>
-                <Link href="/dashboard/strategies" style={{ color: 'var(--text-secondary)' }}>
+                <Link href={`/dashboard/strategies${router.query.tab ? `?tab=${router.query.tab}` : ''}`} style={{ color: 'var(--text-secondary)' }}>
                   ← Volver a estrategias
                 </Link>
               </>
@@ -564,13 +637,13 @@ export default function StrategyDetailPage() {
               <>
                 {/* Header */}
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <Link href="/dashboard/strategies" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.875rem' }}>
+                  <Link href={`/dashboard/strategies${router.query.tab ? `?tab=${router.query.tab}` : ''}`} style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.875rem' }}>
                     ← Volver a estrategias
                   </Link>
                 </div>
 
                 <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                  <div className="editable-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
                     {editingName ? (
                       <input
                         ref={nameInputRef}
@@ -578,7 +651,7 @@ export default function StrategyDetailPage() {
                         value={editedName}
                         onChange={(e) => setEditedName(e.target.value)}
                         onKeyDown={handleNameKeyDown}
-                        onBlur={cancelEditingName}
+                        onBlur={saveEditedName}
                         disabled={savingName}
                         style={{
                           fontSize: '1.875rem',
@@ -598,9 +671,84 @@ export default function StrategyDetailPage() {
                         <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
                           {strategy.name}
                         </h1>
+                        {strategy.isOwner !== false && (
+                          <button
+                            className="edit-pencil"
+                            onClick={startEditingName}
+                            title="Editar nombre"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '0.25rem',
+                              color: 'var(--text-muted)',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.125rem' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: 0 }}>
+                      Creada: {formatDate(strategy.createdAt)}
+                    </p>
+                    {strategy.isOwner !== false && (
+                      <button
+                        onClick={handleToggleVisibility}
+                        disabled={togglingVisibility}
+                        style={{
+                          padding: '0.1875rem 0.625rem',
+                          background: strategy.isPublic ? 'rgba(16, 185, 129, 0.1)' : 'var(--hover-bg)',
+                          border: `1px solid ${strategy.isPublic ? 'rgba(16, 185, 129, 0.3)' : 'var(--border)'}`,
+                          borderRadius: '20px',
+                          fontSize: '0.75rem',
+                          color: strategy.isPublic ? '#10b981' : 'var(--text-muted)',
+                          cursor: togglingVisibility ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {strategy.isPublic ? 'Pública' : 'Privada'}
+                      </button>
+                    )}
+                  </div>
+                  {editingDescription ? (
+                    <div style={{ marginTop: '0.25rem' }}>
+                      <textarea
+                        ref={descriptionInputRef}
+                        value={editedDescription}
+                        onChange={(e) => setEditedDescription(e.target.value)}
+                        onKeyDown={handleDescriptionKeyDown}
+                        onBlur={saveEditedDescription}
+                        disabled={savingDescription}
+                        placeholder="Añadir descripción..."
+                        rows={2}
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--accent)',
+                          borderRadius: '4px',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.875rem',
+                          resize: 'vertical',
+                          fontFamily: 'inherit',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                  ) : (strategy.description || strategy.isOwner !== false) ? (
+                    <div className="editable-row" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.25rem' }}>
+                      <p style={{ color: strategy.description ? 'var(--text-secondary)' : 'var(--text-dim)', fontSize: '0.875rem', margin: 0, fontStyle: strategy.description ? 'normal' : 'italic' }}>
+                        {strategy.description || 'Sin descripción'}
+                      </p>
+                      {strategy.isOwner !== false && (
                         <button
-                          onClick={startEditingName}
-                          title="Editar nombre"
+                          className="edit-pencil"
+                          onClick={startEditingDescription}
+                          title="Editar descripción"
                           style={{
                             background: 'transparent',
                             border: 'none',
@@ -611,14 +759,11 @@ export default function StrategyDetailPage() {
                             alignItems: 'center',
                           }}
                         >
-                          <Pencil size={16} />
+                          <Pencil size={14} />
                         </button>
-                      </>
-                    )}
-                  </div>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                    Creada: {formatDate(strategy.createdAt)}
-                  </p>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Config */}
@@ -674,6 +819,7 @@ export default function StrategyDetailPage() {
                 </div>
 
                 {/* Trajectories Chart */}
+                {strategy.trajectories && (
                 <div style={{
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border)',
@@ -686,8 +832,10 @@ export default function StrategyDetailPage() {
                   </h3>
                   <TrajectoriesChart trajectories={strategy.trajectories} config={strategy.config} />
                 </div>
+                )}
 
                 {/* Metrics */}
+                {strategy.metrics && (
                 <div style={{
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border)',
@@ -761,6 +909,7 @@ export default function StrategyDetailPage() {
                     </table>
                   </div>
                 </div>
+                )}
 
                 {/* Apply section */}
                 <div style={{
@@ -801,6 +950,7 @@ export default function StrategyDetailPage() {
                   )}
 
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    {strategy.metrics && (
                     <button
                       onClick={handleNewBacktest}
                       style={{
@@ -823,6 +973,7 @@ export default function StrategyDetailPage() {
                       </svg>
                       Nuevo backtest
                     </button>
+                    )}
 
                     <button
                       onClick={handleApply}
@@ -843,7 +994,8 @@ export default function StrategyDetailPage() {
                   </div>
                 </div>
 
-                {/* Delete */}
+                {/* Delete — only for owner */}
+                {strategy.isOwner !== false && (
                 <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
@@ -860,6 +1012,7 @@ export default function StrategyDetailPage() {
                     Eliminar estrategia
                   </button>
                 </div>
+                )}
 
                 {/* Delete confirmation modal */}
                 {showDeleteConfirm && (

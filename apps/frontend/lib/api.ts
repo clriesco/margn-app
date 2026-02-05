@@ -836,3 +836,62 @@ export async function bulkUpdateTargetAssets(
     body: JSON.stringify({ assets }),
   });
 }
+
+// ============================================
+// STRATEGIES (PUBLIC)
+// ============================================
+
+/**
+ * Summary of a public/platform strategy
+ */
+export interface PublicStrategySummary {
+  id: string;
+  name: string;
+  description?: string | null;
+  isPlatform?: boolean;
+  isPublic?: boolean;
+  riskProfileId?: string | null;
+  authorName?: string | null;
+  config: {
+    symbols: string[];
+    weights: Record<string, number>;
+    leverageTarget: number;
+    weightMode?: string;
+    dynamicWeights?: boolean;
+  };
+  metrics: {
+    p50: {
+      finalCapital: number;
+      cagr: number;
+      sharpe: number;
+      maxDrawdownEquity: number;
+    };
+    [key: string]: unknown;
+  } | null;
+}
+
+/**
+ * Get public strategies (platform + community)
+ */
+export async function getPublicStrategies(
+  filters?: { riskProfileId?: string; type?: "platform" | "community" }
+): Promise<PublicStrategySummary[]> {
+  const params = new URLSearchParams();
+  if (filters?.riskProfileId) params.set("riskProfileId", filters.riskProfileId);
+  if (filters?.type) params.set("type", filters.type);
+  const qs = params.toString();
+  return fetchAPI(`/strategies/public${qs ? `?${qs}` : ""}`);
+}
+
+/**
+ * Update strategy visibility (public/private toggle)
+ */
+export async function updateStrategyVisibility(
+  strategyId: string,
+  isPublic: boolean
+): Promise<{ id: string; isPublic: boolean }> {
+  return fetchAPI(`/strategies/${strategyId}/visibility`, {
+    method: "PATCH",
+    body: JSON.stringify({ isPublic }),
+  });
+}

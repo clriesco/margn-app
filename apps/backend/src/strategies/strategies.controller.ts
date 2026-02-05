@@ -6,20 +6,26 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 
 import { AuthGuard } from '../auth/auth.guard';
 
-import { CreateStrategyDto } from './dto/create-strategy.dto';
+import { CreateStrategyDto, UpdateVisibilityDto } from './dto/create-strategy.dto';
 import { StrategiesService } from './strategies.service';
 
-class UpdateStrategyNameDto {
+class UpdateStrategyDto {
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  name!: string;
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
 
 @Controller('strategies')
@@ -37,18 +43,44 @@ export class StrategiesController {
     return this.strategiesService.findAllByUser(req.user.id);
   }
 
+  @Get('public')
+  async findAllPublic(
+    @Request() req: any,
+    @Query('riskProfileId') riskProfileId?: string,
+    @Query('type') type?: 'platform' | 'community',
+  ) {
+    return this.strategiesService.findAllPublic({
+      riskProfileId,
+      type,
+      excludeUserId: req.user?.id,
+    });
+  }
+
   @Get(':id')
   async findOne(@Request() req: any, @Param('id') id: string) {
     return this.strategiesService.findOne(req.user.id, id);
   }
 
   @Patch(':id')
-  async updateName(
+  async update(
     @Request() req: any,
     @Param('id') id: string,
-    @Body() dto: UpdateStrategyNameDto,
+    @Body() dto: UpdateStrategyDto,
   ) {
-    return this.strategiesService.updateName(req.user.id, id, dto.name);
+    return this.strategiesService.update(req.user.id, id, dto);
+  }
+
+  @Patch(':id/visibility')
+  async updateVisibility(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateVisibilityDto,
+  ) {
+    return this.strategiesService.updateVisibility(
+      req.user.id,
+      id,
+      dto.isPublic,
+    );
   }
 
   @Delete(':id')

@@ -146,4 +146,17 @@ export class CreateStrategyDto {
   @ValidateNested()
   @Type(() => BacktestTrajectories)
   trajectories!: BacktestTrajectories;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+}
+
+export class UpdateVisibilityDto {
+  @IsBoolean()
+  isPublic!: boolean;
 }

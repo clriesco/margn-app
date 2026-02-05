@@ -21,6 +21,8 @@ export default function SaveStrategyButton({ result }: Props) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +49,8 @@ export default function SaveStrategyButton({ result }: Props) {
 
     const payload = {
       name: name.trim(),
+      description: description.trim() || undefined,
+      isPublic,
       config: {
         symbols: result.config.symbols,
         weights: result.weightsUsed,
@@ -129,13 +133,15 @@ export default function SaveStrategyButton({ result }: Props) {
 
       setShowModal(false);
       setName('');
+      setDescription('');
+      setIsPublic(false);
       router.push('/dashboard/strategies');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
       setSaving(false);
     }
-  }, [name, result, router]);
+  }, [name, description, isPublic, result, router]);
 
   return (
     <>
@@ -226,6 +232,34 @@ export default function SaveStrategyButton({ result }: Props) {
               />
             </div>
 
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                Descripción <span style={{ color: 'var(--text-dim)', fontWeight: 'normal' }}>(opcional)</span>
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setShowModal(false);
+                  }
+                }}
+                placeholder="Ej: Portfolio conservador con fuerte exposición a oro y bonos"
+                rows={2}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.875rem',
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                }}
+              />
+            </div>
+
             <div style={{
               padding: '0.75rem',
               background: 'var(--hover-bg)',
@@ -242,6 +276,26 @@ export default function SaveStrategyButton({ result }: Props) {
                 <li>Trayectorias de equity</li>
               </ul>
             </div>
+
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginBottom: '1rem',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#10b981' }}
+              />
+              Hacer pública en la comunidad
+            </label>
 
             {error && (
               <div style={{
