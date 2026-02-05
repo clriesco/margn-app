@@ -512,7 +512,8 @@ async function sendNotifications(result: DailyCheckResult): Promise<void> {
 // MAIN
 // ============================================
 
-if (require.main === module) {
+// Run if called directly (CommonJS only)
+if (typeof require !== "undefined" && require.main === module) {
   runDailyCheck()
     .then(async (result) => {
       await sendNotifications(result);

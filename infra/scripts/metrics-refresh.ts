@@ -538,8 +538,8 @@ async function refreshMetrics() {
   }
 }
 
-// Run if called directly
-if (require.main === module) {
+// Run if called directly (CommonJS only)
+if (typeof require !== "undefined" && require.main === module) {
   refreshMetrics()
     .then(() => {
       console.log("✅ Metrics refresh completed successfully");

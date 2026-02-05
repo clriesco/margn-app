@@ -136,8 +136,8 @@ async function runAllDailyJobs() {
   }
 }
 
-// Run if called directly
-if (require.main === module) {
+// Run if called directly (CommonJS only)
+if (typeof require !== "undefined" && require.main === module) {
   runAllDailyJobs().catch((error) => {
     console.error("❌ Fatal error in daily jobs pipeline:", error);
     process.exit(1);

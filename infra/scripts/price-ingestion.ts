@@ -113,8 +113,8 @@ async function ingestPrices() {
   }
 }
 
-// Run if called directly
-if (require.main === module) {
+// Run if called directly (CommonJS only)
+if (typeof require !== "undefined" && require.main === module) {
   ingestPrices()
     .then(() => {
       console.log("✅ Price ingestion completed successfully");
