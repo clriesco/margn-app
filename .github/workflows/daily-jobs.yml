@@ -71,7 +71,8 @@ jobs:
         if: |
           steps.check.outputs.should_run == 'true' &&
           (github.event_name == 'schedule' || github.event.inputs.job == 'all' || github.event.inputs.job == 'prices')
-        run: npx ts-node infra/scripts/price-ingestion.ts
+        working-directory: infra/scripts
+        run: npx ts-node price-ingestion.ts
         env:
           DATABASE_URL: ${{ secrets[matrix.database_url_secret] }}
 
@@ -79,7 +80,8 @@ jobs:
         if: |
           steps.check.outputs.should_run == 'true' &&
           (github.event_name == 'schedule' || github.event.inputs.job == 'all' || github.event.inputs.job == 'metrics')
-        run: npx ts-node infra/scripts/metrics-refresh.ts
+        working-directory: infra/scripts
+        run: npx ts-node metrics-refresh.ts
         env:
           DATABASE_URL: ${{ secrets[matrix.database_url_secret] }}
 
@@ -87,6 +89,7 @@ jobs:
         if: |
           steps.check.outputs.should_run == 'true' &&
           (github.event_name == 'schedule' || github.event.inputs.job == 'all' || github.event.inputs.job == 'daily-check')
-        run: npx ts-node infra/scripts/daily-check.ts
+        working-directory: infra/scripts
+        run: npx ts-node daily-check.ts
         env:
           DATABASE_URL: ${{ secrets[matrix.database_url_secret] }}
