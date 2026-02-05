@@ -12,7 +12,6 @@
     "reset:database": "NODE_PATH=../../node_modules npx ts-node reset-database.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {

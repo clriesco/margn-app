@@ -65,7 +65,7 @@ jobs:
 
       - name: Generate Prisma Client
         if: steps.check.outputs.should_run == 'true'
-        run: cd infra/scripts && npm run prisma:generate
+        run: npm --workspace apps/backend run prisma:generate
 
       - name: Price Ingestion (${{ matrix.env_name }})
         if: |
