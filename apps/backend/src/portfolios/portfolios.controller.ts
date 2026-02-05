@@ -1,3 +1,4 @@
+import { getAllRiskProfiles } from "@leveraged-dca/shared";
 import {
   Body,
   Controller,
@@ -20,7 +21,6 @@ import { OnboardingService } from "./onboarding.service";
 import { PortfoliosService } from "./portfolios.service";
 
 @Controller("portfolios")
-@UseGuards(AuthGuard)
 export class PortfoliosController {
   constructor(
     private readonly portfoliosService: PortfoliosService,
@@ -28,10 +28,21 @@ export class PortfoliosController {
   ) {}
 
   /**
+   * Get available risk profiles
+   * GET /api/portfolios/risk-profiles
+   * Public endpoint (no auth required)
+   */
+  @Get("risk-profiles")
+  getRiskProfiles() {
+    return getAllRiskProfiles();
+  }
+
+  /**
    * Create a new portfolio (onboarding) with SSE progress
    * POST /api/portfolios
    * Returns Server-Sent Events stream with progress updates
    */
+  @UseGuards(AuthGuard)
   @Post()
   @Header("Content-Type", "text/event-stream")
   @Header("Cache-Control", "no-cache")
@@ -83,6 +94,7 @@ export class PortfoliosController {
    * GET /api/portfolios/needs-onboarding
    */
   @Get("needs-onboarding")
+  @UseGuards(AuthGuard)
   async needsOnboarding(@CurrentUser() user: any) {
     const hasPortfolio = await this.onboardingService.userHasPortfolio(user.id);
     return { needsOnboarding: !hasPortfolio };
@@ -93,6 +105,7 @@ export class PortfoliosController {
    * GET /api/portfolios?email=user@example.com
    */
   @Get()
+  @UseGuards(AuthGuard)
   async findByUser(
     @Query("email") email: string,
     @CurrentUser() user: any

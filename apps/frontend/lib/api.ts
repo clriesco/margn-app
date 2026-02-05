@@ -340,6 +340,8 @@ export interface PortfolioConfiguration {
   maxWeight: number;
   minWeight: number;
   targetWeights: TargetWeight[];
+  riskProfile: RiskProfileId | null;
+  riskProfileName: string | null;
 }
 
 /**
@@ -368,6 +370,7 @@ export interface UpdatePortfolioConfigurationDto {
   maxWeight?: number;
   minWeight?: number;
   targetWeights?: TargetWeight[];
+  riskProfile?: RiskProfileId | null;
 }
 
 /**
@@ -663,6 +666,7 @@ export interface CreatePortfolioRequest {
   contributionFrequency?: "weekly" | "biweekly" | "monthly" | "quarterly";
   contributionDayOfMonth?: number;
   contributionEnabled?: boolean;
+  riskProfile?: "conservative" | "moderate" | "growth" | "aggressive";
 }
 
 /**
@@ -712,4 +716,123 @@ export async function getBacktestPrices(
     to,
   });
   return fetchAPI(`/backtest/prices?${params.toString()}`);
+}
+
+// ============================================
+// RISK PROFILES
+// ============================================
+
+export type RiskProfileId = "conservative" | "moderate" | "growth" | "aggressive";
+
+export interface RiskProfileParams {
+  leverageMin: number;
+  leverageMax: number;
+  leverageTarget: number;
+  maintenanceMarginRatio: number;
+  meanReturnShrinkage: number;
+  maxWeight: number;
+  minWeight: number;
+  windowMonths: number;
+}
+
+export interface RiskProfile {
+  id: RiskProfileId;
+  name: string;
+  nameEn: string;
+  icon: string;
+  description: string;
+  shortDescription: string;
+  riskLevel: 1 | 2 | 3 | 4;
+  params: RiskProfileParams;
+  suitableFor: string[];
+  notSuitableFor: string[];
+}
+
+/**
+ * Get all available risk profiles (public endpoint, no auth required)
+ */
+export async function getRiskProfiles(): Promise<RiskProfile[]> {
+  const response = await fetch(`${API_BASE_URL}/portfolios/risk-profiles`);
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+// ============================================
+// TARGET ASSETS
+// ============================================
+
+/**
+ * Target asset response from the API
+ */
+export interface TargetAsset {
+  id: string;
+  symbol: string;
+  name: string;
+  assetType: string;
+  targetWeight: number;
+  enabled: boolean;
+  hasPosition: boolean; // Whether there's an actual holding
+  currentQuantity: number | null;
+  currentValue: number | null;
+}
+
+/**
+ * Get all target assets for a portfolio
+ */
+export async function getTargetAssets(portfolioId: string): Promise<TargetAsset[]> {
+  return fetchAPI(`/portfolios/${portfolioId}/target-assets`);
+}
+
+/**
+ * Add a new target asset to a portfolio
+ */
+export async function addTargetAsset(
+  portfolioId: string,
+  data: { symbol: string; targetWeight?: number }
+): Promise<TargetAsset> {
+  return fetchAPI(`/portfolios/${portfolioId}/target-assets`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Update a target asset's weight or enabled status
+ */
+export async function updateTargetAsset(
+  portfolioId: string,
+  symbol: string,
+  data: { targetWeight?: number; enabled?: boolean }
+): Promise<TargetAsset> {
+  return fetchAPI(`/portfolios/${portfolioId}/target-assets/${encodeURIComponent(symbol)}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Remove a target asset from a portfolio
+ */
+export async function removeTargetAsset(
+  portfolioId: string,
+  symbol: string
+): Promise<{ success: boolean }> {
+  return fetchAPI(`/portfolios/${portfolioId}/target-assets/${encodeURIComponent(symbol)}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * Bulk update all target assets (for weight reallocation)
+ */
+export async function bulkUpdateTargetAssets(
+  portfolioId: string,
+  assets: Array<{ symbol: string; targetWeight: number; enabled?: boolean }>
+): Promise<TargetAsset[]> {
+  return fetchAPI(`/portfolios/${portfolioId}/target-assets`, {
+    method: 'PUT',
+    body: JSON.stringify({ assets }),
+  });
 }

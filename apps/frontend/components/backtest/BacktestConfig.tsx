@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X } from 'lucide-react';
+import { X, ChevronDown, ChevronRight } from 'lucide-react';
 import { NumberInput } from '../NumberInput';
 import { Tooltip } from '../Tooltip';
-import { searchSymbols, type SymbolSearchResult } from '../../lib/api';
+import { RiskProfileSelector, type RiskProfileId } from '../RiskProfileSelector';
+import { searchSymbols, getRiskProfiles, type SymbolSearchResult, type RiskProfile } from '../../lib/api';
 import type { BacktestConfig as BacktestConfigType } from '../../lib/backtest/types';
 
 interface UserDefaults {
@@ -37,7 +38,7 @@ const DEFAULT_CONFIG: BacktestConfigType = {
   leverageTarget: 2.5,
   startDate: '2015-01-01',
   endDate: new Date().toISOString().split('T')[0],
-  windowMonths: 60,
+  windowMonths: 60, // 5 years default
   weightMode: 'sharpe',
   dynamicWeights: false,
   dynamicWeightsLookback: 12,
@@ -94,15 +95,15 @@ const TIPS = {
     'Fin del período de datos. Cuanto más largo el rango, más ventanas se simulan y más robusto el resultado.',
   ventana:
     'Duración de cada simulación individual. El backtest genera una ventana nueva cada mes dentro del rango total y luego muestra los percentiles P10/P50/P90.\n\nEjemplo: con rango 2015-2024 y ventana de 5 años, se simulan ~55 ventanas solapadas.',
-  weightSharpe:
-    'El optimizador calcula automáticamente los pesos de cada activo para maximizar el ratio Sharpe (rentabilidad ajustada por riesgo).',
+  weightAuto:
+    'Los pesos de cada activo se calculan automáticamente usando el ratio de Sharpe, que maximiza el rendimiento ajustado por riesgo. El sistema analiza el histórico de precios para encontrar la combinación óptima.',
   weightEqual:
     'Reparte el capital en partes iguales entre todos los activos. Simple y sin optimización.',
   weightManual:
     'Tú defines exactamente qué porcentaje va a cada activo.',
   dynamicWeights:
     'Re-optimiza los pesos cada mes usando una ventana rolling de datos recientes. '
-    + 'Más realista pero más lento.\n\n'
+    + 'Reduce el riesgo al adaptarse a cambios de mercado, aunque típicamente también reduce la rentabilidad.\n\n'
     + '- Desactivado: calcula los pesos una vez al inicio usando todo el histórico\n'
     + '- Activado: recalcula mensualmente con los últimos N meses',
   dynamicWeightsLookback:
@@ -119,6 +120,11 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
   const [hasAppliedDefaults, setHasAppliedDefaults] = useState(false);
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Risk profile state
+  const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([]);
+  const [selectedRiskProfile, setSelectedRiskProfile] = useState<RiskProfileId | null>('moderate');
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
 
   // Apply user defaults when they arrive (async)
   useEffect(() => {
@@ -148,10 +154,48 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
       setHasAppliedDefaults(true);
     }
   }, [userDefaults, hasAppliedDefaults]);
+
+  // Load risk profiles on mount
+  useEffect(() => {
+    async function loadRiskProfiles() {
+      try {
+        const profiles = await getRiskProfiles();
+        setRiskProfiles(profiles);
+      } catch (err) {
+        console.error('Failed to load risk profiles:', err);
+      } finally {
+        setIsLoadingProfiles(false);
+      }
+    }
+    loadRiskProfiles();
+  }, []);
+
+  // Handle risk profile change
+  const handleRiskProfileChange = useCallback((profileId: RiskProfileId | null) => {
+    setSelectedRiskProfile(profileId);
+    if (profileId && riskProfiles.length > 0) {
+      const profile = riskProfiles.find(p => p.id === profileId);
+      if (profile) {
+        setConfig(prev => ({
+          ...prev,
+          leverageMin: profile.params.leverageMin,
+          leverageMax: profile.params.leverageMax,
+          leverageTarget: profile.params.leverageTarget,
+          maintenanceMarginRatio: profile.params.maintenanceMarginRatio,
+          meanReturnShrinkage: profile.params.meanReturnShrinkage,
+          maxWeight: profile.params.maxWeight,
+          minWeight: profile.params.minWeight,
+          windowMonths: profile.params.windowMonths,
+        }));
+      }
+    }
+  }, [riskProfiles]);
+
   const [searchResults, setSearchResults] = useState<SymbolSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [manualWeights, setManualWeights] = useState<Record<string, number>>({});
+  const [showPeriodSettings, setShowPeriodSettings] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -301,6 +345,56 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
         </div>
       )}
 
+      {/* ── Perfil de Riesgo ───────────────────────────────────── */}
+      <div style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>Perfil de Riesgo</h3>
+        <div style={{ marginBottom: '0.5rem' }}>
+          {isLoadingProfiles ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Cargando perfiles...</div>
+          ) : (
+            <RiskProfileSelector
+              profiles={riskProfiles}
+              selected={selectedRiskProfile}
+              onSelect={handleRiskProfileChange}
+              showCustomOption={true}
+              compact={true}
+            />
+          )}
+        </div>
+        {/* Show leverage info for the selected profile */}
+        {selectedRiskProfile && riskProfiles.length > 0 && (() => {
+          const profile = riskProfiles.find(p => p.id === selectedRiskProfile);
+          if (!profile) return null;
+          return (
+            <div style={{
+              marginTop: '0.75rem',
+              padding: '0.75rem 1rem',
+              background: 'var(--input-bg)',
+              borderRadius: '6px',
+              border: '1px solid var(--input-border)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                <div>
+                  <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Leverage</span>
+                  <div style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.95rem' }}>
+                    {profile.params.leverageMin}x – {profile.params.leverageMax}x
+                    <span style={{ color: 'var(--text-muted)', fontWeight: '400', fontSize: '0.85rem', marginLeft: '0.5rem' }}>
+                      (objetivo: {profile.params.leverageTarget}x)
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Peso Máx.</span>
+                  <div style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.95rem' }}>
+                    {(profile.params.maxWeight * 100).toFixed(0)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
       {/* ── Activos ──────────────────────────────────────────────── */}
       <div style={sectionStyle}>
         <h3 style={sectionTitleStyle}>Activos</h3>
@@ -386,7 +480,7 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
         <h3 style={sectionTitleStyle}>Pesos</h3>
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           {([
-            { mode: 'sharpe' as const, label: 'Sharpe Auto', tip: TIPS.weightSharpe },
+            { mode: 'sharpe' as const, label: 'Automático', tip: TIPS.weightAuto },
             { mode: 'equal' as const, label: 'Iguales', tip: TIPS.weightEqual },
             { mode: 'manual' as const, label: 'Manual', tip: TIPS.weightManual },
           ]).map(({ mode, label, tip }) => (
@@ -454,6 +548,7 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
           </div>
         )}
 
+        {/* Optimization params - visible when auto weights is selected */}
         {config.weightMode === 'sharpe' && (
           <>
             {/* Dynamic weights toggle */}
@@ -473,37 +568,41 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
               <Tooltip text={TIPS.dynamicWeights} />
             </label>
 
-            <div style={gridStyle}>
-              <div>
-                <Label text="Peso Mín. (%)" tooltip={TIPS.pesoMin} />
-                <NumberInput value={config.minWeight * 100} onChange={(v) => update('minWeight', v / 100)}
-                  min={0} max={50} step={1} decimals={0} style={inputStyle} />
+            {config.dynamicWeights && (
+              <div style={{ marginBottom: '1rem' }}>
+                <Label text="Lookback (meses)" tooltip={TIPS.dynamicWeightsLookback} />
+                <NumberInput value={config.dynamicWeightsLookback || 12} onChange={(v) => update('dynamicWeightsLookback', v)}
+                  min={3} max={36} step={1} decimals={0} style={{ ...inputStyle, maxWidth: '200px' }} />
               </div>
-              <div>
-                <Label text="Peso Máx. (%)" tooltip={TIPS.pesoMax} />
-                <NumberInput value={config.maxWeight * 100} onChange={(v) => update('maxWeight', v / 100)}
-                  min={10} max={100} step={5} decimals={0} style={inputStyle} />
-              </div>
-              <div>
-                <Label text="Shrinkage de retornos" tooltip={TIPS.shrinkage} />
-                <NumberInput value={config.meanReturnShrinkage} onChange={(v) => update('meanReturnShrinkage', v)}
-                  min={0} max={1} step={0.1} decimals={1} style={inputStyle} />
-              </div>
-              {config.dynamicWeights && (
+            )}
+
+            {/* Advanced optimization params - only visible with custom profile */}
+            {selectedRiskProfile === null && (
+              <div style={gridStyle}>
                 <div>
-                  <Label text="Lookback (meses)" tooltip={TIPS.dynamicWeightsLookback} />
-                  <NumberInput value={config.dynamicWeightsLookback || 12} onChange={(v) => update('dynamicWeightsLookback', v)}
-                    min={3} max={36} step={1} decimals={0} style={inputStyle} />
+                  <Label text="Peso Mín. (%)" tooltip={TIPS.pesoMin} />
+                  <NumberInput value={config.minWeight * 100} onChange={(v) => update('minWeight', v / 100)}
+                    min={0} max={50} step={1} decimals={0} style={inputStyle} />
                 </div>
-              )}
-            </div>
+                <div>
+                  <Label text="Peso Máx. (%)" tooltip={TIPS.pesoMax} />
+                  <NumberInput value={config.maxWeight * 100} onChange={(v) => update('maxWeight', v / 100)}
+                    min={10} max={100} step={5} decimals={0} style={inputStyle} />
+                </div>
+                <div>
+                  <Label text="Shrinkage de retornos" tooltip={TIPS.shrinkage} />
+                  <NumberInput value={config.meanReturnShrinkage} onChange={(v) => update('meanReturnShrinkage', v)}
+                    min={0} max={1} step={0.1} decimals={1} style={inputStyle} />
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
 
-      {/* ── Capital y Leverage ───────────────────────────────────── */}
+      {/* ── Capital y Aportación ───────────────────────────────────── */}
       <div style={sectionStyle}>
-        <h3 style={sectionTitleStyle}>Capital y Leverage</h3>
+        <h3 style={sectionTitleStyle}>Capital y Aportación</h3>
         <div style={gridStyle}>
           <div>
             <Label text="Capital Inicial (USD)" tooltip={TIPS.capitalInicial} />
@@ -515,50 +614,89 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
             <NumberInput value={config.monthlyContribution} onChange={(v) => update('monthlyContribution', v)}
               min={0} step={100} decimals={0} style={inputStyle} />
           </div>
-          <div>
-            <Label text="Leverage Mín." tooltip={TIPS.leverageMin} />
-            <NumberInput value={config.leverageMin} onChange={(v) => update('leverageMin', v)}
-              min={1} max={10} step={0.1} decimals={1} style={inputStyle} />
-          </div>
-          <div>
-            <Label text="Leverage Objetivo" tooltip={TIPS.leverageTarget} />
-            <NumberInput value={config.leverageTarget} onChange={(v) => update('leverageTarget', v)}
-              min={1} max={10} step={0.1} decimals={1} style={inputStyle} />
-          </div>
-          <div>
-            <Label text="Leverage Máx." tooltip={TIPS.leverageMax} />
-            <NumberInput value={config.leverageMax} onChange={(v) => update('leverageMax', v)}
-              min={1} max={10} step={0.1} decimals={1} style={inputStyle} />
-          </div>
         </div>
       </div>
 
-      {/* ── Periodo y Ventanas ───────────────────────────────────── */}
-      <div style={sectionStyle}>
-        <h3 style={sectionTitleStyle}>Periodo y Ventanas</h3>
-        <div style={gridStyle}>
-          <div>
-            <Label text="Fecha Inicio" tooltip={TIPS.fechaInicio} />
-            <input type="date" value={config.startDate}
-              onChange={(e) => update('startDate', e.target.value)} style={inputStyle} />
-          </div>
-          <div>
-            <Label text="Fecha Fin" tooltip={TIPS.fechaFin} />
-            <input type="date" value={config.endDate}
-              onChange={(e) => update('endDate', e.target.value)} style={inputStyle} />
-          </div>
-          <div>
-            <Label text="Duración Ventana" tooltip={TIPS.ventana} />
-            <select value={config.windowMonths}
-              onChange={(e) => update('windowMonths', parseInt(e.target.value))} style={inputStyle}>
-              <option value={36}>3 años (36 meses)</option>
-              <option value={48}>4 años (48 meses)</option>
-              <option value={60}>5 años (60 meses)</option>
-              <option value={72}>6 años (72 meses)</option>
-              <option value={84}>7 años (84 meses)</option>
-            </select>
+      {/* ── Leverage (solo con perfil personalizado) ───────────────────────────────────── */}
+      {selectedRiskProfile === null && (
+        <div style={sectionStyle}>
+          <h3 style={sectionTitleStyle}>Leverage</h3>
+          <div style={gridStyle}>
+            <div>
+              <Label text="Leverage Mín." tooltip={TIPS.leverageMin} />
+              <NumberInput value={config.leverageMin} onChange={(v) => update('leverageMin', v)}
+                min={1} max={10} step={0.1} decimals={1} style={inputStyle} />
+            </div>
+            <div>
+              <Label text="Leverage Objetivo" tooltip={TIPS.leverageTarget} />
+              <NumberInput value={config.leverageTarget} onChange={(v) => update('leverageTarget', v)}
+                min={1} max={10} step={0.1} decimals={1} style={inputStyle} />
+            </div>
+            <div>
+              <Label text="Leverage Máx." tooltip={TIPS.leverageMax} />
+              <NumberInput value={config.leverageMax} onChange={(v) => update('leverageMax', v)}
+                min={1} max={10} step={0.1} decimals={1} style={inputStyle} />
+            </div>
           </div>
         </div>
+      )}
+
+      {/* ── Periodo y Ventanas (siempre visible, colapsable) ─────────────────────────── */}
+      <div style={sectionStyle}>
+        <button
+          type="button"
+          onClick={() => setShowPeriodSettings(!showPeriodSettings)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            width: '100%',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          {showPeriodSettings ? (
+            <ChevronDown size={18} style={{ color: 'var(--text-muted)' }} />
+          ) : (
+            <ChevronRight size={18} style={{ color: 'var(--text-muted)' }} />
+          )}
+          <h3 style={{ ...sectionTitleStyle, marginBottom: 0 }}>Periodo y Ventanas</h3>
+          {!showPeriodSettings && (
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginLeft: 'auto' }}>
+              {config.startDate} – {config.endDate} · {config.windowMonths / 12} años
+            </span>
+          )}
+        </button>
+        {showPeriodSettings && (
+          <div style={{ marginTop: '1.25rem' }}>
+            <div style={gridStyle}>
+              <div>
+                <Label text="Fecha Inicio" tooltip={TIPS.fechaInicio} />
+                <input type="date" value={config.startDate}
+                  onChange={(e) => update('startDate', e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <Label text="Fecha Fin" tooltip={TIPS.fechaFin} />
+                <input type="date" value={config.endDate}
+                  onChange={(e) => update('endDate', e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <Label text="Duración Ventana" tooltip={TIPS.ventana} />
+                <select value={config.windowMonths}
+                  onChange={(e) => update('windowMonths', parseInt(e.target.value))} style={inputStyle}>
+                  <option value={36}>3 años (36 meses)</option>
+                  <option value={48}>4 años (48 meses)</option>
+                  <option value={60}>5 años (60 meses)</option>
+                  <option value={72}>6 años (72 meses)</option>
+                  <option value={84}>7 años (84 meses)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {(() => {

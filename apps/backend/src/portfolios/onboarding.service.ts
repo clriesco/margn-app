@@ -1,4 +1,8 @@
 import {
+  RISK_PROFILES,
+  isValidRiskProfileId,
+} from "@leveraged-dca/shared";
+import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -251,15 +255,30 @@ export class OnboardingService {
         message: "Creando portfolio...",
       });
     }
+    // Determine leverage params: use risk profile if provided, otherwise use dto values or defaults
+    let leverageMin = dto.leverageMin ?? 2.5;
+    let leverageMax = dto.leverageMax ?? 4.0;
+    let leverageTarget = dto.leverageTarget ?? 3.0;
+    let riskProfile = dto.riskProfile || null;
+
+    if (dto.riskProfile && isValidRiskProfileId(dto.riskProfile)) {
+      const profileParams = RISK_PROFILES[dto.riskProfile].params;
+      leverageMin = profileParams.leverageMin;
+      leverageMax = profileParams.leverageMax;
+      leverageTarget = profileParams.leverageTarget;
+      riskProfile = dto.riskProfile;
+    }
+
     const portfolio = await this.prisma.portfolio.create({
       data: {
         userId,
         name: dto.name,
         initialCapital: dto.initialCapital,
         baseCurrency: dto.baseCurrency || "USD",
-        leverageMin: dto.leverageMin ?? 2.5,
-        leverageMax: dto.leverageMax ?? 4.0,
-        leverageTarget: dto.leverageTarget ?? 3.0,
+        leverageMin,
+        leverageMax,
+        leverageTarget,
+        riskProfile,
         monthlyContribution: dto.monthlyContribution,
         contributionFrequency: dto.contributionFrequency || "monthly",
         contributionDayOfMonth: dto.contributionDayOfMonth ?? 1,
@@ -283,6 +302,21 @@ export class OnboardingService {
           quantity: 0,
           avgPrice: 0,
           exposureUsd: 0,
+        },
+      });
+    }
+
+    // Step 5b: Create target assets (the new model for "what user wants to hold")
+    console.log(`[OnboardingService] Step 5b: Creating target assets...`);
+    for (const assetDto of dto.assets) {
+      const assetId = assetMap[assetDto.symbol];
+      const targetWeight = weights.target[assetDto.symbol] || (1 / dto.assets.length);
+      await this.prisma.portfolioTargetAsset.create({
+        data: {
+          portfolioId: portfolio.id,
+          assetId,
+          targetWeight,
+          enabled: true,
         },
       });
     }

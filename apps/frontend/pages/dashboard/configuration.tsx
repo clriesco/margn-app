@@ -8,6 +8,14 @@ import {
   updatePortfolioConfiguration,
   PortfolioConfiguration,
   TargetWeight,
+  getRiskProfiles,
+  RiskProfile,
+  RiskProfileId,
+  getTargetAssets,
+  addTargetAsset,
+  removeTargetAsset,
+  TargetAsset,
+  searchSymbols,
 } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
@@ -19,10 +27,16 @@ import {
   Scale,
   Edit,
   Shield,
-  Bell,
+  Briefcase,
+  Plus,
+  Trash2,
+  Search,
+  Loader2,
+  X,
 } from "lucide-react";
 import { NumberInput } from "../../components/NumberInput";
 import { Tooltip } from "../../components/Tooltip";
+import { RiskProfileSelector } from "../../components/RiskProfileSelector";
 import { formatNumberES, formatPercentES } from "../../lib/number-format";
 
 /**
@@ -65,6 +79,35 @@ export default function Configuration() {
   });
 
   const [targetWeights, setTargetWeights] = useState<TargetWeight[]>([]);
+
+  // Target assets state (what user wants to hold)
+  const [targetAssets, setTargetAssets] = useState<TargetAsset[]>([]);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
+  const [tickerSearch, setTickerSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{ symbol: string; name: string }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isAddingAsset, setIsAddingAsset] = useState(false);
+  const [removingAsset, setRemovingAsset] = useState<string | null>(null);
+
+  // Risk profile state
+  const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([]);
+  const [selectedRiskProfile, setSelectedRiskProfile] = useState<RiskProfileId | null>(null);
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
+
+  // Load risk profiles on mount
+  useEffect(() => {
+    async function loadRiskProfiles() {
+      try {
+        const profiles = await getRiskProfiles();
+        setRiskProfiles(profiles);
+      } catch (err) {
+        console.error("Failed to load risk profiles:", err);
+      } finally {
+        setIsLoadingProfiles(false);
+      }
+    }
+    loadRiskProfiles();
+  }, []);
 
   // Load portfolio and configuration
   useEffect(() => {
@@ -112,6 +155,8 @@ export default function Configuration() {
             minWeight: configData.minWeight || 0.05,
           });
           setTargetWeights(configData.targetWeights || []);
+          // Set risk profile from backend response
+          setSelectedRiskProfile(configData.riskProfile || null);
         } catch {
           setError("Failed to load configuration");
         }
@@ -127,6 +172,109 @@ export default function Configuration() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, router.isReady, router.query.portfolioId]);
+
+  // Load target assets when portfolioId changes
+  useEffect(() => {
+    async function loadTargetAssets() {
+      if (!portfolioId) return;
+      setIsLoadingAssets(true);
+      try {
+        const assets = await getTargetAssets(portfolioId);
+        setTargetAssets(assets);
+      } catch (err) {
+        console.error("Failed to load target assets:", err);
+      } finally {
+        setIsLoadingAssets(false);
+      }
+    }
+    loadTargetAssets();
+  }, [portfolioId]);
+
+  // Debounced ticker search
+  useEffect(() => {
+    if (tickerSearch.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await searchSymbols(tickerSearch);
+        // Filter out assets already in portfolio
+        const existingSymbols = new Set(targetAssets.map(a => a.symbol));
+        setSearchResults(results.filter(r => !existingSymbols.has(r.symbol)));
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [tickerSearch, targetAssets]);
+
+  // Add a new target asset
+  const handleAddAsset = async (symbol: string) => {
+    if (!portfolioId) return;
+    setIsAddingAsset(true);
+    try {
+      await addTargetAsset(portfolioId, { symbol });
+      // Reload ALL target assets since backend normalizes weights
+      const updatedAssets = await getTargetAssets(portfolioId);
+      setTargetAssets(updatedAssets);
+      // Also update targetWeights for the weights section
+      setTargetWeights(updatedAssets.map(a => ({ symbol: a.symbol, weight: a.targetWeight })));
+      setTickerSearch("");
+      setSearchResults([]);
+      setMessage(`✅ ${symbol} añadido al portfolio`);
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Error al añadir ${symbol}`);
+    } finally {
+      setIsAddingAsset(false);
+    }
+  };
+
+  // Remove a target asset
+  const handleRemoveAsset = async (symbol: string) => {
+    if (!portfolioId) return;
+    setRemovingAsset(symbol);
+    try {
+      await removeTargetAsset(portfolioId, symbol);
+      // Reload ALL target assets since backend normalizes weights
+      const updatedAssets = await getTargetAssets(portfolioId);
+      setTargetAssets(updatedAssets);
+      // Also update targetWeights
+      setTargetWeights(updatedAssets.map(a => ({ symbol: a.symbol, weight: a.targetWeight })));
+      setMessage(`✅ ${symbol} eliminado del portfolio`);
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Error al eliminar ${symbol}`);
+    } finally {
+      setRemovingAsset(null);
+    }
+  };
+
+  // Update leverage values when risk profile changes
+  const handleRiskProfileChange = (profileId: RiskProfileId | null) => {
+    setSelectedRiskProfile(profileId);
+    if (profileId && riskProfiles.length > 0) {
+      const profile = riskProfiles.find(p => p.id === profileId);
+      if (profile) {
+        setFormData(prev => ({
+          ...prev,
+          leverageMin: profile.params.leverageMin,
+          leverageMax: profile.params.leverageMax,
+          leverageTarget: profile.params.leverageTarget,
+          maintenanceMarginRatio: profile.params.maintenanceMarginRatio,
+          meanReturnShrinkage: profile.params.meanReturnShrinkage,
+          maxWeight: profile.params.maxWeight,
+          minWeight: profile.params.minWeight,
+        }));
+      }
+    }
+  };
 
   const handleInputChange = (
     field: string,
@@ -150,25 +298,29 @@ export default function Configuration() {
     setMessage("");
 
     try {
-      // Validate weights sum to ~100%
-      const totalWeight = targetWeights.reduce((sum, tw) => sum + tw.weight, 0);
-      if (Math.abs(totalWeight - 1) > 0.01) {
-        setError(
-          `Los pesos objetivo deben sumar 100%. Actualmente: ${formatNumberES(
-            totalWeight * 100,
-            {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            }
-          )}%`
-        );
-        setIsSaving(false);
-        return;
+      // Only validate weights sum when in manual mode
+      // In Sharpe mode, weights are read-only and managed by the system
+      if (!formData.useDynamicSharpeRebalance) {
+        const totalWeight = targetWeights.reduce((sum, tw) => sum + tw.weight, 0);
+        if (Math.abs(totalWeight - 1) > 0.01) {
+          setError(
+            `Los pesos objetivo deben sumar 100%. Actualmente: ${formatNumberES(
+              totalWeight * 100,
+              {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              }
+            )}%`
+          );
+          setIsSaving(false);
+          return;
+        }
       }
 
       await updatePortfolioConfiguration(portfolioId, {
         ...formData,
         targetWeights,
+        riskProfile: selectedRiskProfile,
       });
 
       // Invalidate cache, especially recommendations which depend on configuration
@@ -208,13 +360,18 @@ export default function Configuration() {
   if (!user) return null;
 
   const totalWeight = targetWeights.reduce((sum, tw) => sum + tw.weight, 0);
-  const weightsValid = Math.abs(totalWeight - 1) <= 0.01;
+  // Weights are always valid in Sharpe mode (read-only), only check in manual mode
+  const weightsValid = formData.useDynamicSharpeRebalance || Math.abs(totalWeight - 1) <= 0.01;
 
   return (
     <>
       <Head>
         <title>Configuración - Leveraged DCA App</title>
         <style dangerouslySetInnerHTML={{__html: `
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
           @media (max-width: 768px) {
             .config-wrapper {
               padding: 1rem !important;
@@ -282,6 +439,331 @@ export default function Configuration() {
             </div>
 
             <form onSubmit={handleSubmit}>
+              {/* Risk Profile Selector */}
+              <ConfigSection
+                title={
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <Shield size={18} />
+                    Perfil de Riesgo
+                  </div>
+                }
+              >
+                {isLoadingProfiles ? (
+                  <div style={{ textAlign: "center", padding: "1rem", color: "var(--text-muted)" }}>
+                    Cargando perfiles...
+                  </div>
+                ) : (
+                  <>
+                    <RiskProfileSelector
+                      profiles={riskProfiles}
+                      selected={selectedRiskProfile}
+                      onSelect={handleRiskProfileChange}
+                      showCustomOption={true}
+                      compact={false}
+                    />
+                    {selectedRiskProfile && (
+                      <div
+                        style={{
+                          marginTop: "1rem",
+                          padding: "0.75rem 1rem",
+                          background: "rgba(59, 130, 246, 0.1)",
+                          border: "1px solid rgba(59, 130, 246, 0.3)",
+                          borderRadius: "8px",
+                          fontSize: "0.85rem",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        Los parámetros de leverage y optimización se han ajustado según el perfil seleccionado.
+                        Puedes modificarlos manualmente si lo deseas.
+                      </div>
+                    )}
+                  </>
+                )}
+              </ConfigSection>
+
+              {/* Portfolio Assets - What user WANTS to hold */}
+              <ConfigSection
+                title={
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <Briefcase size={18} />
+                    Activos del Portfolio
+                    <Tooltip text="Define qué activos quieres tener en tu portfolio. Al añadir o eliminar activos, los pesos se redistribuyen automáticamente." />
+                  </div>
+                }
+              >
+                {/* Search for new assets */}
+                <div style={{ marginBottom: "1rem", position: "relative" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: "500",
+                      marginBottom: "0.5rem",
+                      color: "var(--text-secondary)",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    Añadir nuevo activo
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <Search
+                      size={16}
+                      style={{
+                        position: "absolute",
+                        left: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "var(--text-muted)",
+                      }}
+                    />
+                    <input
+                      type="text"
+                      value={tickerSearch}
+                      onChange={(e) => setTickerSearch(e.target.value.toUpperCase())}
+                      placeholder="Buscar ticker (ej: AAPL, BTC-USD, GLD)"
+                      style={{
+                        width: "100%",
+                        padding: "0.625rem 0.875rem 0.625rem 2.25rem",
+                        background: "var(--input-bg)",
+                        color: "var(--input-color)",
+                        border: "1px solid var(--input-border)",
+                        borderRadius: "6px",
+                        fontSize: "0.95rem",
+                      }}
+                    />
+                    {tickerSearch && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTickerSearch("");
+                          setSearchResults([]);
+                        }}
+                        style={{
+                          position: "absolute",
+                          right: "0.5rem",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0.25rem",
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Search results dropdown */}
+                  {(searchResults.length > 0 || isSearching) && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        background: "var(--bg-card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "6px",
+                        marginTop: "0.25rem",
+                        maxHeight: "200px",
+                        overflowY: "auto",
+                        zIndex: 100,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                      }}
+                    >
+                      {isSearching ? (
+                        <div
+                          style={{
+                            padding: "0.75rem",
+                            textAlign: "center",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          <Loader2
+                            size={16}
+                            style={{ animation: "spin 1s linear infinite" }}
+                          />
+                          {" "}Buscando...
+                        </div>
+                      ) : (
+                        searchResults.map((result) => (
+                          <button
+                            key={result.symbol}
+                            type="button"
+                            onClick={() => handleAddAsset(result.symbol)}
+                            disabled={isAddingAsset}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              width: "100%",
+                              padding: "0.625rem 0.875rem",
+                              background: "transparent",
+                              border: "none",
+                              cursor: isAddingAsset ? "wait" : "pointer",
+                              textAlign: "left",
+                              color: "var(--text-primary)",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "var(--hover-bg)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "transparent";
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: "600" }}>{result.symbol}</div>
+                              <div
+                                style={{
+                                  fontSize: "0.8rem",
+                                  color: "var(--text-muted)",
+                                }}
+                              >
+                                {result.name}
+                              </div>
+                            </div>
+                            <Plus size={16} style={{ color: "#22c55e" }} />
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Current assets list */}
+                {isLoadingAssets ? (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "1rem",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    Cargando activos...
+                  </div>
+                ) : targetAssets.length > 0 ? (
+                  <div style={{ marginTop: "0.5rem" }}>
+                    {targetAssets.map((asset) => (
+                      <div
+                        key={asset.symbol}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "0.75rem",
+                          background: "var(--hover-bg)",
+                          borderRadius: "8px",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.5rem",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontWeight: "600",
+                                color: "var(--text-primary)",
+                              }}
+                            >
+                              {asset.symbol}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                padding: "0.125rem 0.375rem",
+                                background: asset.hasPosition
+                                  ? "rgba(34, 197, 94, 0.2)"
+                                  : "rgba(251, 191, 36, 0.2)",
+                                color: asset.hasPosition ? "#22c55e" : "#fbbf24",
+                                borderRadius: "4px",
+                              }}
+                            >
+                              {asset.hasPosition ? "Con posición" : "Sin comprar"}
+                            </span>
+                          </div>
+                          {/* Only show name if different from symbol */}
+                          {asset.name && asset.name !== asset.symbol && (
+                            <div
+                              style={{
+                                fontSize: "0.8rem",
+                                color: "var(--text-muted)",
+                                marginTop: "0.125rem",
+                              }}
+                            >
+                              {asset.name}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAsset(asset.symbol)}
+                          disabled={removingAsset === asset.symbol}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            cursor: removingAsset === asset.symbol ? "wait" : "pointer",
+                            padding: "0.5rem",
+                            color: "#ef4444",
+                            opacity: removingAsset === asset.symbol ? 0.5 : 1,
+                          }}
+                          title={`Eliminar ${asset.symbol}`}
+                        >
+                          {removingAsset === asset.symbol ? (
+                            <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+                          ) : (
+                            <Trash2 size={18} />
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                    <div
+                      style={{
+                        marginTop: "0.75rem",
+                        padding: "0.5rem 0.75rem",
+                        background: "rgba(59, 130, 246, 0.1)",
+                        border: "1px solid rgba(59, 130, 246, 0.2)",
+                        borderRadius: "6px",
+                        fontSize: "0.8rem",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      💡 Al añadir o eliminar activos, los pesos se redistribuyen automáticamente.
+                      Puedes ajustar los pesos en la sección de abajo.
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "1.5rem",
+                      background: "var(--hover-bg)",
+                      borderRadius: "8px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    No hay activos configurados. Busca y añade activos arriba.
+                  </div>
+                )}
+              </ConfigSection>
+
               {/* Contribution Settings */}
               <ConfigSection
                 title={
@@ -415,55 +897,57 @@ export default function Configuration() {
                 </div>
               </ConfigSection>
 
-              {/* Leverage Settings */}
-              <ConfigSection
-                title={
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <BarChart size={18} />
-                    Rango de Leverage
-                    <Tooltip text="El sistema recomendará reborrow cuando el leverage baje del mínimo, y aporte extra cuando suba del máximo." />
+              {/* Leverage Settings - Only visible with custom profile */}
+              {selectedRiskProfile === null && (
+                <ConfigSection
+                  title={
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <BarChart size={18} />
+                      Rango de Leverage
+                      <Tooltip text="El sistema recomendará reborrow cuando el leverage baje del mínimo, y aporte extra cuando suba del máximo." />
+                    </div>
+                  }
+                >
+                  <div style={gridStyle}>
+                    <InputField
+                      label="Leverage Mínimo"
+                      value={formData.leverageMin}
+                      onChange={(v) => handleInputChange("leverageMin", v)}
+                      type="number"
+                      min={1}
+                      max={10}
+                      step={0.1}
+                      suffix="x"
+                    />
+                    <InputField
+                      label="Leverage Máximo"
+                      value={formData.leverageMax}
+                      onChange={(v) => handleInputChange("leverageMax", v)}
+                      type="number"
+                      min={1}
+                      max={10}
+                      step={0.1}
+                      suffix="x"
+                    />
+                    <InputField
+                      label="Leverage Objetivo"
+                      value={formData.leverageTarget}
+                      onChange={(v) => handleInputChange("leverageTarget", v)}
+                      type="number"
+                      min={1}
+                      max={10}
+                      step={0.1}
+                      suffix="x"
+                    />
                   </div>
-                }
-              >
-                <div style={gridStyle}>
-                  <InputField
-                    label="Leverage Mínimo"
-                    value={formData.leverageMin}
-                    onChange={(v) => handleInputChange("leverageMin", v)}
-                    type="number"
-                    min={1}
-                    max={10}
-                    step={0.1}
-                    suffix="x"
-                  />
-                  <InputField
-                    label="Leverage Máximo"
-                    value={formData.leverageMax}
-                    onChange={(v) => handleInputChange("leverageMax", v)}
-                    type="number"
-                    min={1}
-                    max={10}
-                    step={0.1}
-                    suffix="x"
-                  />
-                  <InputField
-                    label="Leverage Objetivo"
-                    value={formData.leverageTarget}
-                    onChange={(v) => handleInputChange("leverageTarget", v)}
-                    type="number"
-                    min={1}
-                    max={10}
-                    step={0.1}
-                    suffix="x"
-                  />
-                </div>
-              </ConfigSection>
+                </ConfigSection>
+              )}
 
               {/* Target Weights */}
               <ConfigSection
@@ -540,7 +1024,8 @@ export default function Configuration() {
                           }}
                         >
                           <TrendingUp size={16} />
-                          Optimización Sharpe
+                          Optimización Automática
+                          <Tooltip text="Los pesos de cada activo se calculan automáticamente usando el ratio de Sharpe, que maximiza el rendimiento ajustado por riesgo. El sistema analiza el histórico de precios para encontrar la combinación óptima." />
                         </div>
                         <div
                           style={{
@@ -550,7 +1035,7 @@ export default function Configuration() {
                           }}
                         >
                           Los pesos se calculan automáticamente para maximizar
-                          el ratio Sharpe
+                          el rendimiento ajustado por riesgo
                         </div>
                       </div>
                     </label>
@@ -610,130 +1095,144 @@ export default function Configuration() {
                   </div>
                 </div>
 
-                {/* Show target weights sliders only if manual allocation is selected */}
-                {!formData.useDynamicSharpeRebalance &&
-                targetWeights.length > 0 ? (
-                  <>
-                    <div style={{ marginBottom: "1rem" }}>
-                      {targetWeights.map((tw, idx) => (
-                        <div
-                          key={tw.symbol}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "1rem",
-                            marginBottom: "0.75rem",
-                            padding: "0.75rem",
-                            background: "var(--hover-bg)",
-                            borderRadius: "8px",
-                          }}
-                        >
-                          <span
-                            style={{
-                              color: "var(--text-primary)",
-                              fontWeight: "600",
-                              minWidth: "100px",
-                            }}
-                          >
-                            {tw.symbol}
-                          </span>
-                          <input
-                            type="range"
-                            min={0}
-                            max={100}
-                            value={tw.weight * 100}
-                            onChange={(e) =>
-                              handleWeightChange(
-                                idx,
-                                parseFloat(e.target.value) / 100
-                              )
-                            }
-                            style={{
-                              flex: 1,
-                              accentColor: "#3b82f6",
-                            }}
-                          />
-                          <NumberInput
-                            value={tw.weight * 100}
-                            onChange={(val) =>
-                              handleWeightChange(
-                                idx,
-                                isNaN(val) ? 0 : val / 100
-                              )
-                            }
-                            min={0}
-                            max={100}
-                            step={1}
-                            decimals={1}
-                            style={{
-                              width: "70px",
-                              padding: "0.5rem",
-                              background: "var(--bg-glass)",
-                              color: "var(--input-color)",
-                              border: "1px solid var(--input-border)",
-                              borderRadius: "4px",
-                              fontSize: "0.9rem",
-                              textAlign: "right",
-                            }}
-                          />
-                          <span style={{ color: "var(--text-muted)" }}>%</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "0.75rem 1rem",
-                        background: weightsValid
-                          ? "rgba(34, 197, 94, 0.1)"
-                          : "rgba(239, 68, 68, 0.1)",
-                        borderRadius: "8px",
-                        border: `1px solid ${
-                          weightsValid
-                            ? "rgba(34, 197, 94, 0.3)"
-                            : "rgba(239, 68, 68, 0.3)"
-                        }`,
-                      }}
-                    >
-                      <span
+                {/* Show target weights */}
+                {targetWeights.length > 0 ? (
+                  formData.useDynamicSharpeRebalance ? (
+                    /* READ-ONLY view when Sharpe optimization is enabled */
+                    <>
+                      <div
                         style={{
-                          color: weightsValid ? "#22c55e" : "#ef4444",
-                          fontWeight: "600",
+                          padding: "1rem",
+                          background: "rgba(59, 130, 246, 0.1)",
+                          border: "1px solid rgba(59, 130, 246, 0.3)",
+                          borderRadius: "8px",
+                          color: "var(--text-secondary)",
+                          fontSize: "0.85rem",
                         }}
                       >
-                        Total:{" "}
-                        {formatNumberES(totalWeight * 100, {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 1,
-                        })}
-                        %
-                      </span>
-                      {!weightsValid && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <TrendingUp size={18} style={{ color: "#3b82f6" }} />
+                          <strong style={{ color: "var(--text-primary)" }}>Optimización automática activa</strong>
+                        </div>
+                        <p style={{ margin: 0, lineHeight: 1.5 }}>
+                          Los pesos óptimos de cada activo se calcularán automáticamente cuando vayas a la
+                          página de <strong>Rebalanceo</strong>, usando el ratio de Sharpe para maximizar
+                          el rendimiento ajustado por riesgo.
+                        </p>
+                        <p style={{ margin: "0.75rem 0 0", color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                          Los activos incluidos en el cálculo son los que has configurado arriba en &quot;Activos del Portfolio&quot;.
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    /* EDITABLE view when manual allocation is selected */
+                    <>
+                      <div style={{ marginBottom: "1rem" }}>
+                        {targetWeights.map((tw, idx) => (
+                          <div
+                            key={tw.symbol}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "1rem",
+                              marginBottom: "0.75rem",
+                              padding: "0.75rem",
+                              background: "var(--hover-bg)",
+                              borderRadius: "8px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: "var(--text-primary)",
+                                fontWeight: "600",
+                                minWidth: "100px",
+                              }}
+                            >
+                              {tw.symbol}
+                            </span>
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              value={tw.weight * 100}
+                              onChange={(e) =>
+                                handleWeightChange(
+                                  idx,
+                                  parseFloat(e.target.value) / 100
+                                )
+                              }
+                              style={{
+                                flex: 1,
+                                accentColor: "#3b82f6",
+                              }}
+                            />
+                            <NumberInput
+                              value={tw.weight * 100}
+                              onChange={(val) =>
+                                handleWeightChange(
+                                  idx,
+                                  isNaN(val) ? 0 : val / 100
+                                )
+                              }
+                              min={0}
+                              max={100}
+                              step={1}
+                              decimals={1}
+                              style={{
+                                width: "70px",
+                                padding: "0.5rem",
+                                background: "var(--bg-glass)",
+                                color: "var(--input-color)",
+                                border: "1px solid var(--input-border)",
+                                borderRadius: "4px",
+                                fontSize: "0.9rem",
+                                textAlign: "right",
+                              }}
+                            />
+                            <span style={{ color: "var(--text-muted)" }}>%</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "0.75rem 1rem",
+                          background: weightsValid
+                            ? "rgba(34, 197, 94, 0.1)"
+                            : "rgba(239, 68, 68, 0.1)",
+                          borderRadius: "8px",
+                          border: `1px solid ${
+                            weightsValid
+                              ? "rgba(34, 197, 94, 0.3)"
+                              : "rgba(239, 68, 68, 0.3)"
+                          }`,
+                        }}
+                      >
                         <span
-                          style={{ color: "#f87171", fontSize: "0.875rem" }}
+                          style={{
+                            color: weightsValid ? "#22c55e" : "#ef4444",
+                            fontWeight: "600",
+                          }}
                         >
-                          Los pesos deben sumar 100%
+                          Total:{" "}
+                          {formatNumberES(totalWeight * 100, {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1,
+                          })}
+                          %
                         </span>
-                      )}
-                    </div>
-                  </>
-                ) : formData.useDynamicSharpeRebalance ? (
-                  <div
-                    style={{
-                      padding: "1rem",
-                      background: "rgba(59, 130, 246, 0.1)",
-                      border: "1px solid rgba(59, 130, 246, 0.3)",
-                      borderRadius: "8px",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    <p style={{ margin: 0 }}>
-                      Los pesos se calcularán automáticamente mediante
-                      optimización Sharpe cuando realices un rebalance.
-                    </p>
-                  </div>
+                        {!weightsValid && (
+                          <span
+                            style={{ color: "#f87171", fontSize: "0.875rem" }}
+                          >
+                            Los pesos deben sumar 100%
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )
                 ) : (
                   <p style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
                     No hay activos configurados. Actualiza las posiciones del
@@ -741,8 +1240,8 @@ export default function Configuration() {
                   </p>
                 )}
 
-                {/* Weight Limits - Only visible when Sharpe optimization is selected */}
-                {formData.useDynamicSharpeRebalance && (
+                {/* Weight Limits - Only visible when Sharpe optimization AND custom profile */}
+                {formData.useDynamicSharpeRebalance && selectedRiskProfile === null && (
                   <div style={{ marginTop: "1.5rem" }}>
                     <div
                       style={{
@@ -795,8 +1294,8 @@ export default function Configuration() {
                 )}
               </ConfigSection>
 
-              {/* Sharpe Optimization - Only visible when Sharpe optimization is selected */}
-              {formData.useDynamicSharpeRebalance && (
+              {/* Advanced Optimization - Only visible when auto optimization AND custom profile */}
+              {formData.useDynamicSharpeRebalance && selectedRiskProfile === null && (
                 <ConfigSection
                   title={
                     <div
@@ -807,7 +1306,8 @@ export default function Configuration() {
                       }}
                     >
                       <TrendingUp size={18} />
-                      Optimización Sharpe
+                      Parámetros de Optimización
+                      <Tooltip text="Ajustes avanzados para el algoritmo de optimización automática de pesos." />
                     </div>
                   }
                 >
@@ -853,63 +1353,65 @@ export default function Configuration() {
                 </ConfigSection>
               )}
 
-              {/* Margin Settings */}
-              <ConfigSection
-                title={
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <Shield size={18} />
-                    Márgenes de Seguridad
+              {/* Margin Settings - Only visible with custom profile */}
+              {selectedRiskProfile === null && (
+                <ConfigSection
+                  title={
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <Shield size={18} />
+                      Márgenes de Seguridad
+                    </div>
+                  }
+                >
+                  <div style={gridStyle}>
+                    <InputField
+                      label="Margen de Mantenimiento"
+                      value={formData.maintenanceMarginRatio * 100}
+                      onChange={(v) =>
+                        handleInputChange("maintenanceMarginRatio", v / 100)
+                      }
+                      type="number"
+                      min={1}
+                      max={50}
+                      step={1}
+                      suffix="%"
+                      help="Margen mínimo requerido por el broker (5% típico)"
+                    />
+                    <InputField
+                      label="Margen Seguro"
+                      value={(formData.safeMarginRatio || 0.15) * 100}
+                      onChange={(v) =>
+                        handleInputChange("safeMarginRatio", v / 100)
+                      }
+                      type="number"
+                      min={5}
+                      max={50}
+                      step={1}
+                      suffix="%"
+                      help="Nivel de margen cómodo para operar"
+                    />
+                    <InputField
+                      label="Margen Crítico"
+                      value={(formData.criticalMarginRatio || 0.1) * 100}
+                      onChange={(v) =>
+                        handleInputChange("criticalMarginRatio", v / 100)
+                      }
+                      type="number"
+                      min={1}
+                      max={30}
+                      step={1}
+                      suffix="%"
+                      help="Alerta urgente si el margen baja de este nivel"
+                    />
                   </div>
-                }
-              >
-                <div style={gridStyle}>
-                  <InputField
-                    label="Margen de Mantenimiento"
-                    value={formData.maintenanceMarginRatio * 100}
-                    onChange={(v) =>
-                      handleInputChange("maintenanceMarginRatio", v / 100)
-                    }
-                    type="number"
-                    min={1}
-                    max={50}
-                    step={1}
-                    suffix="%"
-                    help="Margen mínimo requerido por el broker (5% típico)"
-                  />
-                  <InputField
-                    label="Margen Seguro"
-                    value={(formData.safeMarginRatio || 0.15) * 100}
-                    onChange={(v) =>
-                      handleInputChange("safeMarginRatio", v / 100)
-                    }
-                    type="number"
-                    min={5}
-                    max={50}
-                    step={1}
-                    suffix="%"
-                    help="Nivel de margen cómodo para operar"
-                  />
-                  <InputField
-                    label="Margen Crítico"
-                    value={(formData.criticalMarginRatio || 0.1) * 100}
-                    onChange={(v) =>
-                      handleInputChange("criticalMarginRatio", v / 100)
-                    }
-                    type="number"
-                    min={1}
-                    max={30}
-                    step={1}
-                    suffix="%"
-                    help="Alerta urgente si el margen baja de este nivel"
-                  />
-                </div>
-              </ConfigSection>
+                </ConfigSection>
+              )}
 
               {/* Submit button */}
               <div

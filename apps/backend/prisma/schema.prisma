@@ -45,6 +45,10 @@ model Portfolio {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
+  // Risk Profile (null = custom/legacy portfolios)
+  // Values: 'conservative', 'moderate', 'growth', 'aggressive'
+  riskProfile String? @map("risk_profile")
+
   // Contribution configuration
   monthlyContribution    Float?  @map("monthly_contribution")
   contributionFrequency  String  @default("monthly") @map("contribution_frequency") // 'weekly', 'biweekly', 'monthly', 'quarterly'
@@ -79,6 +83,7 @@ model Portfolio {
   riskFreeRate                Float   @default(0.02) @map("risk_free_rate")
 
   user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetAssets      PortfolioTargetAsset[]
   positions         PortfolioPosition[]
   contributions     MonthlyContribution[]
   rebalanceEvents   RebalanceEvent[]
@@ -99,6 +104,7 @@ model Asset {
   // Earliest date with data available from Yahoo (null = unknown, needs download)
   earliestKnownDate  DateTime? @map("earliest_known_date") @db.Date
 
+  targetAssets       PortfolioTargetAsset[]
   positions          PortfolioPosition[]
   prices             AssetPrice[]
   rebalancePositions RebalancePosition[]
@@ -106,7 +112,31 @@ model Asset {
   @@map("assets")
 }
 
-// Portfolio positions (current holdings)
+// Portfolio target assets (configured allocation - what the user WANTS to hold)
+// Separate from actual positions to allow planning without holdings
+model PortfolioTargetAsset {
+  id          String   @id @default(uuid())
+  portfolioId String   @map("portfolio_id")
+  assetId     String   @map("asset_id")
+
+  // Target weight for this asset (0-1, sum of all should be 1)
+  targetWeight Float   @map("target_weight")
+
+  // Whether this asset is active in the allocation
+  enabled     Boolean  @default(true)
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  asset     Asset     @relation(fields: [assetId], references: [id])
+
+  @@unique([portfolioId, assetId])
+  @@index([portfolioId])
+  @@map("portfolio_target_assets")
+}
+
+// Portfolio positions (current holdings - what the user ACTUALLY holds)
 model PortfolioPosition {
   id          String   @id @default(uuid())
   portfolioId String   @map("portfolio_id")
