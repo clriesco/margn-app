@@ -8,6 +8,9 @@ import {
   OnboardingAsset,
   CreatePortfolioRequest,
   SymbolSearchResult,
+  getRiskProfiles,
+  RiskProfile,
+  RiskProfileId,
 } from "../../lib/api";
 import {
   usePortfolios,
@@ -23,6 +26,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { NumberInput } from "../../components/NumberInput";
+import { RiskProfileSelector } from "../../components/RiskProfileSelector";
 import {
   formatCurrencyES,
   formatPercentES,
@@ -39,7 +43,7 @@ export default function Onboarding() {
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   // Step 1: Basic info
   const [portfolioName, setPortfolioName] = useState("Mi Portfolio Apalancado");
@@ -62,7 +66,12 @@ export default function Onboarding() {
     {}
   );
 
-  // Step 4: Config (optional)
+  // Step 4: Risk Profile
+  const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([]);
+  const [selectedRiskProfile, setSelectedRiskProfile] = useState<RiskProfileId | null>("moderate");
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
+
+  // Step 5: Config (optional - only shown when custom profile selected)
   const [leverageMin, setLeverageMin] = useState(2.5);
   const [leverageMax, setLeverageMax] = useState(4.0);
   const [leverageTarget, setLeverageTarget] = useState(3.0);
@@ -90,6 +99,33 @@ export default function Onboarding() {
       router.push("/dashboard");
     }
   }, [user, loading, portfoliosLoading, portfolios.length, router]);
+
+  // Load risk profiles on mount
+  useEffect(() => {
+    async function loadRiskProfiles() {
+      try {
+        const profiles = await getRiskProfiles();
+        setRiskProfiles(profiles);
+      } catch (err) {
+        console.error("Failed to load risk profiles:", err);
+      } finally {
+        setIsLoadingProfiles(false);
+      }
+    }
+    loadRiskProfiles();
+  }, []);
+
+  // Update leverage values when risk profile changes
+  useEffect(() => {
+    if (selectedRiskProfile && riskProfiles.length > 0) {
+      const profile = riskProfiles.find(p => p.id === selectedRiskProfile);
+      if (profile) {
+        setLeverageMin(profile.params.leverageMin);
+        setLeverageMax(profile.params.leverageMax);
+        setLeverageTarget(profile.params.leverageTarget);
+      }
+    }
+  }, [selectedRiskProfile, riskProfiles]);
 
   // Initialize equal weights when assets change
   useEffect(() => {
@@ -289,6 +325,7 @@ export default function Onboarding() {
         })),
         weightAllocationMethod: weightMethod,
         targetWeights: weightMethod === "manual" ? manualWeights : undefined,
+        riskProfile: selectedRiskProfile || undefined,
         leverageMin,
         leverageMax,
         leverageTarget,
@@ -403,9 +440,11 @@ export default function Onboarding() {
       case 3:
         return weightMethod !== "manual" || weightsValid;
       case 4:
-        return true; // Optional step
+        return true; // Risk profile - always can proceed (default selected)
       case 5:
-        return true;
+        return true; // Contributions - optional step
+      case 6:
+        return true; // Summary
       default:
         return false;
     }
@@ -503,7 +542,7 @@ export default function Onboarding() {
 
           {/* Progress Bar */}
           <div style={progressContainerStyle}>
-            {[1, 2, 3, 4, 5].map((step) => (
+            {[1, 2, 3, 4, 5, 6].map((step) => (
               <React.Fragment key={step}>
                 <div
                   style={{
@@ -513,7 +552,7 @@ export default function Onboarding() {
                 >
                   {step}
                 </div>
-                {step < 5 && (
+                {step < 6 && (
                   <div
                     style={{
                       ...progressLineStyle,
@@ -534,7 +573,7 @@ export default function Onboarding() {
             }}
           >
             {
-              ["Básico", "Activos", "Pesos", "Configuración", "Resumen"][
+              ["Básico", "Activos", "Pesos", "Perfil de Riesgo", "Aportaciones", "Resumen"][
                 currentStep - 1
               ]
             }
@@ -1081,10 +1120,10 @@ export default function Onboarding() {
               </div>
             )}
 
-            {/* Step 4: Configuration */}
+            {/* Step 4: Risk Profile */}
             {currentStep === 4 && (
               <div>
-                <h2 style={stepTitleStyle}>Configuración Adicional</h2>
+                <h2 style={stepTitleStyle}>Perfil de Riesgo</h2>
                 <p
                   style={{
                     color: "var(--text-muted)",
@@ -1092,103 +1131,133 @@ export default function Onboarding() {
                     fontSize: "0.9rem",
                   }}
                 >
-                  Estos valores tienen defaults recomendados. Puedes ajustarlos
-                  después.
+                  Selecciona un perfil que se adapte a tu tolerancia al riesgo y
+                  horizonte de inversión.
                 </p>
 
-                {/* Leverage */}
-                <div style={sectionStyle}>
-                  <h3
-                    style={{
-                      ...sectionTitleStyle,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <BarChart size={18} />
-                    Rango de Leverage
-                  </h3>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: "1rem",
-                    }}
-                  >
-                    <div>
-                      <label style={labelStyle}>Mínimo</label>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                        }}
-                      >
-                        <NumberInput
-                          value={leverageMin}
-                          onChange={(val) =>
-                            setLeverageMin(isNaN(val) ? 1 : val)
-                          }
-                          min={1}
-                          max={10}
-                          step={0.1}
-                          decimals={1}
-                          style={inputStyle}
-                        />
-                        <span style={{ color: "var(--text-muted)" }}>x</span>
+                {isLoadingProfiles ? (
+                  <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+                    Cargando perfiles...
+                  </div>
+                ) : (
+                  <RiskProfileSelector
+                    profiles={riskProfiles}
+                    selected={selectedRiskProfile}
+                    onSelect={(profileId) => setSelectedRiskProfile(profileId)}
+                    showCustomOption={true}
+                  />
+                )}
+
+                {/* Show leverage values if custom is selected */}
+                {selectedRiskProfile === null && (
+                  <div style={{ ...sectionStyle, marginTop: "1.5rem" }}>
+                    <h3
+                      style={{
+                        ...sectionTitleStyle,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <BarChart size={18} />
+                      Configuración de Leverage Personalizada
+                    </h3>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 1fr)",
+                        gap: "1rem",
+                      }}
+                    >
+                      <div>
+                        <label style={labelStyle}>Mínimo</label>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          <NumberInput
+                            value={leverageMin}
+                            onChange={(val) =>
+                              setLeverageMin(isNaN(val) ? 1 : val)
+                            }
+                            min={1}
+                            max={10}
+                            step={0.1}
+                            decimals={1}
+                            style={inputStyle}
+                          />
+                          <span style={{ color: "var(--text-muted)" }}>x</span>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Máximo</label>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                        }}
-                      >
-                        <NumberInput
-                          value={leverageMax}
-                          onChange={(val) =>
-                            setLeverageMax(isNaN(val) ? 1 : val)
-                          }
-                          min={1}
-                          max={10}
-                          step={0.1}
-                          decimals={1}
-                          style={inputStyle}
-                        />
-                        <span style={{ color: "var(--text-muted)" }}>x</span>
+                      <div>
+                        <label style={labelStyle}>Máximo</label>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          <NumberInput
+                            value={leverageMax}
+                            onChange={(val) =>
+                              setLeverageMax(isNaN(val) ? 1 : val)
+                            }
+                            min={1}
+                            max={10}
+                            step={0.1}
+                            decimals={1}
+                            style={inputStyle}
+                          />
+                          <span style={{ color: "var(--text-muted)" }}>x</span>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Objetivo</label>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                        }}
-                      >
-                        <NumberInput
-                          value={leverageTarget}
-                          onChange={(val) =>
-                            setLeverageTarget(isNaN(val) ? 1 : val)
-                          }
-                          min={1}
-                          max={10}
-                          step={0.1}
-                          decimals={1}
-                          style={inputStyle}
-                        />
-                        <span style={{ color: "var(--text-muted)" }}>x</span>
+                      <div>
+                        <label style={labelStyle}>Objetivo</label>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          <NumberInput
+                            value={leverageTarget}
+                            onChange={(val) =>
+                              setLeverageTarget(isNaN(val) ? 1 : val)
+                            }
+                            min={1}
+                            max={10}
+                            step={0.1}
+                            decimals={1}
+                            style={inputStyle}
+                          />
+                          <span style={{ color: "var(--text-muted)" }}>x</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
+              </div>
+            )}
 
-                {/* Contributions */}
+            {/* Step 5: Contributions */}
+            {currentStep === 5 && (
+              <div>
+                <h2 style={stepTitleStyle}>Aportaciones Periódicas</h2>
+                <p
+                  style={{
+                    color: "var(--text-muted)",
+                    marginBottom: "1.5rem",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  Configura tus aportaciones recurrentes. Puedes ajustar esto después.
+                </p>
+
                 <div style={sectionStyle}>
                   <h3
                     style={{
@@ -1199,7 +1268,7 @@ export default function Onboarding() {
                     }}
                   >
                     <DollarSign size={18} />
-                    Aportaciones Periódicas
+                    Configuración de Aportaciones
                   </h3>
                   <div
                     style={{
@@ -1285,8 +1354,8 @@ export default function Onboarding() {
               </div>
             )}
 
-            {/* Step 5: Summary */}
-            {currentStep === 5 && (
+            {/* Step 6: Summary */}
+            {currentStep === 6 && (
               <div>
                 <h2 style={stepTitleStyle}>Resumen</h2>
                 <p
@@ -1419,11 +1488,15 @@ export default function Onboarding() {
                         fontSize: "0.8rem",
                       }}
                     >
-                      LEVERAGE
+                      PERFIL DE RIESGO
                     </h4>
                     <p style={{ color: "var(--text-primary)", margin: 0 }}>
-                      {leverageMin}x - {leverageMax}x (objetivo:{" "}
-                      {leverageTarget}x)
+                      {selectedRiskProfile
+                        ? riskProfiles.find((p) => p.id === selectedRiskProfile)?.name || "Moderado"
+                        : "Personalizado"}{" "}
+                      <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                        ({leverageMin}x - {leverageMax}x)
+                      </span>
                     </p>
                   </div>
 

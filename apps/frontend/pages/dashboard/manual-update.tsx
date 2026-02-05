@@ -41,8 +41,8 @@ interface PositionInput {
 }
 
 /**
- * Manual portfolio update page
- * Used to register the actual current state of the portfolio
+ * Sync Positions page
+ * Used to synchronize the actual holdings with what's in the broker
  */
 export default function ManualUpdate() {
   const router = useRouter();
@@ -442,7 +442,7 @@ export default function ManualUpdate() {
   return (
     <>
       <Head>
-        <title>Actualización Manual - Leveraged DCA App</title>
+        <title>Sincronizar Posiciones - Leveraged DCA App</title>
       </Head>
       <DashboardSidebar portfolioId={portfolioId}>
         <div style={{ padding: "2rem" }}>
@@ -464,11 +464,11 @@ export default function ManualUpdate() {
                   letterSpacing: "-0.025em",
                 }}
               >
-                Actualización Manual del Portfolio
+                Sincronizar Posiciones
               </h1>
               <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                Registra el estado real actual de tu portfolio (desde tu
-                broker).
+                Actualiza las cantidades reales que tienes en tu broker para que
+                coincidan con la app.
               </p>
             </div>
 

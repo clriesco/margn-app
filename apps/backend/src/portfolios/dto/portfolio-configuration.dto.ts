@@ -1,3 +1,4 @@
+import type { RiskProfileId } from "@leveraged-dca/shared";
 import {
   IsBoolean,
   IsIn,
@@ -23,6 +24,12 @@ export class TargetWeightDto {
  * DTO for updating portfolio configuration
  */
 export class UpdatePortfolioConfigurationDto {
+  // Risk profile (if provided, overrides leverage params)
+  @IsOptional()
+  @IsString()
+  @IsIn(["conservative", "moderate", "growth", "aggressive", null])
+  riskProfile?: RiskProfileId | null;
+
   // Contribution settings
   @IsOptional()
   @IsNumber()
@@ -164,6 +171,10 @@ export interface PortfolioConfigurationResponse {
   name: string;
   baseCurrency: string;
   initialCapital: number;
+
+  // Risk profile
+  riskProfile: RiskProfileId | null;
+  riskProfileName: string | null;
 
   // Contribution settings
   monthlyContribution: number | null;

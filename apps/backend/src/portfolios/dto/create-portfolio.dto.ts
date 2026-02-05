@@ -1,3 +1,4 @@
+import type { RiskProfileId } from "@leveraged-dca/shared";
 import { Type } from "class-transformer";
 import {
   IsArray,
@@ -62,7 +63,13 @@ export class CreatePortfolioDto {
   @IsObject()
   targetWeights?: Record<string, number>;
 
-  // Step 4 - Optional configuration
+  // Step 4 - Risk Profile (optional, overrides leverage params if provided)
+  @IsOptional()
+  @IsString()
+  @IsIn(["conservative", "moderate", "growth", "aggressive"])
+  riskProfile?: RiskProfileId;
+
+  // Step 4 - Optional configuration (can be overridden by riskProfile)
   @IsOptional()
   @IsNumber()
   @Min(1)

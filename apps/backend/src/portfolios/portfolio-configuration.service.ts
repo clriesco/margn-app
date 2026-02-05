@@ -1,4 +1,10 @@
 import {
+  RISK_PROFILES,
+  detectRiskProfile,
+  isValidRiskProfileId,
+  type RiskProfileId,
+} from "@leveraged-dca/shared";
+import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -41,6 +47,10 @@ export class PortfolioConfigurationService {
         positions: {
           include: { asset: true },
         },
+        targetAssets: {
+          where: { enabled: true },
+          include: { asset: true },
+        },
       },
     });
 
@@ -48,24 +58,34 @@ export class PortfolioConfigurationService {
       throw new NotFoundException("Portfolio not found");
     }
 
-    // Get all asset symbols from current positions
-    const allAssetSymbols = (portfolio.positions as any[]).map(
-      (p: any) => p.asset.symbol
-    );
-
-    // Parse target weights from JSON or use defaults
+    // Get target weights from the new PortfolioTargetAsset model (preferred)
+    // or fall back to legacy targetWeightsJson
     let targetWeights: Record<string, number> = {};
-    if (portfolio.targetWeightsJson) {
+
+    if (portfolio.targetAssets && portfolio.targetAssets.length > 0) {
+      // Use new model: PortfolioTargetAsset
+      for (const ta of portfolio.targetAssets) {
+        targetWeights[(ta as any).asset.symbol] = ta.targetWeight;
+      }
+    } else if (portfolio.targetWeightsJson) {
+      // Fallback to legacy JSON field
       try {
         targetWeights = JSON.parse(portfolio.targetWeightsJson);
       } catch {
-        // If parsing fails, start with empty object
         targetWeights = {};
       }
     }
 
-    // Ensure ALL current portfolio assets are in targetWeights
-    // If an asset is missing, add it with weight 0
+    // Get all asset symbols from both target assets AND positions
+    const targetAssetSymbols = portfolio.targetAssets?.map(
+      (ta: any) => ta.asset.symbol
+    ) || [];
+    const positionSymbols = (portfolio.positions as any[]).map(
+      (p: any) => p.asset.symbol
+    );
+    const allAssetSymbols = [...new Set([...targetAssetSymbols, ...positionSymbols])];
+
+    // Ensure ALL assets are in targetWeights (add with 0 if missing)
     for (const symbol of allAssetSymbols) {
       if (!(symbol in targetWeights)) {
         targetWeights[symbol] = 0;
@@ -78,11 +98,23 @@ export class PortfolioConfigurationService {
       targetWeights = DEFAULT_TARGET_WEIGHTS;
     }
 
+    // Detect or use stored risk profile
+    const storedProfile = portfolio.riskProfile as RiskProfileId | null;
+    const detectedProfile = storedProfile || detectRiskProfile({
+      leverageMin: portfolio.leverageMin,
+      leverageMax: portfolio.leverageMax,
+      leverageTarget: portfolio.leverageTarget,
+    });
+
     return {
       portfolioId: portfolio.id,
       name: portfolio.name,
       baseCurrency: portfolio.baseCurrency,
       initialCapital: portfolio.initialCapital,
+
+      // Risk profile
+      riskProfile: detectedProfile,
+      riskProfileName: detectedProfile ? RISK_PROFILES[detectedProfile].name : null,
 
       // Contribution settings
       monthlyContribution: portfolio.monthlyContribution,
@@ -168,6 +200,24 @@ export class PortfolioConfigurationService {
     // Build update data
     const updateData: Record<string, any> = {};
 
+    // If a risk profile is provided, apply its parameters
+    if (dto.riskProfile !== undefined) {
+      if (dto.riskProfile === null) {
+        // Explicitly setting to custom (null)
+        updateData.riskProfile = null;
+      } else if (isValidRiskProfileId(dto.riskProfile)) {
+        const profileParams = RISK_PROFILES[dto.riskProfile].params;
+        updateData.riskProfile = dto.riskProfile;
+        updateData.leverageMin = profileParams.leverageMin;
+        updateData.leverageMax = profileParams.leverageMax;
+        updateData.leverageTarget = profileParams.leverageTarget;
+        updateData.maintenanceMarginRatio = profileParams.maintenanceMarginRatio;
+        updateData.meanReturnShrinkage = profileParams.meanReturnShrinkage;
+        updateData.maxWeight = profileParams.maxWeight;
+        updateData.minWeight = profileParams.minWeight;
+      }
+    }
+
     // Contribution settings
     if (dto.monthlyContribution !== undefined) {
       updateData.monthlyContribution = dto.monthlyContribution;
@@ -182,20 +232,33 @@ export class PortfolioConfigurationService {
       updateData.contributionEnabled = dto.contributionEnabled;
     }
 
-    // Leverage settings
-    if (dto.leverageMin !== undefined) {
+    // Leverage settings (only apply if not already set by risk profile)
+    if (dto.leverageMin !== undefined && updateData.leverageMin === undefined) {
       updateData.leverageMin = dto.leverageMin;
+      // Mark as custom if manually setting leverage
+      if (updateData.riskProfile === undefined) {
+        updateData.riskProfile = null;
+      }
     }
-    if (dto.leverageMax !== undefined) {
+    if (dto.leverageMax !== undefined && updateData.leverageMax === undefined) {
       updateData.leverageMax = dto.leverageMax;
+      if (updateData.riskProfile === undefined) {
+        updateData.riskProfile = null;
+      }
     }
-    if (dto.leverageTarget !== undefined) {
+    if (dto.leverageTarget !== undefined && updateData.leverageTarget === undefined) {
       updateData.leverageTarget = dto.leverageTarget;
+      if (updateData.riskProfile === undefined) {
+        updateData.riskProfile = null;
+      }
     }
 
-    // Target weights (store as JSON string)
+    // Target weights (store as JSON string AND sync to PortfolioTargetAsset)
     if (dto.targetWeights !== undefined) {
       updateData.targetWeightsJson = JSON.stringify(dto.targetWeights);
+
+      // Also sync to the new PortfolioTargetAsset model
+      await this.syncTargetAssetsFromWeights(portfolioId, dto.targetWeights);
     }
 
     // Weight constraints
@@ -306,6 +369,67 @@ export class PortfolioConfigurationService {
           sum * 100
         ).toFixed(2)}%`
       );
+    }
+  }
+
+  /**
+   * Sync target weights from the legacy JSON format to PortfolioTargetAsset records
+   * @param portfolioId - Portfolio ID
+   * @param weights - Target weights object
+   */
+  private async syncTargetAssetsFromWeights(
+    portfolioId: string,
+    weights: Record<string, number>
+  ): Promise<void> {
+    // Get all assets by symbol
+    const symbols = Object.keys(weights);
+    const assets = await this.prisma.asset.findMany({
+      where: { symbol: { in: symbols } },
+    });
+    const assetMap = new Map(assets.map(a => [a.symbol, a.id]));
+
+    // Get existing target assets
+    const existingTargetAssets = await this.prisma.portfolioTargetAsset.findMany({
+      where: { portfolioId },
+      include: { asset: true },
+    });
+    const existingMap = new Map(
+      existingTargetAssets.map(ta => [(ta as any).asset.symbol, ta])
+    );
+
+    // Update or create target assets
+    for (const [symbol, weight] of Object.entries(weights)) {
+      const assetId = assetMap.get(symbol);
+      if (!assetId) continue; // Asset doesn't exist in DB
+
+      const existing = existingMap.get(symbol);
+      if (existing) {
+        // Update existing
+        await this.prisma.portfolioTargetAsset.update({
+          where: { id: existing.id },
+          data: { targetWeight: weight, enabled: weight > 0 },
+        });
+      } else {
+        // Create new
+        await this.prisma.portfolioTargetAsset.create({
+          data: {
+            portfolioId,
+            assetId,
+            targetWeight: weight,
+            enabled: weight > 0,
+          },
+        });
+      }
+    }
+
+    // Disable target assets not in the weights object
+    for (const [symbol, ta] of existingMap) {
+      if (!(symbol in weights)) {
+        await this.prisma.portfolioTargetAsset.update({
+          where: { id: ta.id },
+          data: { enabled: false, targetWeight: 0 },
+        });
+      }
     }
   }
 

@@ -9,6 +9,8 @@ import { PortfolioRecommendationsController } from "./portfolio-recommendations.
 import { PortfolioRecommendationsService } from "./portfolio-recommendations.service";
 import { PortfoliosController } from "./portfolios.controller";
 import { PortfoliosService } from "./portfolios.service";
+import { TargetAssetsController } from "./target-assets.controller";
+import { TargetAssetsService } from "./target-assets.service";
 
 
 @Module({
@@ -17,18 +19,21 @@ import { PortfoliosService } from "./portfolios.service";
     PortfoliosController,
     PortfolioConfigurationController,
     PortfolioRecommendationsController,
+    TargetAssetsController,
   ],
   providers: [
     PortfoliosService,
     PortfolioConfigurationService,
     PortfolioRecommendationsService,
     OnboardingService,
+    TargetAssetsService,
   ],
   exports: [
     PortfoliosService,
     PortfolioConfigurationService,
     PortfolioRecommendationsService,
     OnboardingService,
+    TargetAssetsService,
   ],
 })
 export class PortfoliosModule {}
