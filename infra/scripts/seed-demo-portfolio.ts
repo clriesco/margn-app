@@ -11,8 +11,10 @@
 import { config } from "dotenv";
 import { join } from "path";
 
-// Load environment variables from backend .env
-config({ path: join(__dirname, "../../apps/backend/.env") });
+// Load environment variables from backend .env (only in development)
+if (!process.env.DATABASE_URL) {
+  config({ path: join(process.cwd(), "apps/backend/.env") });
+}
 
 import { PrismaClient } from "@prisma/client";
 

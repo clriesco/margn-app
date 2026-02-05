@@ -17,8 +17,10 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-// Load .env from backend directory before importing other modules
-dotenv.config({ path: path.resolve(__dirname, "../../apps/backend/.env") });
+// Load .env from backend directory (only in development)
+if (!process.env.DATABASE_URL) {
+  dotenv.config({ path: path.join(process.cwd(), "apps/backend/.env") });
+}
 
 import { ingestPrices } from "./price-ingestion";
 import { refreshMetrics } from "./metrics-refresh";

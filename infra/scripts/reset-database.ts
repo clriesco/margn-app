@@ -20,8 +20,10 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
-// Load .env from backend directory
-dotenv.config({ path: path.resolve(__dirname, "../../apps/backend/.env") });
+// Load .env from backend directory (only in development)
+if (!process.env.DATABASE_URL) {
+  dotenv.config({ path: path.join(process.cwd(), "apps/backend/.env") });
+}
 
 const prisma = new PrismaClient();
 
