@@ -200,21 +200,8 @@ export default function ManualUpdate() {
   };
 
   const handleRemovePosition = (index: number) => {
-    const position = positions[index];
-
-    // If it's an existing position, mark it for deletion by setting quantity to 0
-    if (position.assetId) {
-      const updated = [...positions];
-      updated[index] = {
-        ...updated[index],
-        quantity: "0", // Mark for deletion
-      };
-      setPositions(updated);
-    } else {
-      // If it's a new position, just remove it
-      const updated = positions.filter((_, i) => i !== index);
-      setPositions(updated);
-    }
+    const updated = positions.filter((_, i) => i !== index);
+    setPositions(updated);
   };
 
   const handlePositionSymbolChange = (index: number, symbol: string) => {
@@ -310,7 +297,6 @@ export default function ManualUpdate() {
 
     try {
       // Build positions array with current quantities
-      // Include all positions (even with quantity 0 to delete existing ones)
       // Round quantities to appropriate precision before sending
       console.log("[ManualUpdate] Starting submit, positions:", positions);
 
@@ -870,32 +856,16 @@ export default function ManualUpdate() {
                                       : 4
                                   }
                                   placeholder="Cantidad"
-                                  disabled={
-                                    isSubmitting ||
-                                    (parseNumberES(pos.quantity) || 0) === 0
-                                  }
+                                  disabled={isSubmitting}
                                   style={{
                                     flex: 1,
                                     padding: "0.75rem 1rem",
-                                    background:
-                                      (parseNumberES(pos.quantity) || 0) === 0
-                                        ? "rgba(239, 68, 68, 0.1)"
-                                        : "var(--bg-glass)",
-                                    color:
-                                      (parseNumberES(pos.quantity) || 0) === 0
-                                        ? "var(--text-on-glass-muted)"
-                                        : "var(--text-primary)",
-                                    border:
-                                      (parseNumberES(pos.quantity) || 0) === 0
-                                        ? "2px solid rgba(239, 68, 68, 0.4)"
-                                        : "2px solid var(--input-border)",
+                                    background: "var(--bg-glass)",
+                                    color: "var(--text-primary)",
+                                    border: "2px solid var(--input-border)",
                                     borderRadius: "8px",
                                     fontSize: "1rem",
                                     boxSizing: "border-box",
-                                    textDecoration:
-                                      (parseNumberES(pos.quantity) || 0) === 0
-                                        ? "line-through"
-                                        : "none",
                                   }}
                                 />
                                 <button
