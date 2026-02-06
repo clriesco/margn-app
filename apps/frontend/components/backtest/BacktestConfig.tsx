@@ -155,6 +155,20 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
     }
   }, [userDefaults, hasAppliedDefaults]);
 
+  // Auto-detect risk profile from user's leverage config
+  useEffect(() => {
+    if (!userDefaults || riskProfiles.length === 0) return;
+    const { leverageMin, leverageMax, leverageTarget } = userDefaults;
+    if (leverageMin == null || leverageMax == null || leverageTarget == null) return;
+    const match = riskProfiles.find(
+      (p) =>
+        p.params.leverageMin === leverageMin &&
+        p.params.leverageMax === leverageMax &&
+        p.params.leverageTarget === leverageTarget
+    );
+    setSelectedRiskProfile(match ? match.id as RiskProfileId : null);
+  }, [userDefaults, riskProfiles]);
+
   // Load risk profiles on mount
   useEffect(() => {
     async function loadRiskProfiles() {
