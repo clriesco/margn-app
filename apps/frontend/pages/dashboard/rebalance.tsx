@@ -399,7 +399,7 @@ export default function Rebalance() {
                             <span>Dinámicos (Optimizados Sharpe)</span>
                           </>
                         ) : (
-                          <span>Estáticos (PORTFOLIO_INITIAL)</span>
+                          <span>Estáticos (Configuración del portfolio)</span>
                         )}
                     </span>
                   </div>
