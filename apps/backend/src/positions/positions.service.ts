@@ -50,14 +50,15 @@ export class PositionsService {
     console.log(`[PositionsService] Existing position symbols:`, Array.from(existingPositionSymbols));
     console.log(`[PositionsService] Submitted symbols:`, Array.from(submittedSymbols));
 
-    // Detect assets that should be deleted (exist in portfolio but not in submitted positions, or have quantity 0)
+    // Detect assets that should be deleted (exist in portfolio but explicitly removed from submitted list)
+    // Note: quantity 0 does NOT trigger deletion — assets can exist with 0 quantity
     for (const existingPos of portfolio.positions) {
       const symbol = (existingPos as any).asset.symbol;
       const submittedPos = dto.positions.find((p) => p.symbol === symbol);
-      
-      if (!submittedPos || submittedPos.quantity === 0) {
+
+      if (!submittedPos) {
         deletedAssetSymbols.push(symbol);
-        console.log(`[PositionsService] Marking ${symbol} for deletion (not submitted or quantity 0)`);
+        console.log(`[PositionsService] Marking ${symbol} for deletion (not in submitted positions)`);
       }
     }
 
@@ -74,17 +75,9 @@ export class PositionsService {
       console.log(`[PositionsService]   - exists in existingPositionSymbols: ${existingPositionSymbols.has(item.symbol)}`);
       console.log(`[PositionsService]   - quantity === 0: ${item.quantity === 0}`);
       
-      // Skip existing positions with quantity 0 (they will be deleted)
-      // BUT: new assets with quantity 0 should be processed to validate ticker and download history
-      if (item.quantity === 0 && !isNewAsset) {
-        console.log(`[PositionsService] ⏭️ Skipping ${item.symbol} (quantity is 0 and it's an existing asset - will be deleted)`);
-        continue;
-      }
-
-      // New assets with quantity 0 are allowed - they will be added with 0 quantity
-      // The user will set the weight in configuration, and later can add quantity
-      if (item.quantity === 0 && isNewAsset) {
-        console.log(`[PositionsService] ✅ New asset ${item.symbol} with quantity 0 - will be added for weight configuration`);
+      // Assets with quantity 0 are allowed — they stay in the portfolio for weight configuration
+      if (item.quantity === 0) {
+        console.log(`[PositionsService] ✅ ${item.symbol} with quantity 0 - will be kept in portfolio`);
       }
 
       // Auto-fetch price if avgPrice is 0 or not provided

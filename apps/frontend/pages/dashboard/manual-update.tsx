@@ -933,18 +933,6 @@ export default function ManualUpdate() {
                                   <Trash2 size={18} />
                                 </button>
                               </div>
-                              {(parseNumberES(pos.quantity) || 0) === 0 && (
-                                <p
-                                  style={{
-                                    color: "#f87171",
-                                    fontSize: "0.75rem",
-                                    marginTop: "0.25rem",
-                                    fontWeight: "500",
-                                  }}
-                                >
-                                  ⚠️ Este activo se eliminará al guardar
-                                </p>
-                              )}
                             </>
                           )}
 
