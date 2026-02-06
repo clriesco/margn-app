@@ -566,6 +566,7 @@ Al crear un release, seguir este orden estricto:
 - **Backend:** camelCase variables, PascalCase clases. NestJS modules con Controller, Service, DTOs.
 - **Frontend:** camelCase variables, PascalCase componentes. Pages en `pages/`, components en `components/`, utils en `lib/`.
 - **Database:** snake_case columnas (mapeado desde camelCase en Prisma).
+- **Migraciones:** NUNCA usar el MCP tool de Supabase (`apply_migration`) para DDL. Siempre crear el archivo `migration.sql` en `apps/backend/prisma/migrations/<timestamp>_<name>/` y ejecutarlo con `prisma migrate deploy` o `prisma db push`. Si se aplica solo vía MCP, la migración no existe en el repo y producción (Render) falla al desplegar.
 - **API Endpoints:** kebab-case (e.g., `/portfolios/:id/daily-metrics`).
 - **Errores backend:** NestJS exceptions (`UnauthorizedException`, `NotFoundException`, etc.). Responses: `{ statusCode, message, error }`.
 - **Errores frontend:** try/catch con mensajes user-friendly.
