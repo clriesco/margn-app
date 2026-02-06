@@ -18,6 +18,7 @@ export default function Contribution() {
   const [portfolioId, setPortfolioId] = useState<string | null>(null);
   const [amount, setAmount] = useState<number>(1000);
   const [note, setNote] = useState("");
+  const [movementType, setMovementType] = useState<"contribution" | "withdrawal">("contribution");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -101,15 +102,22 @@ export default function Contribution() {
       await createContribution({
         portfolioId,
         amount: isNaN(amount) ? 0 : amount,
+        type: movementType,
         note:
           note ||
-          `Monthly contribution - ${new Date().toLocaleDateString("es-ES")}`,
+          (movementType === "withdrawal"
+            ? `Retiro - ${new Date().toLocaleDateString("es-ES")}`
+            : `Monthly contribution - ${new Date().toLocaleDateString("es-ES")}`),
       });
 
       // Invalidate cache so dashboard shows updated data
       invalidatePortfolioCache(portfolioId, user?.email);
 
-      setMessage("✅ ¡Aportación registrada correctamente!");
+      setMessage(
+        movementType === "withdrawal"
+          ? "Retiro registrado correctamente."
+          : "Aportación registrada correctamente."
+      );
 
       setTimeout(() => {
         router.push("/dashboard");
@@ -150,7 +158,7 @@ export default function Contribution() {
   return (
     <>
       <Head>
-        <title>Aportación Mensual - Leveraged DCA App</title>
+        <title>Movimientos - Leveraged DCA App</title>
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -206,14 +214,70 @@ export default function Contribution() {
               >
                 {isExtraContribution
                   ? "Aportación Extra"
-                  : "Aportación Mensual"}
+                  : "Movimientos"}
               </h1>
               <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                 {isExtraContribution
                   ? "Registra una aportación extra para reducir tu leverage y llevarlo de vuelta al rango."
-                  : "Registra tu aportación mensual. Después de esto, puedes rebalancear tu portfolio."}
+                  : "Registra aportaciones o retiros de tu portfolio."}
               </p>
             </div>
+
+            {/* Toggle Tabs */}
+            {!isExtraContribution && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0",
+                  marginBottom: "1.5rem",
+                  background: "var(--input-bg)",
+                  borderRadius: "8px",
+                  padding: "4px",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setMovementType("contribution")}
+                  style={{
+                    flex: 1,
+                    padding: "0.625rem 1rem",
+                    background: movementType === "contribution"
+                      ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                      : "transparent",
+                    color: movementType === "contribution" ? "white" : "var(--text-secondary)",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "0.9375rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Aportación
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMovementType("withdrawal")}
+                  style={{
+                    flex: 1,
+                    padding: "0.625rem 1rem",
+                    background: movementType === "withdrawal"
+                      ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+                      : "transparent",
+                    color: movementType === "withdrawal" ? "white" : "var(--text-secondary)",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "0.9375rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Retiro
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit}>
               <div
@@ -233,7 +297,7 @@ export default function Contribution() {
                       color: "var(--text-on-glass)",
                     }}
                   >
-                    Cantidad de Aportación (USD)
+                    {movementType === "withdrawal" ? "Cantidad de Retiro (USD)" : "Cantidad de Aportación (USD)"}
                   </label>
                   <NumberInput
                     value={amount}
@@ -286,6 +350,22 @@ export default function Contribution() {
                   />
                 </div>
 
+                {movementType === "withdrawal" && (
+                  <div
+                    style={{
+                      marginBottom: "1.5rem",
+                      padding: "0.75rem 1rem",
+                      background: "rgba(239, 68, 68, 0.1)",
+                      border: "1px solid rgba(239, 68, 68, 0.2)",
+                      borderRadius: "8px",
+                      color: "#f87171",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    Un retiro reduce tu equity y aumenta tu leverage. Asegúrate de que el monto no exceda tu equity actual.
+                  </div>
+                )}
+
                 <div
                   style={{
                     display: "flex",
@@ -302,6 +382,8 @@ export default function Contribution() {
                       background:
                         isSubmitting || !portfolioId
                           ? "var(--disabled-bg)"
+                          : movementType === "withdrawal"
+                          ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
                           : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                       color:
                         isSubmitting || !portfolioId
@@ -323,7 +405,11 @@ export default function Contribution() {
                     }}
                     className="submit-button"
                   >
-                    {isSubmitting ? "Guardando..." : "Registrar Aportación"}
+                    {isSubmitting
+                      ? "Guardando..."
+                      : movementType === "withdrawal"
+                      ? "Registrar Retiro"
+                      : "Registrar Aportación"}
                   </button>
                 </div>
               </div>

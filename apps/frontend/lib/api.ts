@@ -27,8 +27,10 @@ export interface Position {
 export interface AnalyticsStats {
   capitalFinal: number;
   totalInvested: number;
+  totalWithdrawn: number;
   absoluteReturn: number;
   totalReturnPercent: number;
+  twr: number | null;
   cagr: number;
   xirr: number | null;
   volatility: number;
@@ -52,8 +54,10 @@ export interface PortfolioSummary {
     exposure: number;
     leverage: number;
     totalContributions: number;
+    totalWithdrawn: number;
     absoluteReturn: number;
     percentReturn: number;
+    twr: number | null;
     startDate: string;
     lastUpdate: string;
   };
@@ -175,6 +179,7 @@ export async function getContributionHistory(portfolioId: string) {
 export async function createContribution(data: {
   portfolioId: string;
   amount: number;
+  type?: "contribution" | "withdrawal";
   note?: string;
 }) {
   return fetchAPI("/contributions", {

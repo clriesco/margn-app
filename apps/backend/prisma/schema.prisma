@@ -153,18 +153,19 @@ model PortfolioPosition {
   @@map("portfolio_positions")
 }
 
-// Monthly contributions
+// Monthly contributions (includes both deposits and withdrawals)
 model MonthlyContribution {
   id            String   @id @default(uuid())
   portfolioId   String   @map("portfolio_id")
-  amount        Float
+  amount        Float    // Always positive; sign determined by type
+  type          String   @default("contribution") // 'contribution' or 'withdrawal'
   contributedAt DateTime @default(now()) @map("contributed_at") // Full DateTime with timestamp
   note          String?
 
   // Deployment tracking
   deployed         Boolean @default(false) @map("deployed")
   deployedAmount   Float   @default(0) @map("deployed_amount")
-  deploymentReason String? @map("deployment_reason") // 'drawdown', 'weight_deviation', 'volatility', 'manual', 'leverage_low'
+  deploymentReason String? @map("deployment_reason") // 'drawdown', 'weight_deviation', 'volatility', 'manual', 'leverage_low', 'withdrawal'
 
   portfolio       Portfolio        @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
   rebalanceEvents RebalanceEvent[]

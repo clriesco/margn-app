@@ -262,11 +262,14 @@ export class RebalanceService {
       latestPrices
     );
 
-    // 10. Calculate equity/borrow breakdown
+    // 10. Actual exposure after rounding (sum of rounded position values)
+    const actualExposure = positions.reduce((sum, p) => sum + p.targetValue, 0);
+
+    // 11. Calculate equity/borrow breakdown
     // Don't use pendingContribution - contributions are already in equity
     const breakdown = this.calculateEquityBorrowBreakdown(
       currentState.exposure,
-      targetExposure,
+      actualExposure,
       currentState.equity, // Pass equity for calculations
       config
     );
@@ -291,8 +294,8 @@ export class RebalanceService {
       positions,
       summary: {
         newEquity: currentState.equity, // Equity doesn't change when rebalancing to buy assets
-        newExposure: targetExposure,
-        newLeverage: currentState.equity > 0 ? targetExposure / currentState.equity : 0,
+        newExposure: actualExposure,
+        newLeverage: currentState.equity > 0 ? actualExposure / currentState.equity : 0,
         equityUsedFromContribution: breakdown.equityUsed,
         borrowIncrease: breakdown.borrowIncrease,
       },

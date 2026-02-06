@@ -137,7 +137,7 @@ async function calculateMetrics(portfolioId: string, date: Date) {
   );
 
   let contributionsSinceLastMetric = newContributions.reduce(
-    (sum: number, c: any) => sum + c.amount,
+    (sum: number, c: any) => sum + (c.type === "withdrawal" ? -c.amount : c.amount),
     0
   );
 
@@ -163,7 +163,7 @@ async function calculateMetrics(portfolioId: string, date: Date) {
   } else if (allContributions.length > 0) {
     // No previous metrics but we have contributions - process all of them
     contributionsSinceLastMetric = allContributions.reduce(
-      (sum: number, c: (typeof allContributions)[0]) => sum + c.amount,
+      (sum: number, c: (typeof allContributions)[0]) => sum + ((c as any).type === "withdrawal" ? -c.amount : c.amount),
       0
     );
     console.log(

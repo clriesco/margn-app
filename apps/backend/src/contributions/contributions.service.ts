@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -41,20 +41,39 @@ export class ContributionsService {
       orderBy: { date: "desc" },
     });
 
+    // Determine type and effective amount
+    const isWithdrawal = dto.type === "withdrawal";
+    const effectiveAmount = isWithdrawal ? -dto.amount : dto.amount;
+
     // Set contribution timestamp to NOW (with full date and time)
     // This allows metrics-refresh to compare timestamps and find contributions made after metrics
     const contributedAt = new Date(); // Current timestamp with full date and time
+
+    // Withdrawal validation: can't withdraw more than current equity
+    if (isWithdrawal) {
+      const currentEquity =
+        latestDailyMetric?.equity ??
+        latestMetrics?.equity ??
+        portfolio.initialCapital;
+
+      if (dto.amount > currentEquity) {
+        throw new BadRequestException(
+          `El retiro ($${dto.amount.toFixed(2)}) excede el equity actual ($${currentEquity.toFixed(2)})`
+        );
+      }
+    }
 
     // Create contribution record - mark as deployed immediately since it goes to equity
     const contribution = await this.prisma.monthlyContribution.create({
       data: {
         portfolioId: dto.portfolioId,
-        amount: dto.amount,
+        amount: dto.amount, // Always positive
+        type: isWithdrawal ? "withdrawal" : "contribution",
         note: dto.note,
         contributedAt: contributedAt, // Use current timestamp (DateTime with full date and time)
         deployed: true, // Immediately deployed - goes to equity
         deployedAmount: dto.amount,
-        deploymentReason: "manual",
+        deploymentReason: isWithdrawal ? "withdrawal" : "manual",
       },
     });
 
@@ -72,14 +91,14 @@ export class ContributionsService {
       exposure += position.quantity * price;
     }
 
-    // Current equity (before contribution)
+    // Current equity (before contribution/withdrawal)
     const currentEquity =
       latestDailyMetric?.equity ??
       latestMetrics?.equity ??
       portfolio.initialCapital;
 
-    // New equity after contribution
-    const newEquity = currentEquity + dto.amount;
+    // New equity after contribution/withdrawal (effectiveAmount is negative for withdrawals)
+    const newEquity = currentEquity + effectiveAmount;
 
     // Calculate new leverage
     const newLeverage = newEquity > 0 ? exposure / newEquity : 0;
@@ -215,6 +234,7 @@ export class ContributionsService {
     metadata.contributions.push({
       contributionId: contribution.id,
       contributionAmount: dto.amount,
+      contributionType: isWithdrawal ? "withdrawal" : "contribution",
       contributedAt: contributedAt.toISOString(),
       composition: composition,
     });
@@ -247,7 +267,7 @@ export class ContributionsService {
       },
     });
 
-    console.log(`[ContributionsService] Contribution recorded: $${dto.amount}`);
+    console.log(`[ContributionsService] ${isWithdrawal ? "Withdrawal" : "Contribution"} recorded: $${dto.amount}`);
     console.log(`  - Previous equity: $${currentEquity.toFixed(2)}`);
     console.log(`  - New equity: $${newEquity.toFixed(2)}`);
     console.log(

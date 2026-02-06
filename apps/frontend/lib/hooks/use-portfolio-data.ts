@@ -101,6 +101,7 @@ interface ContributionHistoryPoint {
   date: string;
   contribution: number;
   cumulative: number;
+  type: string;
 }
 
 /**

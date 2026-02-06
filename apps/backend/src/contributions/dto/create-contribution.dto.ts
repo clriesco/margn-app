@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class CreateContributionDto {
   @IsUUID()
@@ -7,6 +7,10 @@ export class CreateContributionDto {
   @IsNumber()
   @Min(0)
   amount!: number;
+
+  @IsOptional()
+  @IsIn(['contribution', 'withdrawal'])
+  type?: 'contribution' | 'withdrawal';
 
   @IsOptional()
   @IsString()

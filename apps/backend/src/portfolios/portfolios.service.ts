@@ -83,9 +83,10 @@ export class PortfoliosService {
     const contributionsByDate = new Map<string, number>();
     (contributions as any[]).forEach((contribution: any) => {
       const key = contribution.contributedAt.toISOString().split("T")[0];
+      const signed = contribution.type === "withdrawal" ? -contribution.amount : contribution.amount;
       contributionsByDate.set(
         key,
-        (contributionsByDate.get(key) || 0) + contribution.amount
+        (contributionsByDate.get(key) || 0) + signed
       );
     });
 
@@ -149,7 +150,7 @@ export class PortfoliosService {
       orderBy: { contributedAt: "asc" },
     });
 
-    const rows: Array<{ date: Date; contribution: number; cumulative: number }> = [];
+    const rows: Array<{ date: Date; contribution: number; cumulative: number; type: string }> = [];
     let cumulative = 0;
 
     // Onboarding row (initial capital)
@@ -158,16 +159,19 @@ export class PortfoliosService {
       date: portfolio.createdAt,
       contribution: portfolio.initialCapital,
       cumulative,
+      type: "initial",
     });
 
-    // Contribution rows
+    // Contribution and withdrawal rows
     for (const c of contributions as any[]) {
-      if (c.amount <= 0) continue;
-      cumulative += c.amount;
+      const isWithdrawal = c.type === "withdrawal";
+      const signed = isWithdrawal ? -c.amount : c.amount;
+      cumulative += signed;
       rows.push({
         date: c.contributedAt,
-        contribution: c.amount,
+        contribution: signed,
         cumulative,
+        type: c.type || "contribution",
       });
     }
 
@@ -216,19 +220,23 @@ export class PortfoliosService {
       orderBy: { date: "asc" },
     });
 
-    // Calculate total contributions (all) - includes initial capital
-    const contributionsSum = portfolio.contributions.reduce(
-      (sum: number, c: any) => sum + c.amount,
-      0
-    );
-    // Total invested = initial capital + all contributions
-    const totalContributions = (portfolio.initialCapital || 0) + contributionsSum;
-    
+    // Split contributions into deposits and withdrawals
+    const totalDeposited = portfolio.contributions
+      .filter((c: any) => c.type !== "withdrawal")
+      .reduce((sum: number, c: any) => sum + c.amount, 0);
+    const totalWithdrawn = portfolio.contributions
+      .filter((c: any) => c.type === "withdrawal")
+      .reduce((sum: number, c: any) => sum + c.amount, 0);
+
+    // Total invested = initial capital + deposits (not withdrawals)
+    const totalContributions = (portfolio.initialCapital || 0) + totalDeposited;
+
     // Debug logging
     console.log(`[PortfoliosService] getSummary for portfolio ${portfolioId}:`);
     console.log(`  - initialCapital: ${portfolio.initialCapital}`);
     console.log(`  - contributions count: ${portfolio.contributions.length}`);
-    console.log(`  - contributionsSum: ${contributionsSum}`);
+    console.log(`  - totalDeposited: ${totalDeposited}`);
+    console.log(`  - totalWithdrawn: ${totalWithdrawn}`);
     console.log(`  - totalContributions: ${totalContributions}`);
 
     // Calculate pending contributions (not deployed) - for display only
@@ -289,13 +297,16 @@ export class PortfoliosService {
     // 3. RebalanceService (when accepting a rebalance)
     // Updating here would cause equity to accumulate on every page load!
 
-    const absoluteReturn = effectiveEquity - totalContributions;
-    const percentReturn =
-      totalContributions > 0
-        ? ((effectiveEquity - totalContributions) / totalContributions) * 100
-        : 0;
+    // absoluteReturn = total PnL (realized + unrealized) from equity perspective
+    // Uses stored equity which correctly tracks all historical gains/losses,
+    // even from positions that were sold or removed.
+    const absoluteReturn = (effectiveEquity + totalWithdrawn) - totalContributions;
+    // percentReturn will be replaced by TWR from analytics (set below after analytics calculation)
+    let percentReturn = 0;
 
     // Calculate position weights, PNL, and current prices using real-time exposure
+    // NOTE: per-asset PnL is UNREALIZED only — it won't sum to absoluteReturn
+    // if there are realized gains from closed positions or rounding differences.
     const positionsWithWeights = portfolio.positions.map((pos: any) => {
       const currentPrice = latestPrices[pos.assetId] || pos.avgPrice;
       const currentValue = pos.quantity * currentPrice;
@@ -309,8 +320,8 @@ export class PortfoliosService {
         ...pos,
         currentPrice, // Current market price
         exposureUsd: currentValue, // Use real-time value
-        pnl, // Profit/Loss in USD
-        pnlPercent, // Profit/Loss percentage
+        pnl, // Profit/Loss in USD (unrealized)
+        pnlPercent, // Profit/Loss percentage (unrealized)
         weight:
           currentExposure > 0 ? (currentValue / currentExposure) * 100 : 0,
       };
@@ -322,10 +333,17 @@ export class PortfoliosService {
       totalContributions,
       portfolio.initialCapital,
       portfolio.contributions,
-      portfolio.createdAt
+      portfolio.createdAt,
+      totalWithdrawn
     );
 
-    console.log(`[getSummary] Analytics result - capitalFinal: ${analytics.capitalFinal}, totalInvested: ${analytics.totalInvested}`);
+    // Use TWR as the headline percent return; fall back to simple return when TWR can't be computed
+    const simpleReturn = totalContributions > 0
+      ? (absoluteReturn / totalContributions) * 100
+      : 0;
+    percentReturn = analytics.twr !== null ? analytics.twr * 100 : simpleReturn;
+
+    console.log(`[getSummary] Analytics result - capitalFinal: ${analytics.capitalFinal}, totalInvested: ${analytics.totalInvested}, TWR: ${analytics.twr}`);
 
     return {
       portfolio: {
@@ -339,10 +357,12 @@ export class PortfoliosService {
         exposure: currentExposure,
         leverage: currentLeverage,
         totalContributions,
+        totalWithdrawn,
         pendingContributions, // NEW: Show pending contributions separately
         absoluteReturn,
-        percentReturn,
-        startDate: firstMetrics?.date ?? undefined,
+        percentReturn, // TWR-based
+        twr: analytics.twr,
+        startDate: firstMetrics?.date ?? portfolio.createdAt,
         lastUpdate: latestDailyMetric?.date ?? latestMetrics?.date ?? undefined,
       },
       positions: positionsWithWeights,
@@ -388,8 +408,9 @@ export class PortfoliosService {
     metricsHistory: any[],
     totalContributions: number,
     initialCapital: number,
-    contributions: Array<{ amount: number; contributedAt: Date }> = [],
-    portfolioCreatedAt?: Date
+    contributions: Array<{ amount: number; type?: string; contributedAt: Date }> = [],
+    portfolioCreatedAt?: Date,
+    totalWithdrawn: number = 0
   ) {
     const dailyHistory = this.buildDailyHistory(metricsHistory);
 
@@ -402,8 +423,10 @@ export class PortfoliosService {
       return {
         capitalFinal: 0,
         totalInvested: totalContributions,
+        totalWithdrawn,
         absoluteReturn: 0,
         totalReturnPercent: 0,
+        twr: null as number | null,
         cagr: 0,
         xirr: null,
         volatility: 0,
@@ -420,15 +443,17 @@ export class PortfoliosService {
     if (dailyHistory.length < 2) {
       const singleEntry = dailyHistory[0];
       console.log(`[calculatePortfolioAnalytics] Only one entry, equity: ${singleEntry.equity}`);
-      const absoluteReturn = singleEntry.equity - totalContributions;
+      const absoluteReturn = (singleEntry.equity + totalWithdrawn) - totalContributions;
       const totalReturnPercent =
         totalContributions > 0 ? (absoluteReturn / totalContributions) * 100 : 0;
-      
+
       const result = {
         capitalFinal: singleEntry.equity,
         totalInvested: totalContributions,
+        totalWithdrawn,
         absoluteReturn,
         totalReturnPercent,
+        twr: null as number | null,
         cagr: 0,
         xirr: null,
         volatility: 0,
@@ -439,16 +464,17 @@ export class PortfoliosService {
         bestDay: null,
         worstDay: null,
       };
-      
+
       console.log(`[calculatePortfolioAnalytics] Returning result with capitalFinal: ${result.capitalFinal}`);
       return result;
     }
 
+    // contributionsByDate already includes sign (from getMetrics)
     const contributionsByDate = new Map<string, number>();
     metricsHistory.forEach((metric) => {
       const key = this.normalizeDate(metric.date);
       const contribution = metric.contribution || 0;
-      if (contribution > 0) {
+      if (contribution !== 0) {
         contributionsByDate.set(
           key,
           (contributionsByDate.get(key) || 0) + contribution
@@ -466,7 +492,8 @@ export class PortfoliosService {
     console.log(`[calculatePortfolioAnalytics] First entry equity: ${firstEntry.equity}, date: ${firstEntry.date}`);
     console.log(`[calculatePortfolioAnalytics] Last entry equity: ${lastEntry.equity}, date: ${lastEntry.date}`);
     
-    const absoluteReturn = lastEntry.equity - totalContributions;
+    // absoluteReturn = total PnL: (equity + withdrawn) - deposited
+    const absoluteReturn = (lastEntry.equity + totalWithdrawn) - totalContributions;
     const totalReturnPercent =
       totalContributions > 0 ? (absoluteReturn / totalContributions) * 100 : 0;
     const years = Math.max(
@@ -511,8 +538,10 @@ export class PortfoliosService {
 
       dailyReturns.push({ ret, date: point.date });
 
-      // Update cumulative invested capital (initial + all contributions up to this point)
-      cumulativeInvested += contribution;
+      // Update cumulative invested capital (only increases with deposits, not withdrawals)
+      if (contribution > 0) {
+        cumulativeInvested += contribution;
+      }
 
       equityPeak = Math.max(equityPeak, point.equity);
       const drawdown = point.equity / equityPeak - 1;
@@ -530,23 +559,34 @@ export class PortfoliosService {
     }
 
     // Build XIRR cash flows
+    // Contributions are negative (money into portfolio), withdrawals are positive (money out)
     const xirrCashFlows: Array<{ amount: number; date: Date }> = [];
     const startDate = portfolioCreatedAt || new Date(firstEntry.date);
     if (initialCapital > 0) {
       xirrCashFlows.push({ amount: -initialCapital, date: startDate });
     }
     for (const c of contributions) {
-      xirrCashFlows.push({ amount: -c.amount, date: new Date(c.contributedAt) });
+      const isWithdrawal = (c as any).type === "withdrawal";
+      xirrCashFlows.push({
+        amount: isWithdrawal ? c.amount : -c.amount,
+        date: new Date(c.contributedAt),
+      });
     }
     xirrCashFlows.push({ amount: lastEntry.equity, date: new Date(lastEntry.date) });
     const xirr = this.calculateXIRR(xirrCashFlows);
+
+    // TWR (Time-Weighted Return) calculation
+    // Chains sub-period returns between cash flows to eliminate contribution/withdrawal distortion
+    const twr = this.calculateTWR(dailyHistory, contributionsByDate);
 
     if (dailyReturns.length === 0) {
       const result = {
         capitalFinal: lastEntry.equity,
         totalInvested: totalContributions,
+        totalWithdrawn,
         absoluteReturn,
         totalReturnPercent,
+        twr,
         cagr,
         xirr,
         volatility: 0,
@@ -579,8 +619,10 @@ export class PortfoliosService {
     const result = {
       capitalFinal: lastEntry.equity,
       totalInvested: totalContributions,
+      totalWithdrawn,
       absoluteReturn,
       totalReturnPercent,
+      twr,
       cagr,
       xirr,
       volatility,
@@ -597,9 +639,75 @@ export class PortfoliosService {
           ? { date: worstDate, return: worstReturn }
           : null,
     };
-    
-    console.log(`[calculatePortfolioAnalytics] Returning result (with returns) with capitalFinal: ${result.capitalFinal}`);
+
+    console.log(`[calculatePortfolioAnalytics] Returning result (with returns) with capitalFinal: ${result.capitalFinal}, TWR: ${twr}`);
     return result;
+  }
+
+  /**
+   * Calculate TWR (Time-Weighted Return).
+   * Chains sub-period returns between cash flow events so that contributions and
+   * withdrawals don't distort the reported yield.
+   *
+   * TWR = (1 + r₁) × (1 + r₂) × ... × (1 + rₙ) - 1
+   * where rᵢ = equity_before_cashflow / equity_after_prev_cashflow - 1
+   */
+  private calculateTWR(
+    dailyHistory: DailyHistoryEntry[],
+    contributionsByDate: Map<string, number>
+  ): number | null {
+    if (dailyHistory.length < 2) return null;
+
+    let twrProduct = 1;
+    let periodStartEquity = dailyHistory[0].equity;
+
+    if (periodStartEquity <= 0) return null;
+
+    for (let i = 1; i < dailyHistory.length; i++) {
+      const point = dailyHistory[i];
+      const cashFlow = contributionsByDate.get(point.date) || 0;
+
+      if (cashFlow !== 0) {
+        // End of sub-period: equity BEFORE the cash flow was applied
+        const equityBeforeCashFlow = point.equity - cashFlow;
+        if (periodStartEquity > 0) {
+          const subReturn = equityBeforeCashFlow / periodStartEquity;
+          twrProduct *= subReturn;
+        }
+        // Start new sub-period from equity AFTER cash flow (= point.equity)
+        periodStartEquity = point.equity;
+      } else if (i === dailyHistory.length - 1) {
+        // Final sub-period (no cash flow today)
+        if (periodStartEquity > 0) {
+          const subReturn = point.equity / periodStartEquity;
+          twrProduct *= subReturn;
+        }
+      }
+    }
+
+    // If no cash flows at all, just compute simple return
+    if (contributionsByDate.size === 0) {
+      const last = dailyHistory[dailyHistory.length - 1];
+      const first = dailyHistory[0];
+      if (first.equity > 0) {
+        return last.equity / first.equity - 1;
+      }
+      return null;
+    }
+
+    // Close the last sub-period if it wasn't closed by a cash flow on the last day
+    const lastDate = dailyHistory[dailyHistory.length - 1].date;
+    const lastCashFlow = contributionsByDate.get(lastDate) || 0;
+    if (lastCashFlow === 0 && dailyHistory.length > 1) {
+      // Already handled in the loop above at i === length - 1
+    }
+
+    const twr = twrProduct - 1;
+
+    // Sanity check
+    if (!Number.isFinite(twr) || twr < -1 || twr > 100) return null;
+
+    return twr;
   }
 
   /**

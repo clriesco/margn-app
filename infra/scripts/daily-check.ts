@@ -144,7 +144,7 @@ async function calculatePortfolioState(
     });
 
     const contributionsSinceLastMetric = contributions.reduce(
-      (sum: number, c: any) => sum + c.amount,
+      (sum: number, c: any) => sum + (c.type === "withdrawal" ? -c.amount : c.amount),
       0
     );
 

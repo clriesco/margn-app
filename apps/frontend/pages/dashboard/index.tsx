@@ -133,8 +133,10 @@ interface PortfolioSummary {
     exposure: number;
     leverage: number;
     totalContributions: number;
+    totalWithdrawn: number;
     absoluteReturn: number;
     percentReturn: number;
+    twr: number | null;
     startDate: string;
     lastUpdate: string;
   };
@@ -145,8 +147,10 @@ interface PortfolioSummary {
 interface AnalyticsStats {
   capitalFinal: number;
   totalInvested: number;
+  totalWithdrawn: number;
   absoluteReturn: number;
   totalReturnPercent: number;
+  twr: number | null;
   cagr: number;
   xirr: number | null;
   volatility: number;
@@ -947,11 +951,13 @@ function Dashboard() {
                   />
                   <MetricCard
                     title="Retornos"
-                    value={formatPercentES(summary.metrics.percentReturn / 100)}
+                    value={summary.metrics.twr !== null
+                      ? formatPercentES(summary.metrics.twr)
+                      : formatPercentES(summary.metrics.percentReturn / 100)}
                     subtitle={`${formatCurrencyES(
                       summary.metrics.absoluteReturn
-                    )} total`}
-                    positive={summary.metrics.percentReturn >= 0}
+                    )} PnL`}
+                    positive={(summary.metrics.twr ?? summary.metrics.percentReturn / 100) >= 0}
                   />
                 </div>
 
@@ -1059,20 +1065,20 @@ function Dashboard() {
                             "Suma del capital inicial más todas las aportaciones realizadas durante el período.",
                         },
                         {
-                          label: "Retorno absoluto",
+                          label: "Retorno absoluto (PnL)",
                           value: formatCurrencyES(
                             analyticsStats.absoluteReturn
                           ),
                           description:
-                            "Diferencia entre el capital final y el total invertido. Mide la ganancia o pérdida en términos absolutos.",
+                            "Ganancia o pérdida total: (Equity + Retiros) - Total Depositado.",
                         },
                         {
-                          label: "Retorno total",
-                          value: formatPercentES(
-                            analyticsStats.totalReturnPercent / 100
-                          ),
+                          label: "TWR",
+                          value: analyticsStats.twr !== null
+                            ? formatPercentES(analyticsStats.twr)
+                            : "—",
                           description:
-                            "Retorno porcentual sobre el total invertido. Calculado como (Capital Final - Total Invertido) / Total Invertido.",
+                            "Time-Weighted Return. Retorno ponderado por tiempo que elimina el efecto de aportaciones y retiros. Estándar de la industria para medir rendimiento.",
                         },
                         {
                           label: "CAGR",
@@ -1222,7 +1228,7 @@ function Dashboard() {
                           marginBottom: "0.25rem",
                         }}
                       >
-                        Aportaciones Totales
+                        Total Depositado
                       </p>
                       <p
                         style={{
@@ -1234,6 +1240,28 @@ function Dashboard() {
                         {formatCurrencyES(summary.metrics.totalContributions)}
                       </p>
                     </div>
+                    {summary.metrics.totalWithdrawn > 0 && (
+                      <div>
+                        <p
+                          style={{
+                            color: "var(--text-dim)",
+                            fontSize: "0.8rem",
+                            marginBottom: "0.25rem",
+                          }}
+                        >
+                          Total Retirado
+                        </p>
+                        <p
+                          style={{
+                            color: "#f87171",
+                            fontSize: "1.1rem",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {formatCurrencyES(summary.metrics.totalWithdrawn)}
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <p
                         style={{
@@ -1303,7 +1331,7 @@ function Dashboard() {
                       marginBottom: "1rem",
                     }}
                   >
-                    Historial de Aportaciones
+                    Historial de Movimientos
                   </h2>
                   <div
                     style={{
@@ -1322,8 +1350,8 @@ function Dashboard() {
                       <thead>
                         <tr style={{ borderBottom: "1px solid var(--border)" }}>
                           <th style={{ ...tableHeaderStyle, width: "33%" }}>Fecha</th>
-                          <th style={{ ...tableHeaderStyle, width: "33%" }}>Aportación</th>
-                          <th style={{ ...tableHeaderStyle, width: "34%" }}>Total Invertido</th>
+                          <th style={{ ...tableHeaderStyle, width: "33%" }}>Movimiento</th>
+                          <th style={{ ...tableHeaderStyle, width: "34%" }}>Acumulado</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1350,8 +1378,11 @@ function Dashboard() {
                                 }
                               )}
                             </td>
-                            <td style={tableCellStyle}>
-                              {formatCurrencyES(Math.round(point.contribution))}
+                            <td style={{
+                              ...tableCellStyle,
+                              color: point.contribution < 0 ? "#f87171" : "#4ade80",
+                            }}>
+                              {point.contribution < 0 ? "−" : "+"}{formatCurrencyES(Math.abs(Math.round(point.contribution)))}
                             </td>
                             <td style={tableCellStyle}>
                               {formatCurrencyES(Math.round(point.cumulative))}
@@ -1401,9 +1432,11 @@ function Dashboard() {
                           </div>
                         </div>
                         <div className="history-card-row">
-                          <span className="history-card-label">Aportación</span>
-                          <span className="history-card-value">
-                            {formatCurrencyES(Math.round(point.contribution))}
+                          <span className="history-card-label">Movimiento</span>
+                          <span className="history-card-value" style={{
+                            color: point.contribution < 0 ? "#f87171" : "#4ade80",
+                          }}>
+                            {point.contribution < 0 ? "−" : "+"}{formatCurrencyES(Math.abs(Math.round(point.contribution)))}
                           </span>
                         </div>
                       </div>

@@ -81,7 +81,7 @@ export default function DashboardSidebar({
       color: "#60a5fa",
     },
     {
-      label: "Añadir Aportación",
+      label: "Movimientos",
       icon: DollarSign,
       path: "/dashboard/contribution",
       color: "#34d399",
