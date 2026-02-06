@@ -250,46 +250,6 @@ export class PositionsService {
         exposure += position.quantity * price;
       }
 
-      // Get previous equity to detect changes
-      const previousMetrics = await this.prisma.metricsTimeseries.findFirst({
-        where: { portfolioId: dto.portfolioId },
-        orderBy: { date: 'desc' },
-      });
-      const previousEquity = previousMetrics?.equity || 0;
-      const equityDelta = dto.equity - previousEquity;
-
-      // If equity increased, create an implicit contribution to track the capital injection
-      // This prevents manual equity increases from appearing as "returns"
-      if (equityDelta > 0) {
-        console.log(`[PositionsService] Manual equity increase detected: $${previousEquity.toFixed(2)} → $${dto.equity.toFixed(2)} (delta: +$${equityDelta.toFixed(2)})`);
-        console.log(`[PositionsService] Creating implicit contribution of $${equityDelta.toFixed(2)} to track capital injection`);
-        
-        await this.prisma.monthlyContribution.create({
-          data: {
-            portfolioId: dto.portfolioId,
-            amount: equityDelta,
-            contributedAt: new Date(),
-            deployed: true,
-            note: `Ajuste manual de equity (+$${equityDelta.toFixed(2)})`,
-          },
-        });
-      } else if (equityDelta < 0) {
-        // Equity decreased - this could be a withdrawal or loss correction
-        // We create a negative contribution to track the capital withdrawal
-        console.log(`[PositionsService] Manual equity decrease detected: $${previousEquity.toFixed(2)} → $${dto.equity.toFixed(2)} (delta: $${equityDelta.toFixed(2)})`);
-        console.log(`[PositionsService] Creating implicit negative contribution of $${equityDelta.toFixed(2)} to track capital withdrawal`);
-        
-        await this.prisma.monthlyContribution.create({
-          data: {
-            portfolioId: dto.portfolioId,
-            amount: equityDelta, // Negative value
-            contributedAt: new Date(),
-            deployed: true,
-            note: `Ajuste manual de equity ($${equityDelta.toFixed(2)})`,
-          },
-        });
-      }
-
       // Calculate borrowed amount: exposure - equity
       const borrowedAmount = exposure - dto.equity;
       

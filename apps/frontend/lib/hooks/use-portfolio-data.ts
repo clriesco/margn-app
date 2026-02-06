@@ -100,12 +100,7 @@ export function usePortfolioMetrics(portfolioId: string | null) {
 interface ContributionHistoryPoint {
   date: string;
   contribution: number;
-  equity: number;
-  exposure: number;
-  leverage: number;
-  composition: Array<{ symbol: string; weight: number; value: number }>;
-  pnl: number;
-  pnlPercent: number;
+  cumulative: number;
 }
 
 /**

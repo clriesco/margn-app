@@ -199,17 +199,20 @@ async function calculateMetrics(portfolioId: string, date: Date) {
     latestMetric.exposure > 0 &&
     totalExposure > 0
   ) {
-    // We have valid previous metrics with stored borrowedAmount
-    // borrowedAmount stays constant (only changes on rebalance), equity absorbs price changes
+    // Incremental equity: previous equity + exposure change + new contributions
+    // This preserves contributions already absorbed into equity
     borrowedAmount = latestMetric.borrowedAmount;
-    equity = totalExposure - borrowedAmount + totalContributionsToAdd;
+    const exposureChange = totalExposure - latestMetric.exposure;
+    equity = latestMetric.equity + exposureChange + totalContributionsToAdd;
 
     console.log(
-      `[metrics-refresh] Using stored borrowedAmount=$${borrowedAmount.toFixed(
+      `[metrics-refresh] Incremental equity: $${latestMetric.equity.toFixed(
         2
-      )}, equity=$${equity.toFixed(2)} (exposure=$${totalExposure.toFixed(
+      )} + exposure_change=$${exposureChange.toFixed(
         2
-      )} - borrowed + contributions=$${totalContributionsToAdd.toFixed(2)})`
+      )} + contributions=$${totalContributionsToAdd.toFixed(
+        2
+      )} = $${equity.toFixed(2)}`
     );
   } else if (
     latestMetric &&
@@ -225,12 +228,13 @@ async function calculateMetrics(portfolioId: string, date: Date) {
 
     if (previousBorrowed >= 0) {
       borrowedAmount = previousBorrowed;
-      equity = totalExposure - borrowedAmount + totalContributionsToAdd;
+      const exposureChange = totalExposure - latestMetric.exposure;
+      equity = latestMetric.equity + exposureChange + totalContributionsToAdd;
 
       console.log(
         `[metrics-refresh] Derived borrowedAmount=$${borrowedAmount.toFixed(
           2
-        )} from previous equity/exposure, equity=$${equity.toFixed(2)}`
+        )}, incremental equity=$${equity.toFixed(2)}`
       );
     } else {
       // Corrupt data, recalculate from leverage target

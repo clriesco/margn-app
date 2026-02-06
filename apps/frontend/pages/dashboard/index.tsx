@@ -1303,7 +1303,7 @@ function Dashboard() {
                       marginBottom: "1rem",
                     }}
                   >
-                    Historial Mensual
+                    Historial de Aportaciones
                   </h2>
                   <div
                     style={{
@@ -1317,18 +1317,13 @@ function Dashboard() {
                       style={{
                         width: "100%",
                         borderCollapse: "collapse",
-                        minWidth: "700px",
                       }}
                     >
                       <thead>
                         <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                          <th style={{ ...tableHeaderStyle, width: "12%" }}>Fecha</th>
-                          <th style={{ ...tableHeaderStyle, width: "12%" }}>Aportación</th>
-                          <th style={{ ...tableHeaderStyle, width: "14%" }}>Equity</th>
-                          <th style={{ ...tableHeaderStyle, width: "14%" }}>Exposición</th>
-                          <th style={{ ...tableHeaderStyle, width: "10%" }}>Leverage</th>
-                          <th style={{ ...tableHeaderStyle, width: "26%" }}>Composición</th>
-                          <th style={{ ...tableHeaderStyle, width: "12%" }}>PnL</th>
+                          <th style={{ ...tableHeaderStyle, width: "33%" }}>Fecha</th>
+                          <th style={{ ...tableHeaderStyle, width: "33%" }}>Aportación</th>
+                          <th style={{ ...tableHeaderStyle, width: "34%" }}>Total Invertido</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1359,67 +1354,7 @@ function Dashboard() {
                               {formatCurrencyES(Math.round(point.contribution))}
                             </td>
                             <td style={tableCellStyle}>
-                              {formatCurrencyES(Math.round(point.equity))}
-                            </td>
-                            <td style={tableCellStyle}>
-                              {formatCurrencyES(Math.round(point.exposure))}
-                            </td>
-                            <td style={tableCellStyle}>
-                              {formatNumberES(point.leverage, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                              x
-                            </td>
-                            <td style={tableCellStyle}>
-                              {point.composition.length > 0 ? (
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    flexWrap: "wrap",
-                                    gap: "0.35rem",
-                                  }}
-                                >
-                                  {point.composition.map((asset) => (
-                                    <span
-                                      key={`${asset.symbol}-${asset.weight}`}
-                                      style={{
-                                        border:
-                                          "1px solid var(--border-light)",
-                                        borderRadius: "999px",
-                                        padding: "0.2rem 0.55rem",
-                                        fontSize: "0.75rem",
-                                        color: "var(--text-secondary)",
-                                      }}
-                                    >
-                                      {asset.symbol}{" "}
-                                      {formatNumberES(asset.weight * 100, {
-                                        minimumFractionDigits: 1,
-                                        maximumFractionDigits: 1,
-                                      })}
-                                      %
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span
-                                  style={{
-                                    color: "var(--text-muted)",
-                                    fontSize: "0.8rem",
-                                  }}
-                                >
-                                  –
-                                </span>
-                              )}
-                            </td>
-                            <td
-                              style={{
-                                ...tableCellStyle,
-                                color:
-                                  (point.pnl ?? 0) >= 0 ? "#22c55e" : "#f87171",
-                              }}
-                            >
-                              {formatCurrencyES(point.pnl ?? 0)}
+                              {formatCurrencyES(Math.round(point.cumulative))}
                             </td>
                           </tr>
                         ))}
@@ -1456,13 +1391,12 @@ function Dashboard() {
                           <div style={{ textAlign: "right" }}>
                             <div
                               style={{
-                                color:
-                                  (point.pnl ?? 0) >= 0 ? "#22c55e" : "#f87171",
                                 fontWeight: "700",
                                 fontSize: "1.125rem",
+                                color: "var(--text-primary)",
                               }}
                             >
-                              {formatCurrencyES(point.pnl ?? 0)}
+                              {formatCurrencyES(Math.round(point.cumulative))}
                             </div>
                           </div>
                         </div>
@@ -1472,59 +1406,6 @@ function Dashboard() {
                             {formatCurrencyES(Math.round(point.contribution))}
                           </span>
                         </div>
-                        <div className="history-card-row">
-                          <span className="history-card-label">Equity</span>
-                          <span className="history-card-value">
-                            {formatCurrencyES(Math.round(point.equity))}
-                          </span>
-                        </div>
-                        <div className="history-card-row">
-                          <span className="history-card-label">Exposición</span>
-                          <span className="history-card-value">
-                            {formatCurrencyES(Math.round(point.exposure))}
-                          </span>
-                        </div>
-                        <div className="history-card-row">
-                          <span className="history-card-label">Leverage</span>
-                          <span className="history-card-value">
-                            {formatNumberES(point.leverage, {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                            x
-                          </span>
-                        </div>
-                        {point.composition && point.composition.length > 0 && (
-                          <div
-                            style={{
-                              marginTop: "0.75rem",
-                              paddingTop: "0.75rem",
-                              borderTop: "1px solid rgba(148, 163, 184, 0.1)",
-                            }}
-                          >
-                            <div
-                              className="history-card-label"
-                              style={{ marginBottom: "0.5rem" }}
-                            >
-                              Composición
-                            </div>
-                            <div className="composition-tags">
-                              {point.composition.map((asset) => (
-                                <span
-                                  key={`${asset.symbol}-${asset.weight}`}
-                                  className="composition-tag"
-                                >
-                                  {asset.symbol}{" "}
-                                  {formatNumberES(asset.weight * 100, {
-                                    minimumFractionDigits: 1,
-                                    maximumFractionDigits: 1,
-                                  })}
-                                  %
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>

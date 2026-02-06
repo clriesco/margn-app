@@ -149,81 +149,26 @@ export class PortfoliosService {
       orderBy: { contributedAt: "asc" },
     });
 
-    const metrics = await this.prisma.metricsTimeseries.findMany({
-      where: { portfolioId },
-      orderBy: { date: "asc" },
+    const rows: Array<{ date: Date; contribution: number; cumulative: number }> = [];
+    let cumulative = 0;
+
+    // Onboarding row (initial capital)
+    cumulative += portfolio.initialCapital;
+    rows.push({
+      date: portfolio.createdAt,
+      contribution: portfolio.initialCapital,
+      cumulative,
     });
 
-    // Build date -> metric map (latest per date)
-    const metricsByDate = new Map<string, any>();
-    for (const m of metrics) {
-      const key = m.date.toISOString().split("T")[0];
-      metricsByDate.set(key, m);
-    }
-
-    const parseMetadata = (m: any) => {
-      if (!m?.metadataJson) return null;
-      try { return JSON.parse(m.metadataJson); } catch { return null; }
-    };
-
-    // Build all entries: onboarding + positive contributions
-    const entries: Array<{ date: Date; amount: number }> = [
-      { date: portfolio.createdAt, amount: portfolio.initialCapital },
-    ];
+    // Contribution rows
     for (const c of contributions as any[]) {
       if (c.amount <= 0) continue;
-      entries.push({ date: c.contributedAt, amount: c.amount });
-    }
-
-    // Pre-compute: for each date, find the last entry index (to assign market PnL)
-    const lastIndexByDate = new Map<string, number>();
-    entries.forEach((e, idx) => {
-      lastIndexByDate.set(e.date.toISOString().split("T")[0], idx);
-    });
-
-    const rows: any[] = [];
-    let prevEquity = 0;
-
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-      const dateKey = entry.date.toISOString().split("T")[0];
-      const metric = metricsByDate.get(dateKey);
-      const meta = parseMetadata(metric);
-      const isLastOfDay = lastIndexByDate.get(dateKey) === i;
-
-      let equity: number;
-      let pnl: number;
-
-      if (i === 0) {
-        // Onboarding: equity = initialCapital, no PnL
-        equity = entry.amount;
-        pnl = 0;
-      } else if (isLastOfDay && metric) {
-        // Last entry of the day: reconcile with actual metric equity
-        // This captures any market movement that happened during the day
-        equity = metric.equity;
-        pnl = equity - prevEquity - entry.amount;
-      } else {
-        // Same day, not last entry: accumulate, no market data between them
-        equity = prevEquity + entry.amount;
-        pnl = 0;
-      }
-
-      const pnlPercent = prevEquity > 0 ? (pnl / prevEquity) * 100 : 0;
-      const exposure = metric?.exposure ?? 0;
-
+      cumulative += c.amount;
       rows.push({
-        date: entry.date,
-        contribution: entry.amount,
-        equity,
-        exposure,
-        leverage: equity > 0 && exposure > 0 ? exposure / equity : 0,
-        composition: meta?.composition ?? [],
-        pnl,
-        pnlPercent,
+        date: c.contributedAt,
+        contribution: c.amount,
+        cumulative,
       });
-
-      prevEquity = equity;
     }
 
     return rows;

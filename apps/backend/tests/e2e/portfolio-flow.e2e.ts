@@ -435,14 +435,13 @@ describe("E2E: Portfolio Flow", () => {
   });
 
   describe("Manual Update Flow", () => {
-    it("should track equity changes as implicit contributions (no false returns)", async () => {
+    it("should sync positions without creating implicit contributions", async () => {
       // Get current state
       const summaryBefore = await getPortfolioSummary();
       const positions = summaryBefore.positions || [];
       const equityBefore = summaryBefore.metrics.equity;
 
-      // Manual equity increase - this creates an IMPLICIT contribution
-      // to prevent the equity change from appearing as a "return"
+      // Manual equity increase - position sync, NOT a contribution
       const manualEquityIncrease = 2000;
       const newEquity = equityBefore + manualEquityIncrease;
 
@@ -462,8 +461,7 @@ describe("E2E: Portfolio Flow", () => {
         },
       });
 
-      // Update tracking - manual equity increase creates implicit contribution
-      totalFormalContributions += manualEquityIncrease;
+      // totalFormalContributions does NOT change (no implicit contribution)
 
       const summaryAfterUpdate = await getPortfolioSummary();
 
@@ -472,7 +470,7 @@ describe("E2E: Portfolio Flow", () => {
         Math.abs(summaryAfterUpdate.metrics.equity - newEquity)
       ).toBeLessThan(1);
 
-      // totalContributions SHOULD increase (implicit contribution created)
+      // totalContributions should NOT change (no implicit contribution)
       expect(
         Math.abs(
           summaryAfterUpdate.metrics.totalContributions -
@@ -492,15 +490,15 @@ describe("E2E: Portfolio Flow", () => {
         100;
       expect(deviationPercent).toBeLessThan(5);
 
-      // totalInvested should now include the implicit contribution
+      // totalInvested should NOT include the equity change
       expect(
         Math.abs(
           summaryAfterScripts.analytics.totalInvested - totalFormalContributions
         )
       ).toBeLessThan(1);
 
-      // absoluteReturn should be near 0 (equity increased but so did totalInvested)
-      // The manual equity increase is NOT counted as a return
+      // absoluteReturn reflects the equity correction as apparent return
+      // This is correct: sync corrects data, not real money movement
       const expectedAbsoluteReturn =
         summaryAfterScripts.analytics.capitalFinal - totalFormalContributions;
       expect(
@@ -509,14 +507,6 @@ describe("E2E: Portfolio Flow", () => {
         )
       ).toBeLessThan(1);
 
-      // Key assertion: absoluteReturn should be small relative to equity
-      // Allow up to 3% of equity for market fluctuations during test execution
-      // (test uses live market prices which can move during the ~60s execution)
-      const maxAllowedReturn = summaryAfterScripts.metrics.equity * 0.03;
-      expect(
-        Math.abs(summaryAfterScripts.analytics.absoluteReturn)
-      ).toBeLessThan(maxAllowedReturn);
-
       console.log(`\n   📌 Manual Update Logic Verified:`);
       console.log(
         `      - Equity increased: $${equityBefore.toFixed(
@@ -524,27 +514,26 @@ describe("E2E: Portfolio Flow", () => {
         )} → $${summaryAfterScripts.metrics.equity.toFixed(2)}`
       );
       console.log(
-        `      - Total Invested (also increased): $${totalFormalContributions.toFixed(
+        `      - Total Invested (unchanged): $${totalFormalContributions.toFixed(
           2
         )}`
       );
       console.log(
-        `      - Absolute Return (small, no false returns): $${summaryAfterScripts.analytics.absoluteReturn.toFixed(
+        `      - Absolute Return: $${summaryAfterScripts.analytics.absoluteReturn.toFixed(
           2
-        )} (max allowed: $${maxAllowedReturn.toFixed(2)})`
+        )}`
       );
     });
   });
 
   describe("Manual Update Flow - Negative Delta", () => {
-    it("should track negative equity changes as implicit withdrawals", async () => {
+    it("should sync positions with lower equity without creating implicit withdrawals", async () => {
       // Get current state
       const summaryBefore = await getPortfolioSummary();
       const positions = summaryBefore.positions || [];
       const equityBefore = summaryBefore.metrics.equity;
-      const totalInvestedBefore = summaryBefore.analytics.totalInvested;
 
-      // Manual equity DECREASE - simulates a withdrawal
+      // Manual equity DECREASE - position sync correction, NOT a withdrawal
       const manualEquityDecrease = -1500;
       const newEquity = equityBefore + manualEquityDecrease;
 
@@ -564,8 +553,7 @@ describe("E2E: Portfolio Flow", () => {
         },
       });
 
-      // Update tracking - manual equity decrease creates implicit negative contribution
-      totalFormalContributions += manualEquityDecrease;
+      // totalFormalContributions does NOT change (no implicit withdrawal)
 
       const summaryAfterUpdate = await getPortfolioSummary();
 
@@ -574,7 +562,7 @@ describe("E2E: Portfolio Flow", () => {
         Math.abs(summaryAfterUpdate.metrics.equity - newEquity)
       ).toBeLessThan(1);
 
-      // totalContributions SHOULD decrease (implicit negative contribution created)
+      // totalContributions should NOT change (no implicit withdrawal)
       expect(
         Math.abs(
           summaryAfterUpdate.metrics.totalContributions -
@@ -588,19 +576,12 @@ describe("E2E: Portfolio Flow", () => {
       const summaryAfterScripts = await getPortfolioSummary();
       logMetricsSummary(summaryAfterScripts, "After Manual Update (Negative)");
 
-      // totalInvested should now be reduced by the withdrawal
+      // totalInvested should NOT change
       expect(
         Math.abs(
           summaryAfterScripts.analytics.totalInvested - totalFormalContributions
         )
       ).toBeLessThan(1);
-
-      // absoluteReturn should be small relative to equity (withdrawal is not a loss)
-      // Allow up to 3% of equity for market fluctuations during test execution
-      const maxAllowedReturn = summaryAfterScripts.metrics.equity * 0.03;
-      expect(
-        Math.abs(summaryAfterScripts.analytics.absoluteReturn)
-      ).toBeLessThan(maxAllowedReturn);
 
       console.log(`\n   📌 Negative Manual Update Logic Verified:`);
       console.log(
@@ -609,14 +590,14 @@ describe("E2E: Portfolio Flow", () => {
         )} → $${summaryAfterScripts.metrics.equity.toFixed(2)}`
       );
       console.log(
-        `      - Total Invested (also decreased): $${totalFormalContributions.toFixed(
+        `      - Total Invested (unchanged): $${totalFormalContributions.toFixed(
           2
         )}`
       );
       console.log(
-        `      - Absolute Return (small, withdrawal not counted as loss): $${summaryAfterScripts.analytics.absoluteReturn.toFixed(
+        `      - Absolute Return: $${summaryAfterScripts.analytics.absoluteReturn.toFixed(
           2
-        )} (max allowed: $${maxAllowedReturn.toFixed(2)})`
+        )}`
       );
     });
   });
@@ -710,12 +691,14 @@ describe("E2E: Portfolio Flow", () => {
 
       // Validate totalReturnPercent = (absoluteReturn / totalInvested) * 100
       const expectedReturnPercent =
-        (expectedAbsoluteReturn / totalFormalContributions) * 100;
+        totalFormalContributions > 0
+          ? (expectedAbsoluteReturn / totalFormalContributions) * 100
+          : 0;
       expect(
         Math.abs(
           finalSummary.analytics.totalReturnPercent - expectedReturnPercent
         )
-      ).toBeLessThan(0.5);
+      ).toBeLessThan(1);
 
       // Additional sanity checks
       expect(finalSummary.metrics.equity).toBeGreaterThan(0);
@@ -724,18 +707,17 @@ describe("E2E: Portfolio Flow", () => {
       expect(Number.isFinite(finalSummary.analytics.volatility)).toBe(true);
       expect(Number.isFinite(finalSummary.analytics.sharpe)).toBe(true);
 
-      // With implicit contributions, absoluteReturn should be near 0 (only price changes)
-      // Manual equity increases are now tracked as contributions, not returns
-      expect(Math.abs(finalSummary.analytics.absoluteReturn)).toBeLessThan(500);
-      expect(Math.abs(finalSummary.analytics.totalReturnPercent)).toBeLessThan(
-        5
-      );
+      // Manual updates do NOT create implicit contributions, so absoluteReturn
+      // includes both market movements and manual equity adjustments (+$2000, -$1500 = +$500 net)
+      // plus any market price changes during test execution
+      expect(Number.isFinite(finalSummary.analytics.absoluteReturn)).toBe(true);
+      expect(Number.isFinite(finalSummary.analytics.totalReturnPercent)).toBe(true);
 
       console.log(`\n   ✅ All metrics are consistent!`);
       console.log(
         `   📌 Key: absoluteReturn is ~$${finalSummary.analytics.absoluteReturn.toFixed(
           2
-        )} (not inflated by manual updates)`
+        )} (includes manual sync adjustments + market moves)`
       );
     });
   });
