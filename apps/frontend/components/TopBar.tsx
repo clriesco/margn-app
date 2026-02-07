@@ -105,33 +105,37 @@ export default function TopBar({
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: "1.5rem",
+            alignItems: isMobile ? "flex-end" : "center",
+            gap: isMobile ? "0.75rem" : "1.5rem",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ color: "var(--text-dim)", fontSize: "0.8125rem" }}>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-end" : "center", gap: isMobile ? "0" : "0.5rem" }}>
+            <span style={{ color: "var(--text-dim)", fontSize: isMobile ? "0.625rem" : "0.8125rem", lineHeight: isMobile ? "1" : "inherit", textTransform: isMobile ? "uppercase" as const : "none" as const, letterSpacing: isMobile ? "0.03em" : "0" }}>
               Equity
             </span>
             <span
               style={{
                 color: "var(--text-primary)",
-                fontSize: "0.9375rem",
+                fontSize: isMobile ? "0.8125rem" : "0.9375rem",
                 fontWeight: "600",
+                whiteSpace: "nowrap",
+                lineHeight: isMobile ? "1.2" : "inherit",
               }}
             >
               {formatCurrencyES(equity, { maximumFractionDigits: 0 })}
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ color: "var(--text-dim)", fontSize: "0.8125rem" }}>
-              Exposición
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-end" : "center", gap: isMobile ? "0" : "0.5rem" }}>
+            <span style={{ color: "var(--text-dim)", fontSize: isMobile ? "0.625rem" : "0.8125rem", lineHeight: isMobile ? "1" : "inherit", textTransform: isMobile ? "uppercase" as const : "none" as const, letterSpacing: isMobile ? "0.03em" : "0" }}>
+              Expos.
             </span>
             <span
               style={{
                 color: "var(--text-primary)",
-                fontSize: "0.9375rem",
+                fontSize: isMobile ? "0.8125rem" : "0.9375rem",
                 fontWeight: "600",
+                whiteSpace: "nowrap",
+                lineHeight: isMobile ? "1.2" : "inherit",
               }}
             >
               {formatCurrencyES(exposure, { maximumFractionDigits: 0 })}
@@ -140,8 +144,8 @@ export default function TopBar({
         </div>
       )}
 
-      {/* Compact Leverage Indicator */}
-      {leverage !== undefined && leverageMin !== undefined && leverageMax !== undefined && (
+      {/* Compact Leverage Indicator - hidden on mobile */}
+      {!isMobile && leverage !== undefined && leverageMin !== undefined && leverageMax !== undefined && (
         <TopBarLeverageIndicator
           leverage={leverage}
           leverageMin={leverageMin}

@@ -500,6 +500,31 @@ export default function DashboardSidebar({
         className="main-content-wrapper"
       >
         {children}
+        <footer
+          style={{
+            padding: "1.5rem 2rem",
+            borderTop: "1px solid var(--border)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "0.375rem",
+            fontSize: "0.75rem",
+            color: "var(--text-dim)",
+          }}
+        >
+          <span>&copy; {new Date().getFullYear()} Leveraged DCA</span>
+          <span>·</span>
+          <a
+            href="/terms"
+            style={{
+              color: "var(--text-dim)",
+              textDecoration: "underline",
+              textUnderlineOffset: "2px",
+            }}
+          >
+            Términos y Condiciones
+          </a>
+        </footer>
       </div>
 
       {/* Responsive styles */}

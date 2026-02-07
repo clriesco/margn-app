@@ -25,6 +25,22 @@ const RISK_FILTERS = [
   { id: 'aggressive', label: 'Agresivo' },
 ];
 
+const RISK_PROFILE_ORDER: Record<string, number> = {
+  conservative: 0,
+  moderate: 1,
+  growth: 2,
+  aggressive: 3,
+};
+
+function sortByRiskProfile(strategies: PublicStrategySummary[]): PublicStrategySummary[] {
+  return [...strategies].sort((a, b) => {
+    const orderA = a.riskProfileId ? RISK_PROFILE_ORDER[a.riskProfileId] ?? 99 : 99;
+    const orderB = b.riskProfileId ? RISK_PROFILE_ORDER[b.riskProfileId] ?? 99 : 99;
+    if (orderA !== orderB) return orderA - orderB;
+    return (a.config.leverageTarget ?? 0) - (b.config.leverageTarget ?? 0);
+  });
+}
+
 export default function StrategiesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -372,7 +388,7 @@ export default function StrategiesPage() {
 
                 {!publicLoading && publicStrategies.length > 0 && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
-                    {publicStrategies.map((strategy) => (
+                    {sortByRiskProfile(publicStrategies).map((strategy) => (
                       <StrategyCard
                         key={strategy.id}
                         strategy={strategy}

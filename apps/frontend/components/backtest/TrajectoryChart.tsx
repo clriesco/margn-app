@@ -162,42 +162,84 @@ export default function TrajectoryChart({ result }: Props) {
       padding: '1.5rem', marginBottom: '1.5rem',
     }}>
       {/* ── Info panel ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap',
+      <div className="trajectory-info-panel" style={{
+        position: 'relative',
         padding: '0.625rem 1rem', marginBottom: '1rem',
         background: 'var(--hover-bg)', border: '1px solid var(--border)', borderRadius: '6px',
         minHeight: '40px', fontSize: '0.8125rem',
       }}>
-        {/* Month */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.9375rem' }}>{display.month}</span>
+        {/* Desktop layout */}
+        <div className="trajectory-info-desktop" style={{
+          display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap',
+        }}>
+          {/* Month */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.9375rem' }}>{display.month}</span>
+          </div>
+
+          {/* Separator */}
+          <div style={{ width: '1px', height: '28px', background: 'var(--border)' }} />
+
+          {/* P10 / P50 / P90 */}
+          {panelItems.map((item) => (
+            <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: '100px' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: item.color, marginRight: '4px', verticalAlign: 'middle' }} />
+                {item.label}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.9375rem' }}>{fmtUsd(item.equity)}</span>
+                <span style={{ color: item.ret >= 0 ? '#34d399' : '#f87171', fontSize: '0.75rem', fontWeight: '500' }}>{fmtPct(item.ret)}</span>
+              </div>
+            </div>
+          ))}
+
+          {!hover && (
+            <>
+              <div style={{ flex: 1 }} />
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic' }}>Pasa el ratón por el gráfico</span>
+            </>
+          )}
         </div>
 
-        {/* Separator */}
-        <div style={{ width: '1px', height: '28px', background: 'var(--border)' }} />
-
-        {/* P10 / P50 / P90 */}
-        {panelItems.map((item) => (
-          <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: '100px' }}>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: item.color, marginRight: '4px', verticalAlign: 'middle' }} />
-              {item.label}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-              <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.9375rem' }}>{fmtUsd(item.equity)}</span>
-              <span style={{ color: item.ret >= 0 ? '#34d399' : '#f87171', fontSize: '0.75rem', fontWeight: '500' }}>{fmtPct(item.ret)}</span>
-            </div>
+        {/* Mobile layout */}
+        <div className="trajectory-info-mobile" style={{ display: 'none' }}>
+          {/* Month badge top-right */}
+          <div style={{
+            position: 'absolute', top: '0.5rem', right: '0.75rem',
+            display: 'flex', alignItems: 'center', gap: '0.25rem',
+          }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.8125rem' }}>{display.month}</span>
           </div>
-        ))}
 
-        {!hover && (
-          <>
-            <div style={{ flex: 1 }} />
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic' }}>Pasa el ratón por el gráfico</span>
-          </>
-        )}
+          {/* P10 / P50 / P90 stacked */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            {panelItems.map((item) => (
+              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase',
+                  letterSpacing: '0.5px', minWidth: '36px',
+                }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+                  {item.label}
+                </span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.8125rem' }}>{fmtUsd(item.equity)}</span>
+                <span style={{ color: item.ret >= 0 ? '#34d399' : '#f87171', fontSize: '0.6875rem', fontWeight: '500' }}>{fmtPct(item.ret)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
+
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .trajectory-info-desktop { display: none !important; }
+          .trajectory-info-mobile { display: block !important; }
+        }
+      `}</style>
 
       {/* ── SVG Chart ── */}
       <svg

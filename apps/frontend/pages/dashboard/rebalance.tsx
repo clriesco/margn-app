@@ -404,15 +404,19 @@ export default function Rebalance() {
                     </span>
                   </div>
                   <div
-                    style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}
+                    style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}
                   >
                     {Object.entries(proposal.weightsUsed).map(
                       ([symbol, weight]) => (
                         <span
                           key={symbol}
                           style={{
-                            color: "var(--text-on-glass)",
-                            fontSize: "0.85rem",
+                            padding: "0.1875rem 0.5rem",
+                            background: "var(--hover-bg)",
+                            border: "1px solid var(--border-light)",
+                            borderRadius: "4px",
+                            fontSize: "0.75rem",
+                            color: "var(--text-secondary)",
                           }}
                         >
                           {symbol}:{" "}

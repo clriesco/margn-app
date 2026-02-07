@@ -226,11 +226,13 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
       }}
     >
       <div
+        className="explanation-header"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: state === 'idle' ? 0 : '1rem',
+          gap: '0.75rem',
         }}
       >
         <div>
@@ -245,7 +247,7 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
             Análisis IA
           </h3>
           {state === 'idle' && (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
+            <p className="explanation-subtitle" style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
               Genera una explicación de los resultados con inteligencia artificial
             </p>
           )}
@@ -254,6 +256,7 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
         {state === 'idle' && (
           <button
             onClick={generateExplanation}
+            className="explanation-btn"
             style={{
               padding: '0.625rem 1rem',
               background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
@@ -265,10 +268,12 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
               fontWeight: '500',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '0.5rem',
+              flexShrink: 0,
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
               <circle cx="12" cy="12" r="10" />
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -276,6 +281,21 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
             Explicar con IA
           </button>
         )}
+
+        <style jsx>{`
+          @media (max-width: 768px) {
+            .explanation-header {
+              flex-direction: column !important;
+              align-items: stretch !important;
+            }
+            .explanation-subtitle {
+              display: none !important;
+            }
+            .explanation-btn {
+              width: 100% !important;
+            }
+          }
+        `}</style>
 
         {state === 'complete' && (
           <button

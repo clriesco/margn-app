@@ -268,6 +268,28 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
     setManualWeights((prev) => { const n = { ...prev }; delete n[symbol]; return n; });
   }, []);
 
+  const handleManualWeightChange = useCallback((symbol: string, newWeight: number) => {
+    setManualWeights((prev) => {
+      const clamped = Math.min(1, Math.max(0, newWeight));
+      const remaining = 1 - clamped;
+      const others = Object.entries(prev).filter(([s]) => s !== symbol);
+      const othersSum = others.reduce((sum, [, w]) => sum + (w || 0), 0);
+
+      const updated: Record<string, number> = { ...prev, [symbol]: clamped };
+      if (othersSum > 0) {
+        for (const [s, w] of others) {
+          updated[s] = (w || 0) * (remaining / othersSum);
+        }
+      } else if (others.length > 0) {
+        const equalShare = remaining / others.length;
+        for (const [s] of others) {
+          updated[s] = equalShare;
+        }
+      }
+      return updated;
+    });
+  }, []);
+
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   // Reset highlight when results change
@@ -419,7 +441,7 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
             style={{
               display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem',
               padding: '0.5rem 0.75rem', background: 'var(--input-bg)',
-              border: '1px solid var(--input-border)', borderRadius: '6px', cursor: 'text', minHeight: '44px',
+              border: '1px solid var(--input-border)', borderRadius: '6px', cursor: 'text',
             }}
             onClick={() => inputRef.current?.focus()}
           >
@@ -434,7 +456,7 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
                 {symbol}
                 <button type="button" onClick={(e) => { e.stopPropagation(); removeSymbol(symbol); }}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '0', lineHeight: 1 }}
+                    background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '0', lineHeight: 1, minHeight: 0, minWidth: 0 }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; }}
                 ><X size={14} /></button>
@@ -520,7 +542,7 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
                 <span style={{ color: 'var(--text-primary)', fontWeight: '600', minWidth: '80px' }}>{symbol}</span>
                 <input type="range" min={0} max={100}
                   value={(manualWeights[symbol] || 0) * 100}
-                  onChange={(e) => setManualWeights((prev) => ({ ...prev, [symbol]: parseFloat(e.target.value) / 100 }))}
+                  onChange={(e) => handleManualWeightChange(symbol, parseFloat(e.target.value) / 100)}
                   style={{ flex: 1, accentColor: '#3b82f6' }} />
                 <span style={{ color: 'var(--text-muted)', minWidth: '50px', textAlign: 'right' }}>
                   {((manualWeights[symbol] || 0) * 100).toFixed(1)}%

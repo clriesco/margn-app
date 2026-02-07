@@ -172,61 +172,104 @@ function SingleBreakdownChart({ label, points, yMin, yMax, maxMonth }: {
     }}>
       {/* Info panel */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap',
+        position: 'relative',
         padding: '0.5rem 0.875rem', marginBottom: '0.75rem',
         background: 'var(--hover-bg)', border: '1px solid var(--border)', borderRadius: '6px',
         fontSize: '0.8125rem', minHeight: '36px',
       }}>
-        <span style={{ color: 'var(--text-muted)', fontWeight: '600', fontSize: '0.875rem', minWidth: '28px' }}>{label}</span>
-        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
+        {/* Desktop layout */}
+        <div className="breakdown-info-desktop" style={{
+          display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap',
+        }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: '600', fontSize: '0.875rem', minWidth: '28px' }}>{label}</span>
+          <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{display.month}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{display.month}</span>
+          </div>
+          <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: 'var(--text-secondary)', marginRight: '3px', verticalAlign: 'middle' }} />
+              Capital inicial
+            </span>
+            <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{fmtUsd(display.initialCapital)}</span>
+          </div>
+          <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: 'var(--accent-blue)', marginRight: '3px', verticalAlign: 'middle' }} />
+              Aportaciones
+            </span>
+            <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{fmtUsd(display.cumulativeContributions)}</span>
+          </div>
+          <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: display.returns >= 0 ? '#34d399' : '#f87171', marginRight: '3px', verticalAlign: 'middle' }} />
+              Retornos
+            </span>
+            <span style={{ color: display.returns >= 0 ? '#34d399' : '#f87171', fontWeight: '600' }}>
+              {display.returns >= 0 ? '+' : ''}{fmtUsd(display.returns)}
+            </span>
+          </div>
+          <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equity</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{fmtUsd(display.equity)}</span>
+          </div>
+
+          {!hover && (
+            <>
+              <div style={{ flex: 1 }} />
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic' }}>Pasa el ratón por el gráfico</span>
+            </>
+          )}
         </div>
-        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: 'var(--text-secondary)', marginRight: '3px', verticalAlign: 'middle' }} />
-            Capital inicial
-          </span>
-          <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{fmtUsd(display.initialCapital)}</span>
+        {/* Mobile layout */}
+        <div className="breakdown-info-mobile" style={{ display: 'none' }}>
+          {/* Header row: label + month */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.375rem' }}>
+            <span style={{ color: 'var(--text-muted)', fontWeight: '600', fontSize: '0.875rem' }}>{label}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.8125rem' }}>{display.month}</span>
+            </div>
+          </div>
+
+          {/* Data rows */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            {([
+              { dot: 'var(--text-secondary)', name: 'Capital', value: fmtUsd(display.initialCapital), color: 'var(--text-secondary)' },
+              { dot: 'var(--accent-blue)', name: 'Aportaciones', value: fmtUsd(display.cumulativeContributions), color: 'var(--text-secondary)' },
+              { dot: display.returns >= 0 ? '#34d399' : '#f87171', name: 'Retornos', value: `${display.returns >= 0 ? '+' : ''}${fmtUsd(display.returns)}`, color: display.returns >= 0 ? '#34d399' : '#f87171' },
+            ] as const).map((item) => (
+              <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem' }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '2px', background: item.dot, flexShrink: 0 }} />
+                <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', minWidth: '72px' }}>{item.name}</span>
+                <span style={{ color: item.color, fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', marginTop: '0.125rem', paddingTop: '0.25rem', borderTop: '1px solid var(--border)' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', minWidth: '72px', marginLeft: 'calc(7px + 0.375rem)' }}>Equity</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{fmtUsd(display.equity)}</span>
+            </div>
+          </div>
         </div>
-        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: 'var(--accent-blue)', marginRight: '3px', verticalAlign: 'middle' }} />
-            Aportaciones
-          </span>
-          <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{fmtUsd(display.cumulativeContributions)}</span>
-        </div>
-        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '2px', background: display.returns >= 0 ? '#34d399' : '#f87171', marginRight: '3px', verticalAlign: 'middle' }} />
-            Retornos
-          </span>
-          <span style={{ color: display.returns >= 0 ? '#34d399' : '#f87171', fontWeight: '600' }}>
-            {display.returns >= 0 ? '+' : ''}{fmtUsd(display.returns)}
-          </span>
-        </div>
-        <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Equity</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{fmtUsd(display.equity)}</span>
-        </div>
-
-        {!hover && (
-          <>
-            <div style={{ flex: 1 }} />
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic' }}>Pasa el ratón por el gráfico</span>
-          </>
-        )}
       </div>
+
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .breakdown-info-desktop { display: none !important; }
+          .breakdown-info-mobile { display: block !important; }
+        }
+      `}</style>
 
       {/* SVG */}
       <svg

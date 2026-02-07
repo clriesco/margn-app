@@ -353,21 +353,23 @@ export default function BacktestPage() {
             {stage === 'results' && result && (
               <>
                 {/* Actions Bar */}
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '0.75rem',
-                  marginBottom: '1.5rem',
-                  padding: '1rem 1.25rem',
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                }}>
+                <div
+                  className="backtest-actions-bar"
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                    marginBottom: '1.5rem',
+                    padding: '1rem 1.25rem',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                  }}
+                >
                   <SaveStrategyButton result={result} />
 
                   <button
                     onClick={() => {
-                      // Store current config to pre-fill the form
                       const configToReuse = {
                         strategyName: 'Backtest anterior',
                         symbols: result.config.symbols,
@@ -384,6 +386,7 @@ export default function BacktestPage() {
                       localStorage.setItem('backtest_from_strategy', JSON.stringify(configToReuse));
                       window.location.reload();
                     }}
+                    className="backtest-action-btn"
                     style={{
                       padding: '0.625rem 1rem',
                       background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
@@ -395,10 +398,11 @@ export default function BacktestPage() {
                       fontWeight: '500',
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '0.5rem',
                     }}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
                       <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.6 2.6" />
                       <path d="M21 3v6h-6" />
                     </svg>
@@ -407,6 +411,7 @@ export default function BacktestPage() {
 
                   <button
                     onClick={() => { setStage('config'); setResult(null); setProgress(null); }}
+                    className="backtest-action-btn"
                     style={{
                       padding: '0.625rem 1rem',
                       background: 'var(--bg-card)',
@@ -418,16 +423,30 @@ export default function BacktestPage() {
                       fontWeight: '500',
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '0.5rem',
                     }}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
                       <line x1="12" y1="5" x2="12" y2="19" />
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                     Nueva simulación
                   </button>
                 </div>
+
+                <style jsx global>{`
+                  @media (max-width: 768px) {
+                    .backtest-actions-bar {
+                      flex-direction: column !important;
+                    }
+                    .backtest-actions-bar > button,
+                    .backtest-action-btn {
+                      width: 100% !important;
+                      justify-content: center !important;
+                    }
+                  }
+                `}</style>
 
                 <TrajectoryChart result={result} />
                 <BacktestResults result={result} />

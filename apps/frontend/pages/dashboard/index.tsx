@@ -23,6 +23,7 @@ import {
   Edit,
   Calendar,
   BarChart,
+  ChevronDown,
 } from "lucide-react";
 import {
   formatCurrencyES,
@@ -220,6 +221,9 @@ function Dashboard() {
   const [historyPage, setHistoryPage] = useState(1);
   const itemsPerPage = 24;
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [metricsExpanded, setMetricsExpanded] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth > 768 : true
+  );
 
   // Combined loading state
   const dataLoading =
@@ -456,6 +460,12 @@ function Dashboard() {
             .analytics-grid {
               grid-template-columns: 1fr !important;
               gap: 0.75rem !important;
+            }
+            .metrics-collapse-chevron {
+              display: block !important;
+            }
+            .metrics-collapse-toggle {
+              cursor: pointer !important;
             }
             .positions-actions {
               display: none !important;
@@ -1023,16 +1033,26 @@ function Dashboard() {
                       marginBottom: "2rem",
                     }}
                   >
-                    <h2
+                    <button
+                      onClick={() => setMetricsExpanded((v) => !v)}
+                      className="metrics-collapse-toggle"
                       style={{
-                        fontSize: "1.125rem",
-                        fontWeight: "600",
-                        color: "var(--text-primary)",
-                        marginBottom: "1rem",
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        marginBottom: metricsExpanded ? "1rem" : 0,
                       }}
                     >
-                      <div
+                      <h2
                         style={{
+                          fontSize: "1.125rem",
+                          fontWeight: "600",
+                          color: "var(--text-primary)",
+                          margin: 0,
                           display: "flex",
                           alignItems: "center",
                           gap: "0.5rem",
@@ -1040,11 +1060,21 @@ function Dashboard() {
                       >
                         <BarChart size={20} />
                         Métricas
-                      </div>
-                    </h2>
+                      </h2>
+                      <ChevronDown
+                        size={20}
+                        className="metrics-collapse-chevron"
+                        style={{
+                          color: "var(--text-dim)",
+                          transform: metricsExpanded ? "rotate(180deg)" : "rotate(0)",
+                          transition: "transform 0.2s",
+                          display: "none",
+                        }}
+                      />
+                    </button>
                     <div
                       style={{
-                        display: "grid",
+                        display: metricsExpanded ? "grid" : "none",
                         gridTemplateColumns:
                           "repeat(auto-fit, minmax(200px, 1fr))",
                         gap: "1rem",

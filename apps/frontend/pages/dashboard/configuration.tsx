@@ -283,10 +283,19 @@ export default function Configuration() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleWeightChange = (index: number, weight: number) => {
-    setTargetWeights((prev) =>
-      prev.map((tw, i) => (i === index ? { ...tw, weight } : tw))
-    );
+  const handleWeightChange = (index: number, newWeight: number) => {
+    setTargetWeights((prev) => {
+      const clamped = Math.min(1, Math.max(0, newWeight));
+      const remaining = 1 - clamped;
+      const othersSum = prev.reduce((sum, tw, i) => i === index ? sum : sum + tw.weight, 0);
+
+      return prev.map((tw, i) => {
+        if (i === index) return { ...tw, weight: clamped };
+        if (othersSum > 0) return { ...tw, weight: tw.weight * (remaining / othersSum) };
+        // All others are 0 — distribute equally
+        return { ...tw, weight: remaining / (prev.length - 1) };
+      });
+    });
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -386,6 +395,21 @@ export default function Configuration() {
             }
             .config-actions button {
               width: 100% !important;
+            }
+            .weight-method-selector {
+              flex-direction: column !important;
+            }
+            .weight-row {
+              flex-wrap: wrap !important;
+              gap: 0.5rem !important;
+            }
+            .weight-row-symbol {
+              min-width: unset !important;
+              width: 100% !important;
+            }
+            .weight-row-slider {
+              min-width: 0 !important;
+              flex: 1 1 60% !important;
             }
           }
           @media (max-width: 480px) {
@@ -978,10 +1002,11 @@ export default function Configuration() {
                     Método de Asignación
                   </label>
                   <div
+                    className="weight-method-selector"
                     style={{
                       display: "flex",
                       gap: "1rem",
-                      alignItems: "center",
+                      alignItems: "stretch",
                     }}
                   >
                     <label
@@ -1131,6 +1156,7 @@ export default function Configuration() {
                         {targetWeights.map((tw, idx) => (
                           <div
                             key={tw.symbol}
+                            className="weight-row"
                             style={{
                               display: "flex",
                               alignItems: "center",
@@ -1142,6 +1168,7 @@ export default function Configuration() {
                             }}
                           >
                             <span
+                              className="weight-row-symbol"
                               style={{
                                 color: "var(--text-primary)",
                                 fontWeight: "600",
@@ -1152,6 +1179,7 @@ export default function Configuration() {
                             </span>
                             <input
                               type="range"
+                              className="weight-row-slider"
                               min={0}
                               max={100}
                               value={tw.weight * 100}

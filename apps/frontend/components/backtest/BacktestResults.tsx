@@ -214,6 +214,39 @@ function MetricRow({ label, p10, p50, p90, format, coloring, idx }: {
   );
 }
 
+/** Mobile card version of MetricRow */
+function MetricCard({ label, p10, p50, p90, format, coloring }: {
+  label: string;
+  p10: number; p50: number; p90: number;
+  format: (v: number) => string;
+  coloring: 'green' | 'red' | 'neutral';
+}) {
+  const percentiles: { tag: string; value: number; color: string }[] = [
+    { tag: 'P10', value: p10, color: '#f87171' },
+    { tag: 'P50', value: p50, color: '#60a5fa' },
+    { tag: 'P90', value: p90, color: '#34d399' },
+  ];
+
+  return (
+    <div style={{
+      padding: '0.625rem 0',
+      borderBottom: '1px solid var(--border)',
+    }}>
+      <div style={{ color: 'var(--text-secondary)', fontWeight: '500', fontSize: '0.8125rem', marginBottom: '0.375rem' }}>
+        {label}
+      </div>
+      <div style={{ display: 'flex', gap: '0.75rem' }}>
+        {percentiles.map((p) => (
+          <div key={p.tag} style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
+            <span style={{ color: p.color, fontSize: '0.6875rem', fontWeight: '600' }}>{p.tag}</span>
+            <span style={{ color: valueColor(p.value, coloring), fontSize: '0.8125rem', fontWeight: '600' }}>{format(p.value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Accordion Section
 // ---------------------------------------------------------------------------
@@ -334,8 +367,8 @@ export default function BacktestResults({ result }: Props) {
           ))}
         </div>
 
-        {/* P10/P50/P90 table */}
-        <div style={{ overflowX: 'auto' }}>
+        {/* P10/P50/P90 table — desktop */}
+        <div className="backtest-summary-table" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -356,6 +389,18 @@ export default function BacktestResults({ result }: Props) {
               <MetricRow idx={7} label="Leverage Final" p10={p10.finalLeverage} p50={p50.finalLeverage} p90={p90.finalLeverage} format={fmtNum} coloring="neutral" />
             </tbody>
           </table>
+        </div>
+
+        {/* P10/P50/P90 cards — mobile */}
+        <div className="backtest-summary-cards" style={{ display: 'none' }}>
+          <MetricCard label="Capital Final" p10={p10.finalCapital} p50={p50.finalCapital} p90={p90.finalCapital} format={fmtUsd} coloring="green" />
+          <MetricCard label="Retorno %" p10={p10.returnPercent} p50={p50.returnPercent} p90={p90.returnPercent} format={fmtPct} coloring="green" />
+          <MetricCard label="CAGR" p10={p10.cagr} p50={p50.cagr} p90={p90.cagr} format={fmtPct} coloring="green" />
+          <MetricCard label="Sharpe" p10={p10.sharpe} p50={p50.sharpe} p90={p90.sharpe} format={fmtNum} coloring="neutral" />
+          <MetricCard label="Max Drawdown" p10={p10.maxDrawdownEquity} p50={p50.maxDrawdownEquity} p90={p90.maxDrawdownEquity} format={fmtPct} coloring="red" />
+          <MetricCard label="Recovery (días)" p10={p10.recoveryDays} p50={p50.recoveryDays} p90={p90.recoveryDays} format={fmtDays} coloring="neutral" />
+          <MetricCard label="Días bajo el agua" p10={p10.underwaterDays} p50={p50.underwaterDays} p90={p90.underwaterDays} format={fmtDays} coloring="neutral" />
+          <MetricCard label="Leverage Final" p10={p10.finalLeverage} p50={p50.finalLeverage} p90={p90.finalLeverage} format={fmtNum} coloring="neutral" />
         </div>
       </div>
 
@@ -393,7 +438,8 @@ export default function BacktestResults({ result }: Props) {
         </AccordionSection>
 
         <AccordionSection title={`Detalle por ventana (${result.totalWindows})`}>
-          <div style={{ paddingTop: '1rem', overflowX: 'auto' }}>
+          {/* Desktop table */}
+          <div className="backtest-detail-table" style={{ paddingTop: '1rem', overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
               <thead>
                 <tr>
@@ -422,8 +468,42 @@ export default function BacktestResults({ result }: Props) {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile cards */}
+          <div className="backtest-detail-cards" style={{ display: 'none', paddingTop: '0.75rem' }}>
+            {sortedWindows.map((w, i) => (
+              <div key={w.windowIndex} style={{
+                padding: '0.625rem 0',
+                borderBottom: i < sortedWindows.length - 1 ? '1px solid var(--border)' : 'none',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.25rem' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                    #{i + 1} · {w.startDate} → {w.endDate}
+                  </span>
+                  {w.marginCall && (
+                    <span style={{ color: '#f87171', fontSize: '0.6875rem', fontWeight: '600' }}>MARGIN CALL</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.8125rem' }}>
+                  <span style={{ color: valueColor(w.finalCapital, 'green'), fontWeight: '600' }}>{fmtUsd(w.finalCapital)}</span>
+                  <span style={{ color: 'var(--text-dim)' }}>Sharpe <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>{fmtNum(w.sharpe)}</span></span>
+                  <span style={{ color: 'var(--text-dim)' }}>CAGR <span style={{ color: valueColor(w.cagr, 'green'), fontWeight: '500' }}>{fmtPct(w.cagr)}</span></span>
+                  <span style={{ color: 'var(--text-dim)' }}>DD <span style={{ color: valueColor(w.maxDrawdownEquity, 'red'), fontWeight: '500' }}>{fmtPct(w.maxDrawdownEquity)}</span></span>
+                </div>
+              </div>
+            ))}
+          </div>
         </AccordionSection>
       </div>
+
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          .backtest-summary-table { display: none !important; }
+          .backtest-summary-cards { display: block !important; }
+          .backtest-detail-table { display: none !important; }
+          .backtest-detail-cards { display: flex !important; flex-direction: column; }
+        }
+      `}</style>
     </div>
   );
 }
