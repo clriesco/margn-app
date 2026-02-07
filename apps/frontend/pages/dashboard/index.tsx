@@ -961,13 +961,11 @@ function Dashboard() {
                   />
                   <MetricCard
                     title="Retornos"
-                    value={summary.metrics.twr !== null
-                      ? formatPercentES(summary.metrics.twr)
-                      : formatPercentES(summary.metrics.percentReturn / 100)}
+                    value={formatPercentES(summary.metrics.percentReturn / 100)}
                     subtitle={`${formatCurrencyES(
                       summary.metrics.absoluteReturn
                     )} PnL`}
-                    positive={(summary.metrics.twr ?? summary.metrics.percentReturn / 100) >= 0}
+                    positive={summary.metrics.percentReturn >= 0}
                   />
                 </div>
 
@@ -1126,7 +1124,7 @@ function Dashboard() {
                         },
                         {
                           label: "Volatilidad anual",
-                          value: formatPercentES(analyticsStats.volatility),
+                          value: formatPercentES(analyticsStats.volatility, { showSign: false }),
                           description:
                             "Desviación estándar anualizada de los retornos diarios. Mide la variabilidad del portfolio.",
                         },
@@ -1262,7 +1260,7 @@ function Dashboard() {
                       </p>
                       <p
                         style={{
-                          color: "var(--text-primary)",
+                          color: summary.metrics.totalWithdrawn > 0 ? "var(--accent-green)" : "var(--text-primary)",
                           fontSize: "1.1rem",
                           fontWeight: "600",
                         }}

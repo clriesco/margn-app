@@ -337,11 +337,11 @@ export class PortfoliosService {
       totalWithdrawn
     );
 
-    // Use TWR as the headline percent return; fall back to simple return when TWR can't be computed
-    const simpleReturn = totalContributions > 0
+    // Use simple return as the headline percent return (intuitive, like Robinhood/Coinbase)
+    // TWR remains available in the analytics panel as an advanced metric
+    percentReturn = totalContributions > 0
       ? (absoluteReturn / totalContributions) * 100
       : 0;
-    percentReturn = analytics.twr !== null ? analytics.twr * 100 : simpleReturn;
 
     console.log(`[getSummary] Analytics result - capitalFinal: ${analytics.capitalFinal}, totalInvested: ${analytics.totalInvested}, TWR: ${analytics.twr}`);
 
@@ -360,7 +360,7 @@ export class PortfoliosService {
         totalWithdrawn,
         pendingContributions, // NEW: Show pending contributions separately
         absoluteReturn,
-        percentReturn, // TWR-based
+        percentReturn, // Simple return: (PnL / totalInvested) × 100
         twr: analytics.twr,
         startDate: firstMetrics?.date ?? portfolio.createdAt,
         lastUpdate: latestDailyMetric?.date ?? latestMetrics?.date ?? undefined,
@@ -437,6 +437,30 @@ export class PortfoliosService {
         bestDay: null,
         worstDay: null,
       };
+    }
+
+    // Insert synthetic "day 0" data point with initialCapital so the first day's
+    // market return is captured. Without this, if the portfolio was created and
+    // rebalanced on the same day, the first metric already reflects market gains
+    // and we lose the day-1 return entirely.
+    if (
+      initialCapital > 0 &&
+      dailyHistory.length >= 1 &&
+      Math.abs(dailyHistory[0].equity - initialCapital) > 0.01
+    ) {
+      const firstDate = new Date(dailyHistory[0].date);
+      const syntheticDate = new Date(firstDate);
+      syntheticDate.setDate(syntheticDate.getDate() - 1);
+      const syntheticDateStr = syntheticDate.toISOString().split("T")[0];
+
+      dailyHistory.unshift({
+        date: syntheticDateStr,
+        equity: initialCapital,
+        exposure: 0,
+      });
+      console.log(
+        `[calculatePortfolioAnalytics] Inserted synthetic day-0: ${syntheticDateStr}, equity=${initialCapital}`
+      );
     }
 
     // If only one entry, use it as both first and last
@@ -631,11 +655,11 @@ export class PortfoliosService {
       maxDrawdownExposure,
       underwaterDays,
       bestDay:
-        bestDate && bestReturn !== Number.NEGATIVE_INFINITY
+        bestDate && bestReturn !== Number.NEGATIVE_INFINITY && dailyReturns.length >= 2
           ? { date: bestDate, return: bestReturn }
           : null,
       worstDay:
-        worstDate && worstReturn !== Number.POSITIVE_INFINITY
+        worstDate && worstReturn !== Number.POSITIVE_INFINITY && dailyReturns.length >= 2
           ? { date: worstDate, return: worstReturn }
           : null,
     };

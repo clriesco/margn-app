@@ -332,7 +332,7 @@ export default function Rebalance() {
                       <span style={{ color: "var(--text-on-glass-muted)" }}>
                         Equity:{" "}
                       </span>
-                      <span style={{ color: "#4ade80", fontWeight: "600" }}>
+                      <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                         {formatCurrencyES(proposal.summary.newEquity)}
                       </span>
                     </div>
