@@ -1110,7 +1110,7 @@ function Dashboard() {
                         },
                         {
                           label: "CAGR",
-                          value: formatPercentES(analyticsStats.cagr),
+                          value: Math.abs(analyticsStats.cagr) > 100 ? "-" : formatPercentES(analyticsStats.cagr),
                           description:
                             "Tasa de crecimiento anual compuesta. No ajusta por contribuciones — usar XIRR para comparar con benchmarks.",
                         },
