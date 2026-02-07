@@ -1,4 +1,5 @@
 import React, { useState, ReactNode, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -514,7 +515,7 @@ export default function DashboardSidebar({
         >
           <span>&copy; {new Date().getFullYear()} Leveraged DCA</span>
           <span>·</span>
-          <a
+          <Link
             href="/terms"
             style={{
               color: "var(--text-dim)",
@@ -523,7 +524,7 @@ export default function DashboardSidebar({
             }}
           >
             Términos y Condiciones
-          </a>
+          </Link>
         </footer>
       </div>
 
