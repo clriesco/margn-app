@@ -1107,8 +1107,21 @@ export class RebalanceService {
       // NEW: avgPrice = currentPrice
       let updatedAvgPrice = pos.currentPrice;
       if (pos.action === "BUY" && pos.currentQuantity > 0) {
+        // Fetch stored avgPrice (cost basis) from DB — don't use currentValue/currentQuantity
+        // which gives market price and would reset PnL to zero on every rebalance
+        const existingPosition =
+          await this.prisma.portfolioPosition.findUnique({
+            where: {
+              portfolioId_assetId: {
+                portfolioId,
+                assetId: pos.assetId,
+              },
+            },
+            select: { avgPrice: true },
+          });
+        const storedAvgPrice = existingPosition?.avgPrice || pos.currentPrice;
         updatedAvgPrice =
-          (pos.currentQuantity * (pos.currentValue / pos.currentQuantity) +
+          (pos.currentQuantity * storedAvgPrice +
             pos.deltaQuantity * pos.currentPrice) /
           pos.targetQuantity;
       }
