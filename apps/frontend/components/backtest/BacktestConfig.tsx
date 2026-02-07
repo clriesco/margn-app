@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, ChevronDown, ChevronRight } from 'lucide-react';
 import { NumberInput } from '../NumberInput';
+import { RangeSlider } from '../RangeSlider';
 import { Tooltip } from '../Tooltip';
 import { RiskProfileSelector, type RiskProfileId } from '../RiskProfileSelector';
 import { searchSymbols, getRiskProfiles, type SymbolSearchResult, type RiskProfile } from '../../lib/api';
@@ -147,9 +148,12 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
         // If manual weights provided, use manual mode
         manualWeights: userDefaults.weights,
       }));
-      // If weights provided, set them in manualWeights state
+      // If weights provided use them, otherwise initialize equal weights
       if (userDefaults.weights) {
         setManualWeights(userDefaults.weights);
+      } else {
+        const eq = 1 / userSymbols.length;
+        setManualWeights(Object.fromEntries(userSymbols.map((s) => [s, eq])));
       }
       setHasAppliedDefaults(true);
     }
@@ -251,8 +255,10 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
 
   const addSymbol = useCallback((symbol: string) => {
     if (config.symbols.includes(symbol)) return;
-    setConfig((prev) => ({ ...prev, symbols: [...prev.symbols, symbol] }));
-    setManualWeights((prev) => ({ ...prev, [symbol]: 0 }));
+    const newSymbols = [...config.symbols, symbol];
+    const equalWeight = 1 / newSymbols.length;
+    setConfig((prev) => ({ ...prev, symbols: newSymbols }));
+    setManualWeights(Object.fromEntries(newSymbols.map((s) => [s, equalWeight])));
     setSearchQuery('');
     setSearchResults([]);
     setShowDropdown(false);
@@ -264,8 +270,12 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
   }, [addSymbol]);
 
   const removeSymbol = useCallback((symbol: string) => {
-    setConfig((prev) => ({ ...prev, symbols: prev.symbols.filter((s) => s !== symbol) }));
-    setManualWeights((prev) => { const n = { ...prev }; delete n[symbol]; return n; });
+    setConfig((prev) => {
+      const remaining = prev.symbols.filter((s) => s !== symbol);
+      const equalWeight = remaining.length > 0 ? 1 / remaining.length : 0;
+      setManualWeights(Object.fromEntries(remaining.map((s) => [s, equalWeight])));
+      return { ...prev, symbols: remaining };
+    });
   }, []);
 
   const handleManualWeightChange = useCallback((symbol: string, newWeight: number) => {
@@ -528,7 +538,13 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
               borderRadius: '8px',
             }}>
               <input type="radio" name="weightMode" checked={config.weightMode === mode}
-                onChange={() => update('weightMode', mode)} style={{ accentColor: '#3b82f6' }} />
+                onChange={() => {
+                  update('weightMode', mode);
+                  if (mode === 'manual' && config.symbols.length > 0) {
+                    const eq = 1 / config.symbols.length;
+                    setManualWeights(Object.fromEntries(config.symbols.map((s) => [s, eq])));
+                  }
+                }} style={{ accentColor: '#3b82f6' }} />
               <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.875rem' }}>{label}</span>
               <Tooltip text={tip} />
             </label>
@@ -540,47 +556,15 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
             {config.symbols.map((symbol) => (
               <div key={symbol} style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
                 <span style={{ color: 'var(--text-primary)', fontWeight: '600', minWidth: '80px' }}>{symbol}</span>
-                <input type="range" min={0} max={100}
+                <RangeSlider min={0} max={100}
                   value={(manualWeights[symbol] || 0) * 100}
                   onChange={(e) => handleManualWeightChange(symbol, parseFloat(e.target.value) / 100)}
-                  style={{ flex: 1, accentColor: '#3b82f6' }} />
+                  style={{ flex: 1 }} />
                 <span style={{ color: 'var(--text-muted)', minWidth: '50px', textAlign: 'right' }}>
                   {((manualWeights[symbol] || 0) * 100).toFixed(1)}%
                 </span>
               </div>
             ))}
-            {/* Total row */}
-            {(() => {
-              const total = Object.values(manualWeights).reduce((sum, w) => sum + (w || 0), 0) * 100;
-              const isValid = Math.abs(total - 100) < 0.1;
-              return (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '1rem',
-                  marginTop: '0.75rem', paddingTop: '0.75rem',
-                  borderTop: '1px solid var(--input-border)',
-                }}>
-                  <span style={{ color: 'var(--text-secondary)', fontWeight: '600', minWidth: '80px' }}>Total</span>
-                  <div style={{ flex: 1 }} />
-                  <span style={{
-                    minWidth: '50px', textAlign: 'right', fontWeight: '700',
-                    color: isValid ? '#22c55e' : '#f59e0b',
-                  }}>
-                    {total.toFixed(1)}%
-                  </span>
-                </div>
-              );
-            })()}
-            {(() => {
-              const total = Object.values(manualWeights).reduce((sum, w) => sum + (w || 0), 0) * 100;
-              if (Math.abs(total - 100) >= 0.1) {
-                return (
-                  <p style={{ color: '#f59e0b', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-                    Los pesos deben sumar 100% para un backtest preciso
-                  </p>
-                );
-              }
-              return null;
-            })()}
           </div>
         )}
 

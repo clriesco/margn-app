@@ -35,6 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { NumberInput } from "../../components/NumberInput";
+import { RangeSlider } from "../../components/RangeSlider";
 import { Tooltip } from "../../components/Tooltip";
 import { RiskProfileSelector } from "../../components/RiskProfileSelector";
 import { formatNumberES, formatPercentES } from "../../lib/number-format";
@@ -1177,8 +1178,7 @@ export default function Configuration() {
                             >
                               {tw.symbol}
                             </span>
-                            <input
-                              type="range"
+                            <RangeSlider
                               className="weight-row-slider"
                               min={0}
                               max={100}
@@ -1189,10 +1189,7 @@ export default function Configuration() {
                                   parseFloat(e.target.value) / 100
                                 )
                               }
-                              style={{
-                                flex: 1,
-                                accentColor: "#3b82f6",
-                              }}
+                              style={{ flex: 1 }}
                             />
                             <NumberInput
                               value={tw.weight * 100}
@@ -1220,44 +1217,6 @@ export default function Configuration() {
                             <span style={{ color: "var(--text-muted)" }}>%</span>
                           </div>
                         ))}
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "0.75rem 1rem",
-                          background: weightsValid
-                            ? "rgba(34, 197, 94, 0.1)"
-                            : "rgba(239, 68, 68, 0.1)",
-                          borderRadius: "8px",
-                          border: `1px solid ${
-                            weightsValid
-                              ? "rgba(34, 197, 94, 0.3)"
-                              : "rgba(239, 68, 68, 0.3)"
-                          }`,
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: weightsValid ? "#22c55e" : "#ef4444",
-                            fontWeight: "600",
-                          }}
-                        >
-                          Total:{" "}
-                          {formatNumberES(totalWeight * 100, {
-                            minimumFractionDigits: 1,
-                            maximumFractionDigits: 1,
-                          })}
-                          %
-                        </span>
-                        {!weightsValid && (
-                          <span
-                            style={{ color: "#f87171", fontSize: "0.875rem" }}
-                          >
-                            Los pesos deben sumar 100%
-                          </span>
-                        )}
                       </div>
                     </>
                   )

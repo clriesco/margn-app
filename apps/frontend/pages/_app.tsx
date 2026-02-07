@@ -100,6 +100,57 @@ export default function App({ Component, pageProps }: AppProps) {
             background: var(--bg-glass-strong) !important;
           }
 
+          /* Custom range slider */
+          .range-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+          }
+
+          .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            border: none;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+          }
+
+          .range-slider:hover::-webkit-slider-thumb {
+            transform: scale(1.15);
+          }
+
+          .range-slider:active::-webkit-slider-thumb {
+            transform: scale(1.05);
+          }
+
+          .range-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            border: none;
+            cursor: pointer;
+          }
+
+          .range-slider::-moz-range-track {
+            height: 6px;
+            border-radius: 3px;
+            background: transparent;
+          }
+
+          /* Override global button hover for range inputs */
+          .range-slider:hover {
+            transform: none !important;
+            box-shadow: none !important;
+          }
+
           /* Prevent horizontal scroll */
           html,
           body {
