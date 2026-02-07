@@ -197,7 +197,7 @@ export class RebalanceService {
 
     // 3. Get all assets with their latest prices
     const assets = await this.prisma.asset.findMany();
-    const latestPrices = await this.getLatestPrices(assets.map((a: any) => a.id));
+    const latestPrices = await this.getLatestPrices(assets);
 
     // 4. Calculate current portfolio state (includes pending contributions)
     const currentState = this.calculateCurrentState(
@@ -1270,21 +1270,66 @@ export class RebalanceService {
    * @returns Map of assetId to latest price
    */
   private async getLatestPrices(
-    assetIds: string[]
+    assets: { id: string; symbol: string }[]
   ): Promise<Record<string, number>> {
     const prices: Record<string, number> = {};
 
-    for (const assetId of assetIds) {
-      const latestPrice = await this.prisma.assetPrice.findFirst({
-        where: { assetId },
-        orderBy: { date: "desc" },
-      });
-
-      if (latestPrice) {
-        prices[assetId] = latestPrice.close;
+    // Fetch real-time prices from Yahoo Finance, fall back to DB stored prices
+    for (const asset of assets) {
+      const livePrice = await this.fetchLivePrice(asset.symbol);
+      if (livePrice) {
+        prices[asset.id] = livePrice;
+      } else {
+        const storedPrice = await this.prisma.assetPrice.findFirst({
+          where: { assetId: asset.id },
+          orderBy: { date: "desc" },
+        });
+        if (storedPrice) {
+          prices[asset.id] = storedPrice.close;
+          console.warn(
+            `[RebalanceService] Using stored price for ${asset.symbol}: ${storedPrice.close}`
+          );
+        }
       }
     }
 
     return prices;
+  }
+
+  private async fetchLivePrice(symbol: string): Promise<number | null> {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+      });
+
+      if (!response.ok) {
+        console.error(
+          `[RebalanceService] Failed to fetch live price for ${symbol}: HTTP ${response.status}`
+        );
+        return null;
+      }
+
+      const data = await response.json();
+      const price = data.chart?.result?.[0]?.meta?.regularMarketPrice;
+
+      if (price && price > 0) {
+        console.log(
+          `[RebalanceService] Live price for ${symbol}: ${price}`
+        );
+        return price;
+      }
+
+      return null;
+    } catch (error) {
+      console.error(
+        `[RebalanceService] Error fetching live price for ${symbol}:`,
+        error
+      );
+      return null;
+    }
   }
 }
