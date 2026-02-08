@@ -170,6 +170,9 @@ describe("RebalanceService", () => {
     };
 
     service = new RebalanceService(mockPrisma, mockConfigService);
+
+    // Prevent real HTTP calls — force fallback to mocked DB prices
+    jest.spyOn(service as any, "fetchLivePrice").mockResolvedValue(null);
   });
 
   function setupDefaultMocks(portfolio: any) {
