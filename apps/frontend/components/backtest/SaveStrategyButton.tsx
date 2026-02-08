@@ -76,6 +76,7 @@ export default function SaveStrategyButton({ result }: Props) {
           recoveryDays: result.p10.recoveryDays,
           underwaterDays: result.p10.underwaterDays,
           finalLeverage: Number.isFinite(result.p10.finalLeverage) ? result.p10.finalLeverage : 0,
+          xirr: result.p10.xirr,
           windowIndex: result.p10.windowIndex,
         },
         p50: {
@@ -90,6 +91,7 @@ export default function SaveStrategyButton({ result }: Props) {
           recoveryDays: result.p50.recoveryDays,
           underwaterDays: result.p50.underwaterDays,
           finalLeverage: Number.isFinite(result.p50.finalLeverage) ? result.p50.finalLeverage : 0,
+          xirr: result.p50.xirr,
           windowIndex: result.p50.windowIndex,
         },
         p90: {
@@ -104,6 +106,7 @@ export default function SaveStrategyButton({ result }: Props) {
           recoveryDays: result.p90.recoveryDays,
           underwaterDays: result.p90.underwaterDays,
           finalLeverage: Number.isFinite(result.p90.finalLeverage) ? result.p90.finalLeverage : 0,
+          xirr: result.p90.xirr,
           windowIndex: result.p90.windowIndex,
         },
         totalWindows: result.totalWindows,

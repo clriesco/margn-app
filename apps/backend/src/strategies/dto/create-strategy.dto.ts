@@ -53,6 +53,10 @@ class ScenarioMetrics {
 
   @IsOptional()
   @IsNumber()
+  xirr?: number | null;
+
+  @IsOptional()
+  @IsNumber()
   windowIndex?: number;
 }
 
