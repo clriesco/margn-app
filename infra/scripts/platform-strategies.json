@@ -33,6 +33,17 @@
     "dynamicWeights": true
   },
   {
+    "name": "Metales y Blue Chips",
+    "description": "Oro, plata y bonos largos (TLT) como refugio, combinados con los tres grandes índices americanos (QQQ, SPY, DIA). Sharpe P50 de 2.07 sin exposición crypto.",
+    "riskProfileId": "conservative",
+    "weights": { "GLD": 0.17, "SLV": 0.17, "TLT": 0.17, "QQQ": 0.17, "SPY": 0.16, "DIA": 0.16 },
+    "leverageMin": 1.5,
+    "leverageMax": 2.0,
+    "leverageTarget": 1.75,
+    "weightMode": "sharpe",
+    "dynamicWeights": false
+  },
+  {
     "name": "Healthcare y Crypto Balanceado",
     "description": "Mercado amplio (SPY) con healthcare, Bitcoin y coberturas en oro, agricultura y TIPS. El optimizador Sharpe ajusta la exposición crypto automáticamente.",
     "riskProfileId": "moderate",
@@ -64,6 +75,17 @@
     "leverageTarget": 2.5,
     "weightMode": "sharpe",
     "dynamicWeights": true
+  },
+  {
+    "name": "Uranio y Dividendos",
+    "description": "Uranio (URA) y dividendos de calidad (SCHD) como motores de retorno, con Bitcoin, oro y bonos largos. Score 84.1 — el mejor combo moderado de la exploración personalizada.",
+    "riskProfileId": "moderate",
+    "weights": { "BTC-USD": 0.17, "GLD": 0.17, "TLT": 0.17, "SPY": 0.17, "URA": 0.16, "SCHD": 0.16 },
+    "leverageMin": 2.0,
+    "leverageMax": 3.0,
+    "leverageTarget": 2.5,
+    "weightMode": "sharpe",
+    "dynamicWeights": false
   },
   {
     "name": "Commodities y Renta Fija",
@@ -99,6 +121,17 @@
     "dynamicWeights": true
   },
   {
+    "name": "Índices y Uranio",
+    "description": "7 activos con los tres índices americanos (QQQ, SPY, DIA), uranio, dividendos, oro y Bitcoin. Score 91.9 — el mejor growth de todas las exploraciones. Rebalanceo Sharpe dinámico.",
+    "riskProfileId": "growth",
+    "weights": { "BTC-USD": 0.15, "GLD": 0.15, "QQQ": 0.14, "SPY": 0.14, "URA": 0.14, "SCHD": 0.14, "DIA": 0.14 },
+    "leverageMin": 2.5,
+    "leverageMax": 4.0,
+    "leverageTarget": 3.0,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
     "name": "Alta Potencia",
     "description": "S&P 500 y consumo defensivo como anclas, con Bitcoin apalancado y bonos (AGG + LQD) para estabilización. P50 CAGR de 181% con 0 margin calls.",
     "riskProfileId": "aggressive",
@@ -125,6 +158,17 @@
     "description": "8 activos con tecnología (QQQ) e infraestructura global (IGF). Sharpe ratio P50 de 2.75 — el más eficiente del perfil agresivo. Optimización estática.",
     "riskProfileId": "aggressive",
     "weights": { "QQQ": 0.125, "XLP": 0.125, "GLD": 0.125, "DBC": 0.125, "SHY": 0.125, "TIP": 0.125, "BTC-USD": 0.125, "IGF": 0.125 },
+    "leverageMin": 3.0,
+    "leverageMax": 5.0,
+    "leverageTarget": 4.0,
+    "weightMode": "sharpe",
+    "dynamicWeights": false
+  },
+  {
+    "name": "Metales Preciosos y Tech",
+    "description": "Triada de metales (oro, plata, platino) con Nasdaq y dividendos, estabilizados por bonos largos. Score 91.4 con 0 margin calls — sin crypto para máximo control a alto apalancamiento.",
+    "riskProfileId": "aggressive",
+    "weights": { "GLD": 0.17, "SLV": 0.17, "PPLT": 0.17, "TLT": 0.17, "QQQ": 0.16, "SCHD": 0.16 },
     "leverageMin": 3.0,
     "leverageMax": 5.0,
     "leverageTarget": 4.0,
