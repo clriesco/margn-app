@@ -90,6 +90,7 @@ export class StrategiesService {
               },
               totalWindows: metrics.totalWindows,
               marginCallCount: metrics.marginCallCount,
+              ...(metrics.score ? { score: metrics.score } : {}),
             }
           : null,
       };
@@ -151,6 +152,7 @@ export class StrategiesService {
                 sharpe: metrics.p50.sharpe,
                 maxDrawdownEquity: metrics.p50.maxDrawdownEquity,
               },
+              ...(metrics.score ? { score: metrics.score } : {}),
             }
           : null,
       };

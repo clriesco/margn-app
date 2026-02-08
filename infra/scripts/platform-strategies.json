@@ -33,37 +33,37 @@
     "dynamicWeights": false
   },
   {
-    "name": "Equilibrio Clásico",
-    "description": "Distribución balanceada entre equity, oro, crypto y bonos. Pesos fijos para el clásico portfolio diversificado.",
+    "name": "Defensa Optimizada",
+    "description": "Consumo defensivo, bonos intermedios y cortos, y agricultura con re-optimización mensual por Sharpe. Diseñado por exploración cuantitativa de 64K combinaciones para máxima consistencia.",
     "riskProfileId": "moderate",
-    "weights": { "SPY": 0.35, "GLD": 0.3, "BTC-USD": 0.2, "TLT": 0.15 },
-    "leverageMin": 2.0,
-    "leverageMax": 3.0,
-    "leverageTarget": 2.5,
-    "weightMode": "manual",
-    "dynamicWeights": false
-  },
-  {
-    "name": "Crecimiento Balanceado",
-    "description": "Tech, equity, oro y crypto con pesos optimizados por Sharpe. El motor de optimización maximiza el retorno ajustado al riesgo.",
-    "riskProfileId": "moderate",
-    "weights": { "QQQ": 0.25, "SPY": 0.25, "GLD": 0.25, "BTC-USD": 0.25 },
-    "leverageMin": 2.0,
-    "leverageMax": 3.0,
-    "leverageTarget": 2.5,
-    "weightMode": "sharpe",
-    "dynamicWeights": false
-  },
-  {
-    "name": "Multi-Activo Global",
-    "description": "Diversificación global con re-optimización mensual por Sharpe. Se adapta automáticamente a las condiciones del mercado.",
-    "riskProfileId": "moderate",
-    "weights": { "VT": 0.25, "GLD": 0.25, "BTC-USD": 0.25, "IEF": 0.25 },
+    "weights": { "XLP": 0.25, "IEF": 0.25, "SHY": 0.25, "DBA": 0.25 },
     "leverageMin": 2.0,
     "leverageMax": 3.0,
     "leverageTarget": 2.5,
     "weightMode": "sharpe",
     "dynamicWeights": true
+  },
+  {
+    "name": "Salud y Renta Fija",
+    "description": "Healthcare, bonos agregados, bonos cortos y agricultura con optimización dinámica. Mínima correlación entre activos para máxima estabilidad.",
+    "riskProfileId": "moderate",
+    "weights": { "XLV": 0.25, "SHY": 0.25, "AGG": 0.25, "DBA": 0.25 },
+    "leverageMin": 2.0,
+    "leverageMax": 3.0,
+    "leverageTarget": 2.5,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
+    "name": "Cobertura Inflación",
+    "description": "Consumo defensivo, bonos cortos, TIPS y oro con pesos iguales. Protección natural contra inflación con baja volatilidad y drawdowns mínimos.",
+    "riskProfileId": "moderate",
+    "weights": { "XLP": 0.25, "SHY": 0.25, "TIP": 0.25, "GLD": 0.25 },
+    "leverageMin": 2.0,
+    "leverageMax": 3.0,
+    "leverageTarget": 2.5,
+    "weightMode": "equal",
+    "dynamicWeights": false
   },
   {
     "name": "Crecimiento Tech",

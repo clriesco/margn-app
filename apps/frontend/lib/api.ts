@@ -871,6 +871,10 @@ export interface PublicStrategySummary {
       sharpe: number;
       maxDrawdownEquity: number;
     };
+    score?: {
+      composite: number;
+      dimensions: { dispersion: number; worstCase: number; sharpe: number; drawdown: number };
+    };
     [key: string]: unknown;
   } | null;
 }

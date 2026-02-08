@@ -40,6 +40,7 @@ export function calculateWindowMetrics(
       absoluteReturn: -totalInvested,
       returnPercent: -1, // -100%
       cagr: -1, // -100%
+      xirr: null,
       sharpe: -Infinity,
       maxDrawdownEquity: -1, // -100%
       recoveryDays: states.length,
@@ -116,6 +117,21 @@ export function calculateWindowMetrics(
     }
   }
 
+  // XIRR — accounts for DCA timing
+  const cashFlows: { amount: number; date: string }[] = [
+    { amount: -firstEquity, date: states[0].date },
+  ];
+  for (let k = 0; k < contributions.length; k++) {
+    if (contributionIndices[k] < states.length) {
+      cashFlows.push({
+        amount: -contributions[k],
+        date: states[contributionIndices[k]].date,
+      });
+    }
+  }
+  cashFlows.push({ amount: finalCapital, date: states[states.length - 1].date });
+  const xirr = calculateXIRR(cashFlows);
+
   return {
     windowIndex,
     startDate,
@@ -125,6 +141,7 @@ export function calculateWindowMetrics(
     absoluteReturn,
     returnPercent,
     cagr,
+    xirr,
     sharpe,
     maxDrawdownEquity: maxDrawdown,
     recoveryDays: maxRecoveryDays,
@@ -132,6 +149,59 @@ export function calculateWindowMetrics(
     marginCall: false,
     finalLeverage: lastState.leverage,
   };
+}
+
+/**
+ * Calculate XIRR (Extended Internal Rate of Return) using Newton-Raphson.
+ * Accounts for the timing of DCA contributions, unlike CAGR.
+ */
+export function calculateXIRR(
+  cashFlows: { amount: number; date: string }[]
+): number | null {
+  if (cashFlows.length < 2) return null;
+
+  const d0 = new Date(cashFlows[0].date).getTime();
+  const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+  const years = cashFlows.map(
+    (cf) => (new Date(cf.date).getTime() - d0) / msPerYear
+  );
+  const amounts = cashFlows.map((cf) => cf.amount);
+
+  let rate = 0.1; // initial guess
+
+  for (let iter = 0; iter < 100; iter++) {
+    let f = 0;
+    let df = 0;
+
+    for (let j = 0; j < amounts.length; j++) {
+      const t = years[j];
+      const base = 1 + rate;
+      if (base <= 0) {
+        rate = 0.01;
+        break;
+      }
+      const pv = amounts[j] / Math.pow(base, t);
+      f += pv;
+      if (t !== 0) {
+        df -= (t * amounts[j]) / Math.pow(base, t + 1);
+      }
+    }
+
+    if (Math.abs(df) < 1e-12) return null;
+
+    const newRate = rate - f / df;
+
+    if (Math.abs(newRate - rate) < 1e-7) {
+      if (newRate < -0.99 || newRate > 10) return null;
+      return newRate;
+    }
+
+    rate = newRate;
+    if (rate < -0.99) rate = -0.99;
+    if (rate > 10) rate = 10;
+  }
+
+  return null; // didn't converge
 }
 
 /**
@@ -175,7 +245,7 @@ function emptyMetrics(windowIndex: number, startDate: string, endDate: string): 
   return {
     windowIndex, startDate, endDate,
     finalCapital: 0, totalContributed: 0, absoluteReturn: 0,
-    returnPercent: 0, cagr: 0, sharpe: 0, maxDrawdownEquity: 0,
+    returnPercent: 0, cagr: 0, xirr: null, sharpe: 0, maxDrawdownEquity: 0,
     recoveryDays: 0, underwaterDays: 0, marginCall: false, finalLeverage: 0,
   };
 }

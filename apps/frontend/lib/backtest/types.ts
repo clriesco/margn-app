@@ -3,6 +3,8 @@
  * All interfaces for the browser-side backtest computation
  */
 
+import type { BacktestScore } from './scoring';
+
 export interface BacktestConfig {
   symbols: string[];
   initialCapital: number;
@@ -84,6 +86,7 @@ export interface WindowMetrics {
   absoluteReturn: number;
   returnPercent: number;
   cagr: number;
+  xirr: number | null;
   sharpe: number;
   maxDrawdownEquity: number;
   recoveryDays: number;
@@ -128,6 +131,8 @@ export interface BacktestResult {
   excludedSymbols?: string[];
   /** Data coverage information - present when there are limitations */
   dataCoverage?: DataCoverageInfo;
+  /** Composite score (computed after backtest completes) */
+  score?: BacktestScore;
 }
 
 export interface BacktestProgress {

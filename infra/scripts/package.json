@@ -9,7 +9,8 @@
     "metrics:refresh": "NODE_PATH=../../node_modules npx ts-node metrics-refresh.ts",
     "daily:check": "NODE_PATH=../../node_modules npx ts-node daily-check.ts",
     "daily:all": "NODE_PATH=../../node_modules npx ts-node run-daily-jobs.ts",
-    "reset:database": "NODE_PATH=../../node_modules npx ts-node reset-database.ts"
+    "reset:database": "NODE_PATH=../../node_modules npx ts-node reset-database.ts",
+    "explore:portfolios": "NODE_PATH=../../node_modules npx ts-node explore-portfolios.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5"

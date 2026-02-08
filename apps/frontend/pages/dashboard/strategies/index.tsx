@@ -37,7 +37,12 @@ function sortByRiskProfile(strategies: PublicStrategySummary[]): PublicStrategyS
     const orderA = a.riskProfileId ? RISK_PROFILE_ORDER[a.riskProfileId] ?? 99 : 99;
     const orderB = b.riskProfileId ? RISK_PROFILE_ORDER[b.riskProfileId] ?? 99 : 99;
     if (orderA !== orderB) return orderA - orderB;
-    return (a.config.leverageTarget ?? 0) - (b.config.leverageTarget ?? 0);
+    // Score descending (higher first)
+    const scoreA = a.metrics?.score?.composite ?? -1;
+    const scoreB = b.metrics?.score?.composite ?? -1;
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    // Name ascending
+    return a.name.localeCompare(b.name);
   });
 }
 

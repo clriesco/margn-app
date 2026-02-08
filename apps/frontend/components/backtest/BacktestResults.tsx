@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import type { BacktestScore } from '../../lib/backtest/scoring';
+import { scoreColor } from '../../lib/backtest/scoring';
 import type { BacktestResult, DataCoverageInfo } from '../../lib/backtest/types';
 import { formatNumberES } from '../../lib/number-format';
 import EquityBreakdownChart from './EquityBreakdownChart';
@@ -248,6 +250,62 @@ function MetricCard({ label, p10, p50, p90, format, coloring }: {
 }
 
 // ---------------------------------------------------------------------------
+// Score Panel
+// ---------------------------------------------------------------------------
+function ScoreBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <span style={{ width: '100px', fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>{label}</span>
+      <div style={{
+        flex: 1, height: '8px', background: 'var(--bg-glass)',
+        borderRadius: '4px', overflow: 'hidden',
+      }}>
+        <div style={{
+          width: `${Math.max(value, 2)}%`, height: '100%',
+          background: scoreColor(value), borderRadius: '4px',
+          transition: 'width 0.4s ease',
+        }} />
+      </div>
+      <span style={{ width: '32px', textAlign: 'right', fontSize: '0.75rem', fontWeight: '600', color: scoreColor(value) }}>
+        {Math.round(value)}
+      </span>
+    </div>
+  );
+}
+
+function ScorePanel({ score }: { score: BacktestScore }) {
+  const color = scoreColor(score.composite);
+
+  return (
+    <div style={{
+      display: 'flex', gap: '1.5rem', alignItems: 'center',
+      padding: '1rem', marginBottom: '1.25rem',
+      background: 'var(--hover-bg)', borderRadius: '8px',
+      flexWrap: 'wrap',
+    }}>
+      {/* Composite number */}
+      <div style={{ textAlign: 'center', minWidth: '72px' }}>
+        <div style={{ fontSize: '2rem', fontWeight: '700', color, lineHeight: 1 }}>
+          {Math.round(score.composite)}
+        </div>
+        <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Score</div>
+        {score.marginCallPenalty && (
+          <div style={{ fontSize: '0.625rem', color: '#f87171', marginTop: '0.125rem' }}>margin call</div>
+        )}
+      </div>
+
+      {/* Dimension bars */}
+      <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+        <ScoreBar label="Consistencia" value={score.dimensions.dispersion} />
+        <ScoreBar label="Riesgo/Retorno" value={score.dimensions.worstCase} />
+        <ScoreBar label="Sharpe" value={score.dimensions.sharpe} />
+        <ScoreBar label="Drawdown" value={score.dimensions.drawdown} />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Accordion Section
 // ---------------------------------------------------------------------------
 function AccordionSection({ title, children, defaultOpen = false }: {
@@ -367,6 +425,9 @@ export default function BacktestResults({ result }: Props) {
           ))}
         </div>
 
+        {/* Score panel */}
+        {result.score && <ScorePanel score={result.score} />}
+
         {/* P10/P50/P90 table — desktop */}
         <div className="backtest-summary-table" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -380,13 +441,15 @@ export default function BacktestResults({ result }: Props) {
             </thead>
             <tbody>
               <MetricRow idx={0} label="Capital Final" p10={p10.finalCapital} p50={p50.finalCapital} p90={p90.finalCapital} format={fmtUsd} coloring="green" />
-              <MetricRow idx={1} label="Retorno %" p10={p10.returnPercent} p50={p50.returnPercent} p90={p90.returnPercent} format={fmtPct} coloring="green" />
-              <MetricRow idx={2} label="CAGR" p10={p10.cagr} p50={p50.cagr} p90={p90.cagr} format={fmtPct} coloring="green" />
-              <MetricRow idx={3} label="Sharpe" p10={p10.sharpe} p50={p50.sharpe} p90={p90.sharpe} format={fmtNum} coloring="neutral" />
-              <MetricRow idx={4} label="Max Drawdown" p10={p10.maxDrawdownEquity} p50={p50.maxDrawdownEquity} p90={p90.maxDrawdownEquity} format={fmtPct} coloring="red" />
-              <MetricRow idx={5} label="Recovery (días)" p10={p10.recoveryDays} p50={p50.recoveryDays} p90={p90.recoveryDays} format={fmtDays} coloring="neutral" />
-              <MetricRow idx={6} label="Días bajo el agua" p10={p10.underwaterDays} p50={p50.underwaterDays} p90={p90.underwaterDays} format={fmtDays} coloring="neutral" />
-              <MetricRow idx={7} label="Leverage Final" p10={p10.finalLeverage} p50={p50.finalLeverage} p90={p90.finalLeverage} format={fmtNum} coloring="neutral" />
+              <MetricRow idx={1} label="Capital Aportado" p10={result.config.initialCapital + p10.totalContributed} p50={result.config.initialCapital + p50.totalContributed} p90={result.config.initialCapital + p90.totalContributed} format={fmtUsd} coloring="neutral" />
+              <MetricRow idx={2} label="Retorno %" p10={p10.returnPercent} p50={p50.returnPercent} p90={p90.returnPercent} format={fmtPct} coloring="green" />
+              <MetricRow idx={3} label="CAGR" p10={p10.cagr} p50={p50.cagr} p90={p90.cagr} format={fmtPct} coloring="green" />
+              <MetricRow idx={4} label="XIRR" p10={p10.xirr ?? NaN} p50={p50.xirr ?? NaN} p90={p90.xirr ?? NaN} format={(v) => isNaN(v) ? '—' : fmtPct(v)} coloring="green" />
+              <MetricRow idx={5} label="Sharpe" p10={p10.sharpe} p50={p50.sharpe} p90={p90.sharpe} format={fmtNum} coloring="neutral" />
+              <MetricRow idx={6} label="Max Drawdown" p10={p10.maxDrawdownEquity} p50={p50.maxDrawdownEquity} p90={p90.maxDrawdownEquity} format={fmtPct} coloring="red" />
+              <MetricRow idx={7} label="Recovery (días)" p10={p10.recoveryDays} p50={p50.recoveryDays} p90={p90.recoveryDays} format={fmtDays} coloring="neutral" />
+              <MetricRow idx={8} label="Días bajo el agua" p10={p10.underwaterDays} p50={p50.underwaterDays} p90={p90.underwaterDays} format={fmtDays} coloring="neutral" />
+              <MetricRow idx={9} label="Leverage Final" p10={p10.finalLeverage} p50={p50.finalLeverage} p90={p90.finalLeverage} format={fmtNum} coloring="neutral" />
             </tbody>
           </table>
         </div>
@@ -394,8 +457,10 @@ export default function BacktestResults({ result }: Props) {
         {/* P10/P50/P90 cards — mobile */}
         <div className="backtest-summary-cards" style={{ display: 'none' }}>
           <MetricCard label="Capital Final" p10={p10.finalCapital} p50={p50.finalCapital} p90={p90.finalCapital} format={fmtUsd} coloring="green" />
+          <MetricCard label="Capital Aportado" p10={result.config.initialCapital + p10.totalContributed} p50={result.config.initialCapital + p50.totalContributed} p90={result.config.initialCapital + p90.totalContributed} format={fmtUsd} coloring="neutral" />
           <MetricCard label="Retorno %" p10={p10.returnPercent} p50={p50.returnPercent} p90={p90.returnPercent} format={fmtPct} coloring="green" />
           <MetricCard label="CAGR" p10={p10.cagr} p50={p50.cagr} p90={p90.cagr} format={fmtPct} coloring="green" />
+          <MetricCard label="XIRR" p10={p10.xirr ?? NaN} p50={p50.xirr ?? NaN} p90={p90.xirr ?? NaN} format={(v) => isNaN(v) ? '—' : fmtPct(v)} coloring="green" />
           <MetricCard label="Sharpe" p10={p10.sharpe} p50={p50.sharpe} p90={p90.sharpe} format={fmtNum} coloring="neutral" />
           <MetricCard label="Max Drawdown" p10={p10.maxDrawdownEquity} p50={p50.maxDrawdownEquity} p90={p90.maxDrawdownEquity} format={fmtPct} coloring="red" />
           <MetricCard label="Recovery (días)" p10={p10.recoveryDays} p50={p50.recoveryDays} p90={p90.recoveryDays} format={fmtDays} coloring="neutral" />

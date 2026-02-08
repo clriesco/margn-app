@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Pencil } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import DashboardSidebar from '../../../components/DashboardSidebar';
+import { scoreColor } from '../../../lib/backtest/scoring';
 import { formatNumberES } from '../../../lib/number-format';
 import { getPortfoliosByEmail, updateStrategyVisibility } from '../../../lib/api';
 
@@ -22,6 +23,7 @@ interface ScenarioMetrics {
   totalContributed: number;
   returnPercent: number;
   cagr: number;
+  xirr?: number | null;
   sharpe: number;
   maxDrawdownEquity: number;
   recoveryDays: number;
@@ -56,6 +58,11 @@ interface StrategyDetail {
     p90: ScenarioMetrics;
     totalWindows: number;
     marginCallCount: number;
+    score?: {
+      composite: number;
+      dimensions: { dispersion: number; worstCase: number; sharpe: number; drawdown: number };
+      marginCallPenalty?: boolean;
+    };
   } | null;
   trajectories: {
     p10: { points: TrajectoryPoint[] };
@@ -846,6 +853,45 @@ export default function StrategyDetailPage() {
                   <h3 style={{ color: 'var(--text-primary)', margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600' }}>
                     Métricas ({strategy.metrics.totalWindows} ventanas, {strategy.metrics.marginCallCount} margin calls)
                   </h3>
+
+                  {/* Score breakdown */}
+                  {strategy.metrics.score && (
+                    <div style={{
+                      display: 'flex', gap: '1.5rem', alignItems: 'center',
+                      padding: '1rem', marginBottom: '1rem',
+                      background: 'var(--hover-bg)', borderRadius: '8px',
+                      flexWrap: 'wrap',
+                    }}>
+                      <div style={{ textAlign: 'center', minWidth: '72px' }}>
+                        <div style={{ fontSize: '2rem', fontWeight: '700', color: scoreColor(strategy.metrics.score.composite), lineHeight: 1 }}>
+                          {Math.round(strategy.metrics.score.composite)}
+                        </div>
+                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Score</div>
+                        {strategy.metrics.score.marginCallPenalty && (
+                          <div style={{ fontSize: '0.625rem', color: '#f87171', marginTop: '0.125rem' }}>margin call</div>
+                        )}
+                      </div>
+                      <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                        {([
+                          ['Consistencia', strategy.metrics.score.dimensions.dispersion],
+                          ['Riesgo/Retorno', strategy.metrics.score.dimensions.worstCase],
+                          ['Sharpe', strategy.metrics.score.dimensions.sharpe],
+                          ['Drawdown', strategy.metrics.score.dimensions.drawdown],
+                        ] as const).map(([label, value]) => (
+                          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ width: '100px', fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>{label}</span>
+                            <div style={{ flex: 1, height: '8px', background: 'var(--bg-glass)', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ width: `${Math.max(value, 2)}%`, height: '100%', background: scoreColor(value), borderRadius: '4px' }} />
+                            </div>
+                            <span style={{ width: '32px', textAlign: 'right', fontSize: '0.75rem', fontWeight: '600', color: scoreColor(value) }}>
+                              {Math.round(value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ overflowX: 'auto' }}>
                     <table className="strategy-metrics-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                       <thead>
@@ -870,10 +916,22 @@ export default function StrategyDetailPage() {
                           <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', fontWeight: '500', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.metrics.p90.finalCapital)}</td>
                         </tr>
                         <tr>
+                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Capital aportado</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.config.initialCapital + strategy.metrics.p10.totalContributed)}</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.config.initialCapital + strategy.metrics.p50.totalContributed)}</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.config.initialCapital + strategy.metrics.p90.totalContributed)}</td>
+                        </tr>
+                        <tr>
                           <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>CAGR</td>
                           <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p10.cagr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p10.cagr)}</td>
                           <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p50.cagr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p50.cagr)}</td>
                           <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p90.cagr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p90.cagr)}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>XIRR</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p10.xirr != null && strategy.metrics.p10.xirr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p10.xirr != null ? fmtPct(strategy.metrics.p10.xirr) : '—'}</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p50.xirr != null && strategy.metrics.p50.xirr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p50.xirr != null ? fmtPct(strategy.metrics.p50.xirr) : '—'}</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p90.xirr != null && strategy.metrics.p90.xirr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p90.xirr != null ? fmtPct(strategy.metrics.p90.xirr) : '—'}</td>
                         </tr>
                         <tr>
                           <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Sharpe</td>

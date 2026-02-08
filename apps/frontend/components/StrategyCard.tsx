@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import type { PublicStrategySummary } from "../lib/api";
+import { scoreColor } from "../lib/backtest/scoring";
 
 const RISK_PROFILE_LABELS: Record<string, string> = {
   conservative: "Conservador",
@@ -276,6 +277,22 @@ export function StrategyCard({
             marginTop: "0.75rem",
           }}
         >
+          {strategy.metrics.score && (
+            <div>
+              <span style={{ fontSize: "0.6875rem", color: "var(--text-dim)" }}>
+                Score
+              </span>
+              <div
+                style={{
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  color: scoreColor(strategy.metrics.score.composite),
+                }}
+              >
+                {Math.round(strategy.metrics.score.composite)}
+              </div>
+            </div>
+          )}
           <div>
             <span style={{ fontSize: "0.6875rem", color: "var(--text-dim)" }}>
               CAGR

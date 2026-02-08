@@ -10,6 +10,7 @@ import BacktestProgress from '../../components/backtest/BacktestProgress';
 import BacktestResults from '../../components/backtest/BacktestResults';
 import SaveStrategyButton from '../../components/backtest/SaveStrategyButton';
 import TrajectoryChart from '../../components/backtest/TrajectoryChart';
+import { computeBacktestScore } from '../../lib/backtest/scoring';
 import type {
   BacktestConfig,
   BacktestProgress as ProgressType,
@@ -192,6 +193,12 @@ export default function BacktestPage() {
           if (allExcluded.length > 0) {
             backResult.excludedSymbols = allExcluded;
           }
+          backResult.score = computeBacktestScore({
+            p10: { cagr: backResult.p10.cagr, sharpe: backResult.p10.sharpe, maxDrawdown: backResult.p10.maxDrawdownEquity },
+            p50: { cagr: backResult.p50.cagr, sharpe: backResult.p50.sharpe },
+            p90: { cagr: backResult.p90.cagr, sharpe: backResult.p90.sharpe, maxDrawdown: backResult.p90.maxDrawdownEquity },
+            marginCallCount: backResult.marginCallCount,
+          });
           setResult(backResult);
           setStage('results');
           worker.terminate();

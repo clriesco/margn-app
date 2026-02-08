@@ -127,7 +127,7 @@ export function alignPrices(
 
   function computeCommonDates(syms: string[]): string[] {
     const dateSets = syms.map((s) => new Set(Object.keys(priceData[s] || {})));
-    return [...dateSets[0]].filter((d) => dateSets.every((set) => set.has(d))).sort();
+    return Array.from(dateSets[0]).filter((d) => dateSets.every((set) => set.has(d))).sort();
   }
 
   let commonDates = computeCommonDates(kept);

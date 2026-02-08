@@ -23,6 +23,7 @@ if (!process.env.DATABASE_URL) {
 
 import { PrismaClient } from "@prisma/client";
 import { runBacktest } from "../../apps/frontend/lib/backtest/engine/backtest-engine";
+import { computeBacktestScore } from "../../apps/frontend/lib/backtest/scoring";
 import type {
   BacktestConfig,
   BacktestResult,
@@ -107,8 +108,8 @@ const PRICE_START_DATE = "2015-01-01";
 
 function guessAssetType(symbol: string): string {
   if (symbol.includes("-USD")) return "crypto";
-  if (["GLD", "SLV", "USO"].includes(symbol)) return "commodity";
-  if (["TLT", "IEF", "SHY", "AGG", "BND"].includes(symbol)) return "bond";
+  if (["GLD", "SLV", "USO", "DBA", "DBC", "COPX", "GDX"].includes(symbol)) return "commodity";
+  if (["TLT", "IEF", "SHY", "AGG", "BND", "TIP", "LQD", "HYG", "EMB"].includes(symbol)) return "bond";
   return "index";
 }
 
@@ -318,6 +319,13 @@ function extractResults(result: BacktestResult): {
 
   const safeNum = (n: number) => (Number.isFinite(n) ? n : 0);
 
+  const score = computeBacktestScore({
+    p10: { cagr: safeNum(result.p10.cagr), sharpe: safeNum(result.p10.sharpe), maxDrawdown: result.p10.maxDrawdownEquity },
+    p50: { cagr: safeNum(result.p50.cagr), sharpe: safeNum(result.p50.sharpe) },
+    p90: { cagr: safeNum(result.p90.cagr), sharpe: safeNum(result.p90.sharpe), maxDrawdown: result.p90.maxDrawdownEquity },
+    marginCallCount: result.marginCallCount,
+  });
+
   const metrics = {
     p10: {
       startDate: result.p10.startDate,
@@ -326,6 +334,7 @@ function extractResults(result: BacktestResult): {
       totalContributed: result.p10.totalContributed,
       returnPercent: result.p10.returnPercent,
       cagr: safeNum(result.p10.cagr),
+      xirr: result.p10.xirr,
       sharpe: safeNum(result.p10.sharpe),
       maxDrawdownEquity: result.p10.maxDrawdownEquity,
       recoveryDays: result.p10.recoveryDays,
@@ -340,6 +349,7 @@ function extractResults(result: BacktestResult): {
       totalContributed: result.p50.totalContributed,
       returnPercent: result.p50.returnPercent,
       cagr: safeNum(result.p50.cagr),
+      xirr: result.p50.xirr,
       sharpe: safeNum(result.p50.sharpe),
       maxDrawdownEquity: result.p50.maxDrawdownEquity,
       recoveryDays: result.p50.recoveryDays,
@@ -354,6 +364,7 @@ function extractResults(result: BacktestResult): {
       totalContributed: result.p90.totalContributed,
       returnPercent: result.p90.returnPercent,
       cagr: safeNum(result.p90.cagr),
+      xirr: result.p90.xirr,
       sharpe: safeNum(result.p90.sharpe),
       maxDrawdownEquity: result.p90.maxDrawdownEquity,
       recoveryDays: result.p90.recoveryDays,
@@ -363,6 +374,7 @@ function extractResults(result: BacktestResult): {
     },
     totalWindows: result.totalWindows,
     marginCallCount: result.marginCallCount,
+    score,
   };
 
   const trajectories = {
@@ -486,16 +498,17 @@ async function seedPlatformStrategies() {
         `      Running backtest (${riskParams.windowMonths}mo windows)...`
       );
       const result = runBacktest(backtestConfig, strategyPrices);
+      const { metricsJson, trajectoriesJson } = extractResults(result);
 
+      const parsedScore = JSON.parse(metricsJson).score;
       console.log(
         `      ${result.totalWindows} windows, ` +
           `P50 CAGR: ${(result.p50.cagr * 100).toFixed(1)}%, ` +
           `Sharpe: ${result.p50.sharpe.toFixed(2)}, ` +
           `MaxDD: ${(result.p50.maxDrawdownEquity * 100).toFixed(1)}%, ` +
-          `Margin calls: ${result.marginCallCount}`
+          `Margin calls: ${result.marginCallCount}, ` +
+          `Score: ${parsedScore.composite}`
       );
-
-      const { metricsJson, trajectoriesJson } = extractResults(result);
 
       await createStrategyRecord(strategy, metricsJson, trajectoriesJson);
       console.log(`      Saved with metrics and trajectories\n`);
