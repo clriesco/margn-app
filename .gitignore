@@ -13,6 +13,9 @@ dist/
 **/build/
 **/tsconfig.tsbuildinfo
 
+# Exploration results (large JSON files)
+infra/scripts/exploration-results-*.json
+
 # TypeScript compiled files (in scripts directories)
 infra/scripts/*.js
 infra/scripts/*.js.map
