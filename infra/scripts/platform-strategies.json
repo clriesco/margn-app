@@ -1,42 +1,42 @@
 [
   {
-    "name": "Refugio Estable",
-    "description": "Portfolio conservador con fuerte exposición a oro y bonos. Pesos fijos diseñados para preservar capital con baja volatilidad.",
+    "name": "Dividendos y Refugio",
+    "description": "Portfolio defensivo con dividendos (VIG), consumo básico (XLP), oro y agricultura como cobertura, y bonos del tesoro. Score 93.2 — el más consistente de todas las exploraciones.",
     "riskProfileId": "conservative",
-    "weights": { "GLD": 0.4, "TLT": 0.35, "SPY": 0.25 },
-    "leverageMin": 1.5,
-    "leverageMax": 2.0,
-    "leverageTarget": 1.75,
-    "weightMode": "manual",
-    "dynamicWeights": false
-  },
-  {
-    "name": "Dividendos Protegidos",
-    "description": "Pesos iguales entre ETFs de dividendo, oro, bonos y equity. Máxima simplicidad con diversificación automática.",
-    "riskProfileId": "conservative",
-    "weights": { "VYM": 0.25, "GLD": 0.25, "IEF": 0.25, "SPY": 0.25 },
-    "leverageMin": 1.5,
-    "leverageMax": 2.0,
-    "leverageTarget": 1.75,
-    "weightMode": "equal",
-    "dynamicWeights": false
-  },
-  {
-    "name": "Baja Volatilidad",
-    "description": "Activos de mínima volatilidad con pesos optimizados por Sharpe. El optimizador encuentra la asignación de menor riesgo.",
-    "riskProfileId": "conservative",
-    "weights": { "USMV": 0.34, "GLD": 0.33, "TLT": 0.33 },
+    "weights": { "VIG": 0.17, "XLP": 0.17, "GLD": 0.17, "DBA": 0.17, "SHY": 0.16, "TLT": 0.16 },
     "leverageMin": 1.5,
     "leverageMax": 2.0,
     "leverageTarget": 1.75,
     "weightMode": "sharpe",
-    "dynamicWeights": false
+    "dynamicWeights": true
   },
   {
-    "name": "Defensa Optimizada",
-    "description": "Consumo defensivo, bonos intermedios y cortos, y agricultura con re-optimización mensual por Sharpe. Diseñado por exploración cuantitativa de 64K combinaciones para máxima consistencia.",
+    "name": "Commodities e Inflación",
+    "description": "S&P 500 y consumo defensivo con materias primas amplias (DBC) y TIPS para protección contra inflación. Rebalanceo Sharpe dinámico mensual.",
+    "riskProfileId": "conservative",
+    "weights": { "SPY": 0.17, "XLP": 0.17, "GLD": 0.17, "DBC": 0.17, "IEF": 0.16, "TIP": 0.16 },
+    "leverageMin": 1.5,
+    "leverageMax": 2.0,
+    "leverageTarget": 1.75,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
+    "name": "Salud y Tech Protegida",
+    "description": "Crecimiento tech (QQQ) y healthcare (XLV) equilibrado con oro, agricultura y bonos de protección inflacionaria. Sharpe P50 de 2.59.",
+    "riskProfileId": "conservative",
+    "weights": { "QQQ": 0.17, "XLV": 0.17, "GLD": 0.17, "DBA": 0.17, "IEF": 0.16, "TIP": 0.16 },
+    "leverageMin": 1.5,
+    "leverageMax": 2.0,
+    "leverageTarget": 1.75,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
+    "name": "Healthcare y Crypto Balanceado",
+    "description": "Mercado amplio (SPY) con healthcare, Bitcoin y coberturas en oro, agricultura y TIPS. El optimizador Sharpe ajusta la exposición crypto automáticamente.",
     "riskProfileId": "moderate",
-    "weights": { "XLP": 0.25, "IEF": 0.25, "SHY": 0.25, "DBA": 0.25 },
+    "weights": { "SPY": 0.15, "XLV": 0.15, "GLD": 0.14, "DBA": 0.14, "SHY": 0.14, "TIP": 0.14, "BTC-USD": 0.14 },
     "leverageMin": 2.0,
     "leverageMax": 3.0,
     "leverageTarget": 2.5,
@@ -44,10 +44,10 @@
     "dynamicWeights": true
   },
   {
-    "name": "Salud y Renta Fija",
-    "description": "Healthcare, bonos agregados, bonos cortos y agricultura con optimización dinámica. Mínima correlación entre activos para máxima estabilidad.",
+    "name": "Staples y Bitcoin",
+    "description": "Dividendos (VIG) y consumo defensivo (XLP) como base, con Bitcoin y oro como catalizadores de retorno. Bonos agregados y TIPS para estabilidad.",
     "riskProfileId": "moderate",
-    "weights": { "XLV": 0.25, "SHY": 0.25, "AGG": 0.25, "DBA": 0.25 },
+    "weights": { "VIG": 0.15, "XLP": 0.15, "GLD": 0.14, "DBA": 0.14, "AGG": 0.14, "TIP": 0.14, "BTC-USD": 0.14 },
     "leverageMin": 2.0,
     "leverageMax": 3.0,
     "leverageTarget": 2.5,
@@ -55,80 +55,80 @@
     "dynamicWeights": true
   },
   {
-    "name": "Cobertura Inflación",
-    "description": "Consumo defensivo, bonos cortos, TIPS y oro con pesos iguales. Protección natural contra inflación con baja volatilidad y drawdowns mínimos.",
+    "name": "Energía y Crypto",
+    "description": "Exposición a energía (XLE) y Bitcoin con dividendos, oro, agricultura y bonos cortos. Diversificación por sectores no correlacionados.",
     "riskProfileId": "moderate",
-    "weights": { "XLP": 0.25, "SHY": 0.25, "TIP": 0.25, "GLD": 0.25 },
+    "weights": { "VIG": 0.15, "XLE": 0.15, "GLD": 0.14, "DBA": 0.14, "SHY": 0.14, "TIP": 0.14, "BTC-USD": 0.14 },
     "leverageMin": 2.0,
     "leverageMax": 3.0,
     "leverageTarget": 2.5,
-    "weightMode": "equal",
-    "dynamicWeights": false
-  },
-  {
-    "name": "Crecimiento Tech",
-    "description": "Apuesta por tecnología con exposición crypto moderada. Pesos fijos para máximo control sobre la asignación.",
-    "riskProfileId": "growth",
-    "weights": { "QQQ": 0.35, "SPY": 0.3, "GLD": 0.2, "BTC-USD": 0.15 },
-    "leverageMin": 2.0,
-    "leverageMax": 3.5,
-    "leverageTarget": 2.75,
-    "weightMode": "manual",
-    "dynamicWeights": false
-  },
-  {
-    "name": "Crypto + Equity",
-    "description": "Renta variable, Bitcoin y oro con re-optimización mensual por Sharpe. Se adapta a la volatilidad crypto automáticamente.",
-    "riskProfileId": "growth",
-    "weights": { "SPY": 0.25, "QQQ": 0.25, "GLD": 0.25, "BTC-USD": 0.25 },
-    "leverageMin": 2.0,
-    "leverageMax": 3.5,
-    "leverageTarget": 2.75,
     "weightMode": "sharpe",
     "dynamicWeights": true
   },
   {
-    "name": "Máxima Diversificación",
-    "description": "5 activos con pesos iguales (20% cada uno). Reduce riesgo idiosincrático con diversificación máxima y simplicidad.",
+    "name": "Commodities y Renta Fija",
+    "description": "Materias primas amplias (DBC) con bonos corporativos (LQD), consumo defensivo y Bitcoin. Optimización Sharpe dinámica para máximo retorno ajustado al riesgo. P50 CAGR 132%.",
     "riskProfileId": "growth",
-    "weights": { "SPY": 0.2, "QQQ": 0.2, "GLD": 0.2, "BTC-USD": 0.2, "TLT": 0.2 },
-    "leverageMin": 2.0,
-    "leverageMax": 3.5,
-    "leverageTarget": 2.75,
-    "weightMode": "equal",
-    "dynamicWeights": false
-  },
-  {
-    "name": "Crypto Dominante",
-    "description": "Mayor exposición a Bitcoin (30%) con soporte en equity y oro. Pesos fijos para alta tolerancia al riesgo.",
-    "riskProfileId": "aggressive",
-    "weights": { "BTC-USD": 0.3, "QQQ": 0.25, "SPY": 0.25, "GLD": 0.2 },
+    "weights": { "VIG": 0.15, "XLP": 0.15, "GLD": 0.14, "DBC": 0.14, "AGG": 0.14, "LQD": 0.14, "BTC-USD": 0.14 },
     "leverageMin": 2.5,
     "leverageMax": 4.0,
-    "leverageTarget": 3.25,
-    "weightMode": "manual",
-    "dynamicWeights": false
-  },
-  {
-    "name": "All-In Crecimiento",
-    "description": "Activos de alto crecimiento con pesos optimizados por Sharpe. El optimizador busca la máxima eficiencia del portfolio.",
-    "riskProfileId": "aggressive",
-    "weights": { "QQQ": 0.25, "SPY": 0.25, "BTC-USD": 0.25, "GLD": 0.25 },
-    "leverageMin": 2.5,
-    "leverageMax": 4.0,
-    "leverageTarget": 3.25,
-    "weightMode": "sharpe",
-    "dynamicWeights": false
-  },
-  {
-    "name": "Tech Apalancado",
-    "description": "Nasdaq, S&P 500, Bitcoin y oro con re-optimización mensual por Sharpe. Leverage elevado con rebalanceo dinámico.",
-    "riskProfileId": "aggressive",
-    "weights": { "QQQ": 0.25, "SPY": 0.25, "BTC-USD": 0.25, "GLD": 0.25 },
-    "leverageMin": 2.5,
-    "leverageMax": 4.0,
-    "leverageTarget": 3.25,
+    "leverageTarget": 3.0,
     "weightMode": "sharpe",
     "dynamicWeights": true
+  },
+  {
+    "name": "Healthcare y Agricultura",
+    "description": "Healthcare (XLV) como motor de crecimiento con agricultura (DBA), TIPS, bonos agregados y Bitcoin. Balance entre sectores defensivos y activos de alto rendimiento.",
+    "riskProfileId": "growth",
+    "weights": { "VIG": 0.15, "XLV": 0.15, "GLD": 0.14, "DBA": 0.14, "AGG": 0.14, "TIP": 0.14, "BTC-USD": 0.14 },
+    "leverageMin": 2.5,
+    "leverageMax": 4.0,
+    "leverageTarget": 3.0,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
+    "name": "Infraestructura Diversificada",
+    "description": "8 activos incluyendo infraestructura global (IGF). Máxima diversificación con S&P 500, consumo defensivo, commodities, Bitcoin y bonos TIPS.",
+    "riskProfileId": "growth",
+    "weights": { "SPY": 0.125, "XLP": 0.125, "GLD": 0.125, "DBC": 0.125, "IEF": 0.125, "TIP": 0.125, "BTC-USD": 0.125, "IGF": 0.125 },
+    "leverageMin": 2.5,
+    "leverageMax": 4.0,
+    "leverageTarget": 3.0,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
+    "name": "Alta Potencia",
+    "description": "S&P 500 y consumo defensivo como anclas, con Bitcoin apalancado y bonos (AGG + LQD) para estabilización. P50 CAGR de 181% con 0 margin calls.",
+    "riskProfileId": "aggressive",
+    "weights": { "SPY": 0.15, "XLP": 0.15, "GLD": 0.14, "DBA": 0.14, "AGG": 0.14, "LQD": 0.14, "BTC-USD": 0.14 },
+    "leverageMin": 3.0,
+    "leverageMax": 5.0,
+    "leverageTarget": 4.0,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
+    "name": "Value y Healthcare",
+    "description": "Value investing (VTV) y healthcare con Bitcoin apalancado. El optimizador Sharpe mantiene la exposición crypto en niveles seguros. P50 CAGR 172%.",
+    "riskProfileId": "aggressive",
+    "weights": { "VTV": 0.15, "XLV": 0.15, "GLD": 0.14, "DBA": 0.14, "AGG": 0.14, "LQD": 0.14, "BTC-USD": 0.14 },
+    "leverageMin": 3.0,
+    "leverageMax": 5.0,
+    "leverageTarget": 4.0,
+    "weightMode": "sharpe",
+    "dynamicWeights": true
+  },
+  {
+    "name": "Tech e Infraestructura",
+    "description": "8 activos con tecnología (QQQ) e infraestructura global (IGF). Sharpe ratio P50 de 2.75 — el más eficiente del perfil agresivo. Optimización estática.",
+    "riskProfileId": "aggressive",
+    "weights": { "QQQ": 0.125, "XLP": 0.125, "GLD": 0.125, "DBC": 0.125, "SHY": 0.125, "TIP": 0.125, "BTC-USD": 0.125, "IGF": 0.125 },
+    "leverageMin": 3.0,
+    "leverageMax": 5.0,
+    "leverageTarget": 4.0,
+    "weightMode": "sharpe",
+    "dynamicWeights": false
   }
 ]

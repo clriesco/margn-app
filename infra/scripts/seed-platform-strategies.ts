@@ -65,14 +65,14 @@ const RISK_PARAMS: Record<string, RiskParams> = {
     meanReturnShrinkage: 0.7,
     maxWeight: 0.4,
     minWeight: 0.05,
-    windowMonths: 48,
+    windowMonths: 60,
   },
   aggressive: {
     maintenanceMarginRatio: 0.05,
     meanReturnShrinkage: 0.85,
     maxWeight: 0.5,
     minWeight: 0.0,
-    windowMonths: 36,
+    windowMonths: 60,
   },
 };
 
