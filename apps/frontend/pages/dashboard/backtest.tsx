@@ -11,6 +11,7 @@ import BacktestResults from '../../components/backtest/BacktestResults';
 import SaveStrategyButton from '../../components/backtest/SaveStrategyButton';
 import TrajectoryChart from '../../components/backtest/TrajectoryChart';
 import { computeBacktestScore } from '../../lib/backtest/scoring';
+import { formatNumberES } from '../../lib/number-format';
 import type {
   BacktestConfig,
   BacktestProgress as ProgressType,
@@ -359,6 +360,61 @@ export default function BacktestPage() {
 
             {stage === 'results' && result && (
               <>
+                {/* Config parameters */}
+                <div style={{
+                  background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
+                  padding: '1.25rem', marginBottom: '1.5rem',
+                }}>
+                  <h3 style={{ color: 'var(--text-primary)', margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600' }}>
+                    Configuración
+                  </h3>
+                  <div className="backtest-config-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Capital inicial</div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{'$' + formatNumberES(result.config.initialCapital, { maximumFractionDigits: 0 })}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Contribución</div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{'$' + formatNumberES(result.config.monthlyContribution, { maximumFractionDigits: 0 })}/mes</div>
+                    </div>
+                    <div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Leverage</div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{result.config.leverageTarget}x ({result.config.leverageMin}x - {result.config.leverageMax}x)</div>
+                    </div>
+                    <div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Modo de pesos</div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: '500' }}>
+                        {result.config.weightMode === 'sharpe'
+                          ? (result.config.dynamicWeights ? 'Sharpe (re-optimización mensual)' : 'Sharpe (pesos fijos)')
+                          : result.config.weightMode === 'equal' ? 'Pesos iguales' : 'Pesos manuales'}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.5rem' }}>Pesos</div>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {Object.entries(result.weightsUsed).map(([symbol, weight]) => (
+                        <span key={symbol} style={{
+                          padding: '0.375rem 0.75rem',
+                          background: 'var(--hover-bg)',
+                          border: '1px solid var(--border-light)',
+                          borderRadius: '20px',
+                          fontSize: '0.8125rem',
+                          color: 'var(--text-secondary)',
+                        }}>
+                          {symbol}: {(weight * 100).toFixed(1)}%
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <TrajectoryChart result={result} />
+                <BacktestResults result={result} />
+
+                {/* AI Explanation (after results - component handles idle/active states) */}
+                <BacktestExplanation ref={explanationRef} result={result} />
+
                 {/* Actions Bar */}
                 <div
                   className="backtest-actions-bar"
@@ -366,7 +422,7 @@ export default function BacktestPage() {
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: '0.75rem',
-                    marginBottom: '1.5rem',
+                    marginTop: '1.5rem',
                     padding: '1rem 1.25rem',
                     background: 'var(--bg-card)',
                     border: '1px solid var(--border)',
@@ -454,12 +510,6 @@ export default function BacktestPage() {
                     }
                   }
                 `}</style>
-
-                <TrajectoryChart result={result} />
-                <BacktestResults result={result} />
-
-                {/* AI Explanation (after results - component handles idle/active states) */}
-                <BacktestExplanation ref={explanationRef} result={result} />
               </>
             )}
           </div>

@@ -410,21 +410,6 @@ export default function BacktestResults({ result }: Props) {
           <DataCoveragePanel coverage={result.dataCoverage} actualWindows={result.totalWindows} excludedSymbols={result.excludedSymbols} />
         )}
 
-        {/* Weights used */}
-        <div style={{
-          display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem',
-        }}>
-          {Object.entries(result.weightsUsed).map(([symbol, weight]) => (
-            <span key={symbol} style={{
-              padding: '0.25rem 0.75rem', background: 'var(--hover-bg)',
-              border: '1px solid var(--border-light)', borderRadius: '20px',
-              color: 'var(--text-muted)', fontSize: '0.8125rem',
-            }}>
-              {symbol}: {(weight * 100).toFixed(1)}%
-            </span>
-          ))}
-        </div>
-
         {/* Score panel */}
         {result.score && <ScorePanel score={result.score} />}
 
