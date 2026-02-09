@@ -1,10 +1,10 @@
-# Leveraged DCA App
+# Margn
 
 A complete web application for managing leveraged investment portfolios that implements a **Conditional DCA and Dynamic Leverage Management** strategy. The application allows users to manage leveraged portfolios with automated rebalancing strategies based on market signals, Sharpe Ratio optimization, and active risk management.
 
 ## 🎯 Project Overview
 
-**Leveraged DCA App** implements an investment strategy where:
+**Margn** implements an investment strategy where:
 1. Users make periodic contributions (DCA - Dollar Cost Averaging)
 2. The system automatically manages leverage between 2.5x and 4.0x
 3. Asset weights are optimized using Sharpe Ratio algorithms
@@ -139,7 +139,7 @@ npm run dev:frontend  # Frontend on http://localhost:3002
 - **Saved Strategies** - Save backtest configurations and results:
   - List with P10/P50/P90 metrics
   - Trajectory charts visualization
-  - Apply strategy weights to existing portfolio
+  - Create new portfolio from strategy configuration
 - **AI Analysis** - Claude-powered backtest explanations with streaming responses
 - **Auto-fill Price Gaps** - Automatic detection and download of missing historical data
 
@@ -148,7 +148,6 @@ npm run dev:frontend  # Frontend on http://localhost:3002
 - Email/SMS notifications for urgent alerts
 - Broker API integration (webhooks)
 - Recommendation history tracking
-- Multiple portfolios per user
 - Data export (CSV/Excel)
 - "What if" simulator before rebalancing
 
@@ -197,7 +196,7 @@ Base URL: `http://localhost:3003/api`
 - `GET /strategies/:id` - Get strategy detail
 - `PATCH /strategies/:id` - Update strategy name
 - `DELETE /strategies/:id` - Delete strategy
-- `POST /strategies/:id/apply/:portfolioId` - Apply strategy to portfolio
+- `POST /strategies/:id/create-portfolio` - Create portfolio from strategy
 
 ### Backtest
 - `GET /backtest/prices` - Get historical prices for backtest
@@ -410,7 +409,7 @@ npm run lint
 - [x] Auto-fetch prices in position updates
 - [x] Onboarding wizard with SSE progress
 - [x] Backtest simulator with calendar-based rolling windows
-- [x] Saved strategies with apply to portfolio
+- [x] Saved strategies with create portfolio from strategy
 - [x] AI-powered backtest explanations
 - [x] Cron jobs in production (GitHub Actions)
 - [x] Test suite (67 tests: unit, integration, e2e)
@@ -420,7 +419,7 @@ npm run lint
 - [ ] Recommendation history (persist past recommendations)
 
 ### Low Priority
-- [ ] Multiple portfolios per user
+- [x] Multiple portfolios per user
 - [ ] Broker API integration
 - [ ] Data export (CSV/Excel)
 
