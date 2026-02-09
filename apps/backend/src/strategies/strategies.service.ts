@@ -6,15 +6,20 @@ import {
   Logger,
 } from '@nestjs/common';
 
+import { OnboardingService } from '../portfolios/onboarding.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { CreatePortfolioFromStrategyDto } from './dto/create-portfolio-from-strategy.dto';
 import { CreateStrategyDto } from './dto/create-strategy.dto';
 
 @Injectable()
 export class StrategiesService {
   private readonly logger = new Logger(StrategiesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly onboardingService: OnboardingService,
+  ) {}
 
   async create(userId: string, dto: CreateStrategyDto) {
     const config = dto.config;
@@ -285,10 +290,10 @@ export class StrategiesService {
     return { success: true };
   }
 
-  async applyToPortfolio(
+  async createPortfolioFromStrategy(
     userId: string,
     strategyId: string,
-    portfolioId: string,
+    dto: CreatePortfolioFromStrategyDto,
   ) {
     // Get strategy
     const strategy = await this.prisma.savedStrategy.findUnique({
@@ -300,107 +305,36 @@ export class StrategiesService {
     }
 
     if (strategy.userId !== userId && !strategy.isPublic) {
-      throw new ForbiddenException('You do not own this strategy');
-    }
-
-    // Get portfolio
-    const portfolio = await this.prisma.portfolio.findUnique({
-      where: { id: portfolioId },
-      include: { positions: { include: { asset: true } } },
-    });
-
-    if (!portfolio) {
-      throw new NotFoundException('Portfolio not found');
-    }
-
-    if (portfolio.userId !== userId) {
-      throw new ForbiddenException('You do not own this portfolio');
+      throw new ForbiddenException('You do not have access to this strategy');
     }
 
     const config = JSON.parse(strategy.configJson);
     const weights = config.weights as Record<string, number>;
     const symbols = Object.keys(weights);
 
-    // Find existing position symbols
-    const existingSymbols = new Set(
-      portfolio.positions.map((p) => p.asset.symbol),
+    // Map strategy config to onboarding DTO
+    const result = await this.onboardingService.createPortfolioWithAssets(
+      userId,
+      {
+        name: dto.name,
+        initialCapital: dto.initialCapital,
+        assets: symbols.map((symbol) => ({ symbol })),
+        weightAllocationMethod: 'manual',
+        targetWeights: weights,
+        leverageMin: config.leverageMin,
+        leverageMax: config.leverageMax,
+        leverageTarget: config.leverageTarget,
+        monthlyContribution: dto.monthlyContribution,
+      },
     );
 
-    // Find symbols that need to be added
-    const newSymbols = symbols.filter((s) => !existingSymbols.has(s));
-
-    // For new symbols, we need to:
-    // 1. Create or find the asset
-    // 2. Create a position with quantity 0
-    const addedAssets: string[] = [];
-
-    for (const symbol of newSymbols) {
-      // Find or create asset
-      let asset = await this.prisma.asset.findUnique({
-        where: { symbol },
-      });
-
-      if (!asset) {
-        // Create basic asset record - the onboarding or position service
-        // will fetch full details and historical prices
-        asset = await this.prisma.asset.create({
-          data: {
-            symbol,
-            name: symbol, // Will be updated later
-            assetType: this.guessAssetType(symbol),
-          },
-        });
-        this.logger.log(`Created new asset: ${symbol}`);
-      }
-
-      // Create position with quantity 0
-      await this.prisma.portfolioPosition.create({
-        data: {
-          portfolioId,
-          assetId: asset.id,
-          quantity: 0,
-          avgPrice: 0,
-          exposureUsd: 0,
-        },
-      });
-
-      addedAssets.push(symbol);
-      this.logger.log(`Created position for ${symbol} in portfolio ${portfolioId}`);
-    }
-
-    // Update target weights
-    await this.prisma.portfolio.update({
-      where: { id: portfolioId },
-      data: {
-        targetWeightsJson: JSON.stringify(weights),
-      },
-    });
-
     this.logger.log(
-      `Applied strategy ${strategyId} to portfolio ${portfolioId}. Added ${addedAssets.length} new assets.`,
+      `Created portfolio from strategy ${strategyId}: ${result.portfolio.id}`,
     );
 
     return {
-      success: true,
-      addedAssets,
-      updatedWeights: weights,
-      message:
-        addedAssets.length > 0
-          ? `Estrategia aplicada. Se añadieron ${addedAssets.length} activo(s): ${addedAssets.join(', ')}. Redirigiendo a Rebalanceo...`
-          : 'Estrategia aplicada. Pesos objetivo actualizados. Redirigiendo a Rebalanceo...',
+      portfolioId: result.portfolio.id,
+      name: result.portfolio.name,
     };
-  }
-
-  private guessAssetType(symbol: string): string {
-    if (symbol.includes('-USD') || symbol.includes('BTC') || symbol.includes('ETH')) {
-      return 'crypto';
-    }
-    if (symbol === 'GLD' || symbol === 'SLV' || symbol === 'USO') {
-      return 'commodity';
-    }
-    if (symbol === 'TLT' || symbol === 'IEF' || symbol === 'SHY') {
-      return 'bond';
-    }
-    return 'stock';
   }
 }

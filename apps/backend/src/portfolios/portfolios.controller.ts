@@ -2,6 +2,7 @@ import { getAllRiskProfiles } from "@leveraged-dca/shared";
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   Param,
@@ -165,5 +166,15 @@ export class PortfoliosController {
   @UseGuards(AuthGuard, PortfolioOwnershipGuard)
   async dailyMetrics(@Param("id") id: string) {
     return this.portfoliosService.getDailyMetrics(id);
+  }
+
+  /**
+   * Delete a portfolio
+   * DELETE /api/portfolios/:id
+   */
+  @Delete(":id")
+  @UseGuards(AuthGuard, PortfolioOwnershipGuard)
+  async delete(@Param("id") id: string, @CurrentUser() user: any) {
+    return this.portfoliosService.deletePortfolio(user.id, id);
   }
 }

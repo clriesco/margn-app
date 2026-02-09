@@ -16,6 +16,7 @@ import { Response } from 'express';
 
 import { AuthGuard } from '../auth/auth.guard';
 
+import { CreatePortfolioFromStrategyDto } from './dto/create-portfolio-from-strategy.dto';
 import { CreateStrategyDto, UpdateVisibilityDto } from './dto/create-strategy.dto';
 import { StrategiesService } from './strategies.service';
 import { StrategyAnalysisService } from './strategy-analysis.service';
@@ -125,12 +126,12 @@ export class StrategiesController {
     }
   }
 
-  @Post(':id/apply/:portfolioId')
-  async applyToPortfolio(
+  @Post(':id/create-portfolio')
+  async createPortfolioFromStrategy(
     @Request() req: any,
     @Param('id') id: string,
-    @Param('portfolioId') portfolioId: string,
+    @Body() dto: CreatePortfolioFromStrategyDto,
   ) {
-    return this.strategiesService.applyToPortfolio(req.user.id, id, portfolioId);
+    return this.strategiesService.createPortfolioFromStrategy(req.user.id, id, dto);
   }
 }

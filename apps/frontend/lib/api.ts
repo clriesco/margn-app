@@ -904,3 +904,27 @@ export async function updateStrategyVisibility(
     body: JSON.stringify({ isPublic }),
   });
 }
+
+/**
+ * Create a new portfolio from a saved strategy
+ */
+export async function createPortfolioFromStrategy(
+  strategyId: string,
+  data: { name: string; initialCapital: number; monthlyContribution?: number }
+): Promise<{ portfolioId: string; name: string }> {
+  return fetchAPI(`/strategies/${strategyId}/create-portfolio`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Delete a portfolio
+ */
+export async function deletePortfolio(
+  portfolioId: string
+): Promise<{ success: boolean }> {
+  return fetchAPI(`/portfolios/${portfolioId}`, {
+    method: "DELETE",
+  });
+}

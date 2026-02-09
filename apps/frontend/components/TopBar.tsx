@@ -2,22 +2,22 @@ import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import useSWR from "swr";
 import { useAuth } from "../contexts/AuthContext";
+import { usePortfolio } from "../contexts/PortfolioContext";
 import { usePortfolioSummary } from "../lib/hooks/use-portfolio-data";
 import { getProfile, UserProfile } from "../lib/api";
 import { User, Settings, LogOut, ChevronDown } from "lucide-react";
 import { formatCurrencyES, formatNumberES } from "../lib/number-format";
 
 interface TopBarProps {
-  portfolioId: string | null;
   isMobile?: boolean;
   sidebarCollapsed?: boolean;
 }
 
 export default function TopBar({
-  portfolioId,
   isMobile = false,
   sidebarCollapsed = false,
 }: TopBarProps) {
+  const { activePortfolioId: portfolioId } = usePortfolio();
   const { summary } = usePortfolioSummary(portfolioId);
   const equity = summary?.metrics?.equity;
   const exposure = summary?.metrics?.exposure;

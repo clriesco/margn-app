@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useAuth } from '../../contexts/AuthContext';
-import { getPortfoliosByEmail, getBacktestPrices, getPortfolioSummary, getPortfolioConfiguration } from '../../lib/api';
+import { usePortfolio } from '../../contexts/PortfolioContext';
+import { getBacktestPrices, getPortfolioSummary, getPortfolioConfiguration } from '../../lib/api';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import BacktestConfigForm from '../../components/backtest/BacktestConfig';
 import BacktestExplanation, { BacktestExplanationHandle } from '../../components/backtest/BacktestExplanation';
@@ -24,7 +25,7 @@ type Stage = 'config' | 'loading-prices' | 'running' | 'results';
 export default function BacktestPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
+  const { activePortfolioId: portfolioId } = usePortfolio();
   const [stage, setStage] = useState<Stage>('config');
   const [progress, setProgress] = useState<ProgressType | null>(null);
   const [result, setResult] = useState<BacktestResult | null>(null);
@@ -78,40 +79,32 @@ export default function BacktestPage() {
       }
 
       // Normal flow: load from portfolio
-      let pId = router.query.portfolioId as string;
-      if (!pId && user?.email) {
-        try {
-          const portfolios = await getPortfoliosByEmail(user.email);
-          if (portfolios?.length > 0) pId = portfolios[0].id;
-        } catch { /* ignore */ }
-      }
-      if (pId) {
-        setPortfolioId(pId);
-        // Load user's portfolio data for defaults
-        try {
-          const [summary, config] = await Promise.all([
-            getPortfolioSummary(pId),
-            getPortfolioConfiguration(pId),
-          ]);
-          // Extract symbols from user's positions
-          const userSymbols = summary.positions
-            ?.map((p: { asset: { symbol: string } }) => p.asset.symbol)
-            .filter(Boolean) || [];
+      if (!portfolioId) return;
 
-          setUserDefaults({
-            symbols: userSymbols.length > 0 ? userSymbols : undefined,
-            initialCapital: config.initialCapital,
-            monthlyContribution: config.monthlyContribution ?? undefined,
-            leverageMin: config.leverageMin,
-            leverageMax: config.leverageMax,
-            leverageTarget: config.leverageTarget,
-          });
-        } catch { /* ignore - will use defaults */ }
-      }
+      // Load user's portfolio data for defaults
+      try {
+        const [summary, config] = await Promise.all([
+          getPortfolioSummary(portfolioId),
+          getPortfolioConfiguration(portfolioId),
+        ]);
+        // Extract symbols from user's positions
+        const userSymbols = summary.positions
+          ?.map((p: { asset: { symbol: string } }) => p.asset.symbol)
+          .filter(Boolean) || [];
+
+        setUserDefaults({
+          symbols: userSymbols.length > 0 ? userSymbols : undefined,
+          initialCapital: config.initialCapital,
+          monthlyContribution: config.monthlyContribution ?? undefined,
+          leverageMin: config.leverageMin,
+          leverageMax: config.leverageMax,
+          leverageTarget: config.leverageTarget,
+        });
+      } catch { /* ignore - will use defaults */ }
       setDefaultsLoaded(true);
     }
     if (!authLoading && user) load();
-  }, [user, authLoading, router.query.portfolioId]);
+  }, [user, authLoading, portfolioId]);
 
   // Cleanup worker on unmount
   useEffect(() => {
@@ -244,14 +237,14 @@ export default function BacktestPage() {
   return (
     <>
       <Head>
-        <title>Backtest - Leveraged DCA App</title>
+        <title>Backtest - Margn</title>
         <style dangerouslySetInnerHTML={{ __html: `
           @media (max-width: 768px) {
             .backtest-wrapper { padding: 1rem !important; padding-top: 4rem !important; }
           }
         `}} />
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
+      <DashboardSidebar>
         <div style={{ padding: '2rem', paddingTop: '4rem' }} className="backtest-wrapper">
           <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             {/* Header */}

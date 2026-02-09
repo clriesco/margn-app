@@ -385,7 +385,7 @@ export function StrategyCard({
                 fontWeight: 500,
               }}
             >
-              Aplicar a mi portfolio
+              Crear portfolio
             </button>
           )}
           {onDelete && (

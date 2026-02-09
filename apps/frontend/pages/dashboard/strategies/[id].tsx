@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { Pencil } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import DashboardSidebar from '../../../components/DashboardSidebar';
+import CreatePortfolioModal from '../../../components/strategies/CreatePortfolioModal';
 import StrategyAIAnalysis from '../../../components/StrategyAIAnalysis';
 import { scoreColor } from '../../../lib/backtest/scoring';
 import { formatNumberES } from '../../../lib/number-format';
-import { getPortfoliosByEmail, updateStrategyVisibility } from '../../../lib/api';
+import { usePortfolio } from '../../../contexts/PortfolioContext';
+import { updateStrategyVisibility } from '../../../lib/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
 
@@ -323,12 +325,11 @@ export default function StrategyDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { user, loading: authLoading } = useAuth();
+  const { activePortfolioId: portfolioId } = usePortfolio();
   const [strategy, setStrategy] = useState<StrategyDetail | null>(null);
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [applying, setApplying] = useState(false);
-  const [applyResult, setApplyResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [togglingVisibility, setTogglingVisibility] = useState(false);
@@ -367,14 +368,6 @@ export default function StrategyDetailPage() {
 
         const data = await response.json();
         setStrategy(data);
-
-        // Load portfolio ID
-        if (user.email) {
-          const portfolios = await getPortfoliosByEmail(user.email);
-          if (portfolios?.length > 0) {
-            setPortfolioId(portfolios[0].id);
-          }
-        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error');
       } finally {
@@ -384,44 +377,6 @@ export default function StrategyDetailPage() {
 
     loadData();
   }, [id, user]);
-
-  const handleApply = useCallback(async () => {
-    if (!portfolioId || !strategy) return;
-
-    setApplying(true);
-    setApplyResult(null);
-
-    const token = localStorage.getItem('supabase_token');
-    if (!token) {
-      setApplyResult({ success: false, message: 'No autenticado' });
-      setApplying(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/strategies/${strategy.id}/apply/${portfolioId}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Error applying strategy');
-      }
-
-      setApplyResult({ success: true, message: data.message });
-
-      // Redirect to rebalance after 2 seconds
-      setTimeout(() => {
-        router.push('/dashboard/rebalance');
-      }, 2000);
-    } catch (err) {
-      setApplyResult({ success: false, message: err instanceof Error ? err.message : 'Error' });
-    } finally {
-      setApplying(false);
-    }
-  }, [portfolioId, strategy, router]);
 
   const handleDelete = useCallback(async () => {
     if (!strategy) return;
@@ -613,7 +568,7 @@ export default function StrategyDetailPage() {
           }
         `}} />
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
+      <DashboardSidebar>
         <div style={{ padding: '2rem', paddingTop: '4rem' }} className="strategy-detail-wrapper">
           <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             {loading ? (
@@ -957,7 +912,7 @@ export default function StrategyDetailPage() {
                   />
                 )}
 
-                {/* Apply section */}
+                {/* Actions section */}
                 <div style={{
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border)',
@@ -966,34 +921,11 @@ export default function StrategyDetailPage() {
                   marginBottom: '1.5rem',
                 }}>
                   <h3 style={{ color: 'var(--text-primary)', margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600' }}>
-                    Aplicar a portfolio
+                    Acciones
                   </h3>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-                    <p style={{ margin: '0 0 0.5rem 0' }}><strong>Esto actualizará:</strong></p>
-                    <ul style={{ margin: '0 0 1rem 1rem', padding: 0 }}>
-                      <li>Pesos objetivo (targetWeights)</li>
-                      <li>Añadirá activos faltantes (sin posiciones)</li>
-                    </ul>
-                    <p style={{ margin: '0 0 0.5rem 0' }}><strong>NO modificará:</strong></p>
-                    <ul style={{ margin: '0 0 0 1rem', padding: 0 }}>
-                      <li>Tus posiciones actuales (cantidades)</li>
-                      <li>Tu equity ni borrowed amount</li>
-                    </ul>
+                    Crea un nuevo portfolio con los activos, pesos y configuracion de leverage de esta estrategia.
                   </div>
-
-                  {applyResult && (
-                    <div style={{
-                      padding: '0.75rem',
-                      background: applyResult.success ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                      border: `1px solid ${applyResult.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                      borderRadius: '6px',
-                      color: applyResult.success ? '#10b981' : '#ef4444',
-                      fontSize: '0.875rem',
-                      marginBottom: '1rem',
-                    }}>
-                      {applyResult.message}
-                    </div>
-                  )}
 
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     {strategy.metrics && (
@@ -1022,23 +954,31 @@ export default function StrategyDetailPage() {
                     )}
 
                     <button
-                      onClick={handleApply}
-                      disabled={applying || !portfolioId}
+                      onClick={() => setShowCreateModal(true)}
                       style={{
                         padding: '0.75rem 1.5rem',
-                        background: applying ? 'var(--border)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '8px',
-                        cursor: applying || !portfolioId ? 'not-allowed' : 'pointer',
+                        cursor: 'pointer',
                         fontSize: '0.9375rem',
                         fontWeight: '500',
                       }}
                     >
-                      {applying ? 'Aplicando...' : 'Aplicar a mi portfolio'}
+                      Crear portfolio
                     </button>
                   </div>
                 </div>
+
+                {showCreateModal && strategy && (
+                  <CreatePortfolioModal
+                    strategyId={strategy.id}
+                    strategyName={strategy.name}
+                    defaultContribution={strategy.config.monthlyContribution}
+                    onClose={() => setShowCreateModal(false)}
+                  />
+                )}
 
                 {/* Delete — only for owner */}
                 {strategy.isOwner !== false && (

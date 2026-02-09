@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 
 import { PortfoliosService } from "../../src/portfolios/portfolios.service";
 
@@ -55,7 +55,7 @@ describe("PortfoliosService", () => {
   beforeEach(() => {
     mockPrisma = {
       user: { findUnique: jest.fn() },
-      portfolio: { findUnique: jest.fn() },
+      portfolio: { findUnique: jest.fn(), count: jest.fn(), delete: jest.fn() },
       metricsTimeseries: { findFirst: jest.fn(), findMany: jest.fn() },
       dailyMetric: { findFirst: jest.fn(), findMany: jest.fn() },
       monthlyContribution: { findMany: jest.fn() },
@@ -69,10 +69,14 @@ describe("PortfoliosService", () => {
   // findByUserEmail
   // ─────────────────────────────────────────────
   describe("findByUserEmail", () => {
-    it("returns portfolios when user exists", async () => {
+    it("returns portfolios enriched with latest equity and leverage", async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
         ...baseUser,
         portfolios: [{ ...basePortfolio }],
+      });
+      mockPrisma.dailyMetric.findFirst.mockResolvedValue({
+        equity: 15000,
+        leverage: 2.8,
       });
 
       const result = await service.findByUserEmail("test@example.com");
@@ -80,18 +84,21 @@ describe("PortfoliosService", () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("port-1");
       expect(result[0].positions).toHaveLength(2);
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: "test@example.com" },
-        include: {
-          portfolios: {
-            include: {
-              positions: {
-                include: { asset: true },
-              },
-            },
-          },
-        },
+      expect(result[0].latestEquity).toBe(15000);
+      expect(result[0].latestLeverage).toBe(2.8);
+    });
+
+    it("returns null equity/leverage when no daily metrics exist", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...baseUser,
+        portfolios: [{ ...basePortfolio }],
       });
+      mockPrisma.dailyMetric.findFirst.mockResolvedValue(null);
+
+      const result = await service.findByUserEmail("test@example.com");
+
+      expect(result[0].latestEquity).toBeNull();
+      expect(result[0].latestLeverage).toBeNull();
     });
 
     it("returns empty array when user not found", async () => {
@@ -504,6 +511,42 @@ describe("PortfoliosService", () => {
       expect(mockPrisma.dailyMetric.findMany).toHaveBeenCalledWith({
         where: { portfolioId: "port-1" },
         orderBy: { date: "asc" },
+      });
+    });
+  });
+
+  // ─────────────────────────────────────────────
+  // deletePortfolio
+  // ─────────────────────────────────────────────
+  describe("deletePortfolio", () => {
+    it("deletes portfolio when user has multiple portfolios", async () => {
+      mockPrisma.portfolio.count.mockResolvedValue(2);
+      mockPrisma.portfolio.delete.mockResolvedValue({});
+
+      const result = await service.deletePortfolio("user-1", "port-1");
+
+      expect(result).toEqual({ success: true });
+      expect(mockPrisma.portfolio.delete).toHaveBeenCalledWith({
+        where: { id: "port-1" },
+      });
+    });
+
+    it("throws BadRequestException when user has only one portfolio", async () => {
+      mockPrisma.portfolio.count.mockResolvedValue(1);
+
+      await expect(
+        service.deletePortfolio("user-1", "port-1")
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("counts only the user's own portfolios", async () => {
+      mockPrisma.portfolio.count.mockResolvedValue(3);
+      mockPrisma.portfolio.delete.mockResolvedValue({});
+
+      await service.deletePortfolio("user-1", "port-1");
+
+      expect(mockPrisma.portfolio.count).toHaveBeenCalledWith({
+        where: { userId: "user-1" },
       });
     });
   });
