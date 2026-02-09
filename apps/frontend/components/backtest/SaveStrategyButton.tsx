@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import { computeBacktestScore } from '../../lib/backtest/scoring';
 import type { BacktestResult, WindowTrajectory } from '../../lib/backtest/types';
 
 interface Props {
@@ -111,6 +112,12 @@ export default function SaveStrategyButton({ result }: Props) {
         },
         totalWindows: result.totalWindows,
         marginCallCount: result.marginCallCount,
+        score: computeBacktestScore({
+          p10: { cagr: result.p10.cagr, sharpe: result.p10.sharpe, maxDrawdown: result.p10.maxDrawdownEquity },
+          p50: { cagr: result.p50.cagr, sharpe: result.p50.sharpe },
+          p90: { cagr: result.p90.cagr, sharpe: result.p90.sharpe, maxDrawdown: result.p90.maxDrawdownEquity },
+          marginCallCount: result.marginCallCount,
+        }),
       },
       trajectories: {
         p10: { points: extractDailyEquity(p10Trajectory) },

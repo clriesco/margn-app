@@ -896,73 +896,50 @@ export default function StrategyDetailPage() {
                     <table className="strategy-metrics-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                       <thead>
                         <tr>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Métrica</th>
-                          <th style={{ padding: '0.75rem', textAlign: 'right', color: '#f87171', borderBottom: '1px solid var(--border)' }}>P10</th>
-                          <th style={{ padding: '0.75rem', textAlign: 'right', color: '#60a5fa', borderBottom: '1px solid var(--border)' }}>P50</th>
-                          <th style={{ padding: '0.75rem', textAlign: 'right', color: '#34d399', borderBottom: '1px solid var(--border)' }}>P90</th>
+                          <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Métrica</th>
+                          <th style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>P10</th>
+                          <th style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>P50</th>
+                          <th style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>P90</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Período</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: '0.8125rem' }}>{strategy.metrics.p10.startDate.slice(0, 7)} a {strategy.metrics.p10.endDate.slice(0, 7)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: '0.8125rem' }}>{strategy.metrics.p50.startDate.slice(0, 7)} a {strategy.metrics.p50.endDate.slice(0, 7)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: '0.8125rem' }}>{strategy.metrics.p90.startDate.slice(0, 7)} a {strategy.metrics.p90.endDate.slice(0, 7)}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Capital final</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', fontWeight: '500', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.metrics.p10.finalCapital)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', fontWeight: '500', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.metrics.p50.finalCapital)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', fontWeight: '500', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.metrics.p90.finalCapital)}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Capital aportado</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.config.initialCapital + strategy.metrics.p10.totalContributed)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.config.initialCapital + strategy.metrics.p50.totalContributed)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{fmtUsd(strategy.config.initialCapital + strategy.metrics.p90.totalContributed)}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>CAGR</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p10.cagr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p10.cagr)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p50.cagr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p50.cagr)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p90.cagr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p90.cagr)}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>XIRR</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p10.xirr != null && strategy.metrics.p10.xirr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p10.xirr != null ? fmtPct(strategy.metrics.p10.xirr) : '—'}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p50.xirr != null && strategy.metrics.p50.xirr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p50.xirr != null ? fmtPct(strategy.metrics.p50.xirr) : '—'}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p90.xirr != null && strategy.metrics.p90.xirr >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p90.xirr != null ? fmtPct(strategy.metrics.p90.xirr) : '—'}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Sharpe</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p10.sharpe.toFixed(2)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p50.sharpe.toFixed(2)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p90.sharpe.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Max Drawdown</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p10.maxDrawdownEquity)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p50.maxDrawdownEquity)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p90.maxDrawdownEquity)}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Retorno</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p10.returnPercent >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p10.returnPercent)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p50.returnPercent >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p50.returnPercent)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: strategy.metrics.p90.returnPercent >= 0 ? '#34d399' : '#f87171', borderBottom: '1px solid var(--border)' }}>{fmtPct(strategy.metrics.p90.returnPercent)}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Recovery</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p10.recoveryDays} días</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p50.recoveryDays} días</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p90.recoveryDays} días</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Bajo el agua</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p10.underwaterDays} días</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p50.underwaterDays} días</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{strategy.metrics.p90.underwaterDays} días</td>
-                        </tr>
+                        {(() => {
+                          const m = strategy.metrics;
+                          const green = (v: number) => v >= 0 ? '#34d399' : '#f87171';
+                          const red = (v: number) => v <= 0 ? '#f87171' : '#34d399';
+                          const neutral = () => 'var(--text-secondary)';
+                          const cell = (v: string, color: string, idx: number) => (
+                            <td key={idx} style={{ padding: '0.75rem 1rem', textAlign: 'right', color, borderBottom: '1px solid var(--border)' }}>{v}</td>
+                          );
+                          const row = (label: string, vals: [string, string, string], colorFn: (v: number) => string, rawVals: [number, number, number], rowIdx: number) => (
+                            <tr key={label} className="table-row-hoverable" style={{ background: rowIdx % 2 === 1 ? 'var(--hover-bg)' : 'transparent', transition: 'background 0.15s ease' }}>
+                              <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 500, borderBottom: '1px solid var(--border)' }}>{label}</td>
+                              {vals.map((v, i) => cell(v, colorFn(rawVals[i]), i))}
+                            </tr>
+                          );
+                          const fmtDays = (v: number) => `${v} días`;
+                          const fmtNum = (v: number) => v.toFixed(2);
+                          const fmtXirr = (v: number | null | undefined) => v != null ? fmtPct(v) : '—';
+                          const xirrColor = (v: number | null | undefined) => v != null ? green(v) : 'var(--text-muted)';
+
+                          return (<>
+                            {row('Capital Final', [fmtUsd(m.p10.finalCapital), fmtUsd(m.p50.finalCapital), fmtUsd(m.p90.finalCapital)], green, [m.p10.finalCapital, m.p50.finalCapital, m.p90.finalCapital], 0)}
+                            {row('Capital Aportado', [fmtUsd(strategy.config.initialCapital + m.p10.totalContributed), fmtUsd(strategy.config.initialCapital + m.p50.totalContributed), fmtUsd(strategy.config.initialCapital + m.p90.totalContributed)], neutral, [0, 0, 0], 1)}
+                            {row('Retorno %', [fmtPct(m.p10.returnPercent), fmtPct(m.p50.returnPercent), fmtPct(m.p90.returnPercent)], green, [m.p10.returnPercent, m.p50.returnPercent, m.p90.returnPercent], 2)}
+                            {row('CAGR', [fmtPct(m.p10.cagr), fmtPct(m.p50.cagr), fmtPct(m.p90.cagr)], green, [m.p10.cagr, m.p50.cagr, m.p90.cagr], 3)}
+                            <tr className="table-row-hoverable" style={{ background: 'var(--hover-bg)', transition: 'background 0.15s ease' }}>
+                              <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 500, borderBottom: '1px solid var(--border)' }}>XIRR</td>
+                              {[m.p10.xirr, m.p50.xirr, m.p90.xirr].map((v, i) => (
+                                <td key={i} style={{ padding: '0.75rem 1rem', textAlign: 'right', color: xirrColor(v), borderBottom: '1px solid var(--border)' }}>{fmtXirr(v)}</td>
+                              ))}
+                            </tr>
+                            {row('Sharpe', [fmtNum(m.p10.sharpe), fmtNum(m.p50.sharpe), fmtNum(m.p90.sharpe)], neutral, [0, 0, 0], 5)}
+                            {row('Max Drawdown', [fmtPct(m.p10.maxDrawdownEquity), fmtPct(m.p50.maxDrawdownEquity), fmtPct(m.p90.maxDrawdownEquity)], red, [m.p10.maxDrawdownEquity, m.p50.maxDrawdownEquity, m.p90.maxDrawdownEquity], 6)}
+                            {row('Recovery (días)', [fmtDays(m.p10.recoveryDays), fmtDays(m.p50.recoveryDays), fmtDays(m.p90.recoveryDays)], neutral, [0, 0, 0], 7)}
+                            {row('Días bajo el agua', [fmtDays(m.p10.underwaterDays), fmtDays(m.p50.underwaterDays), fmtDays(m.p90.underwaterDays)], neutral, [0, 0, 0], 8)}
+                            {row('Leverage Final', [fmtNum(m.p10.finalLeverage), fmtNum(m.p50.finalLeverage), fmtNum(m.p90.finalLeverage)], neutral, [0, 0, 0], 9)}
+                          </>);
+                        })()}
                       </tbody>
                     </table>
                   </div>

@@ -112,6 +112,19 @@ class BacktestMetrics {
 
   @IsNumber()
   marginCallCount!: number;
+
+  @IsOptional()
+  @IsObject()
+  score?: {
+    composite: number;
+    dimensions: {
+      dispersion: number;
+      worstCase: number;
+      sharpe: number;
+      drawdown: number;
+    };
+    marginCallPenalty: boolean;
+  };
 }
 
 class ScenarioTrajectory {
