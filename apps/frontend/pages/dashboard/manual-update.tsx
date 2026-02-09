@@ -8,9 +8,9 @@ import React, {
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
   updatePositions,
-  getPortfoliosByEmail,
   getPortfolioSummary,
   searchSymbols,
   SymbolSearchResult,
@@ -47,8 +47,7 @@ interface PositionInput {
 export default function ManualUpdate() {
   const router = useRouter();
   const { user, loading } = useAuth();
-
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
+  const { activePortfolioId: portfolioId } = usePortfolio();
   const [equity, setEquity] = useState<number>(0);
   const [positions, setPositions] = useState<PositionInput[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,30 +102,14 @@ export default function ManualUpdate() {
   // Load portfolio and current positions
   useEffect(() => {
     async function loadPortfolio() {
-      if (!user?.email) return;
+      if (!user?.email || !portfolioId) return;
 
       setIsLoading(true);
       setError("");
 
       try {
-        // Get portfolioId from URL or fetch
-        let pId = router.query.portfolioId as string;
-
-        if (!pId) {
-          const portfolios = await getPortfoliosByEmail(user.email);
-          if (portfolios && portfolios.length > 0) {
-            pId = portfolios[0].id;
-          } else {
-            setError("No se encontró portfolio");
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        setPortfolioId(pId);
-
         // Get current portfolio state
-        const summary = await getPortfolioSummary(pId);
+        const summary = await getPortfolioSummary(portfolioId);
 
         // Set current equity
         setEquity(summary.metrics.equity);
@@ -168,7 +151,7 @@ export default function ManualUpdate() {
       loadPortfolio();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading, router.isReady, router.query.portfolioId, formatQuantity]);
+  }, [user, loading, router.isReady, portfolioId, formatQuantity]);
 
   const handlePositionChange = (index: number, value: number | string) => {
     const updated = [...positions];
@@ -428,10 +411,10 @@ export default function ManualUpdate() {
   return (
     <>
       <Head>
-        <title>Sincronizar Posiciones - Leveraged DCA App</title>
+        <title>Sincronizar Posiciones - Margn</title>
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
-        <div style={{ padding: "2rem" }}>
+      <DashboardSidebar>
+        <div style={{ padding: "2rem", paddingTop: "4rem" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
             {/* Header */}
             <div

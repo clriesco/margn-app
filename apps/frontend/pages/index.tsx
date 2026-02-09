@@ -44,7 +44,7 @@ export default function Home() {
     return (
       <>
         <Head>
-          <title>Cargando... - Leveraged DCA App</title>
+          <title>Cargando... - Margn</title>
         </Head>
         <div
           style={{
@@ -63,7 +63,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Iniciar Sesión - Leveraged DCA App</title>
+        <title>Iniciar Sesión - Margn</title>
         <meta
           name="description"
           content="Inicia sesión para gestionar tu portfolio apalancado"
@@ -119,7 +119,7 @@ export default function Home() {
                 letterSpacing: "-0.025em",
               }}
             >
-              Leveraged DCA
+              Margn
             </h1>
             <p
               style={{

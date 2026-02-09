@@ -2,7 +2,8 @@ import React, { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
-import { createContribution, getPortfoliosByEmail } from "../../lib/api";
+import { usePortfolio } from "../../contexts/PortfolioContext";
+import { createContribution } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
 import { NumberInput } from "../../components/NumberInput";
@@ -14,77 +15,41 @@ import { parseNumberES } from "../../lib/number-format";
 export default function Contribution() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { activePortfolioId: portfolioId } = usePortfolio();
 
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
   const [amount, setAmount] = useState<number>(1000);
   const [note, setNote] = useState("");
   const [movementType, setMovementType] = useState<"contribution" | "withdrawal">("contribution");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   // Check if this is an extra contribution (from recommendations)
   const isExtraContribution = router.query.extra === "true";
 
-  // Get portfolioId from URL or fetch from API
+  // Redirect if not authenticated
   useEffect(() => {
-    async function loadPortfolio() {
-      // Check URL first
-      const urlPortfolioId = router.query.portfolioId as string;
-      const urlAmount = router.query.amount as string;
-
-      if (urlPortfolioId) {
-        setPortfolioId(urlPortfolioId);
-      }
-
-      // Pre-fill amount from URL if provided (e.g., from recommendations)
-      if (urlAmount) {
-        const parsedAmount = parseNumberES(urlAmount);
-        setAmount(isNaN(parsedAmount) ? 1000 : parsedAmount);
-        if (isExtraContribution) {
-          setNote(
-            `Aportación extra para reducir el leverage - ${new Date().toLocaleDateString(
-              "es-ES"
-            )}`
-          );
-        }
-      }
-
-      if (urlPortfolioId) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Otherwise fetch from API
-      if (user?.email) {
-        try {
-          const portfolios = await getPortfoliosByEmail(user.email);
-          if (portfolios && portfolios.length > 0) {
-            setPortfolioId(portfolios[0].id);
-          } else {
-            setError("No portfolio found");
-          }
-        } catch {
-          setError("Failed to load portfolio");
-        }
-      }
-      setIsLoading(false);
-    }
-
     if (!loading && !user) {
       router.push("/");
-    } else if (user) {
-      loadPortfolio();
     }
-  }, [
-    user,
-    loading,
-    router,
-    router.query.portfolioId,
-    router.query.amount,
-    isExtraContribution,
-  ]);
+  }, [user, loading, router]);
+
+  // Pre-fill amount and note from URL query params (e.g., from recommendations)
+  useEffect(() => {
+    const urlAmount = router.query.amount as string;
+
+    if (urlAmount) {
+      const parsedAmount = parseNumberES(urlAmount);
+      setAmount(isNaN(parsedAmount) ? 1000 : parsedAmount);
+      if (isExtraContribution) {
+        setNote(
+          `Aportación extra para reducir el leverage - ${new Date().toLocaleDateString(
+            "es-ES"
+          )}`
+        );
+      }
+    }
+  }, [router.query.amount, isExtraContribution]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -131,7 +96,7 @@ export default function Contribution() {
     }
   };
 
-  if (loading || isLoading) {
+  if (loading || !portfolioId) {
     return (
       <>
         <Head>
@@ -158,7 +123,7 @@ export default function Contribution() {
   return (
     <>
       <Head>
-        <title>Movimientos - Leveraged DCA App</title>
+        <title>Movimientos - Margn</title>
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -186,7 +151,7 @@ export default function Contribution() {
           }}
         />
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
+      <DashboardSidebar>
         <div
           style={{
             padding: "2rem",

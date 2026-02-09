@@ -2,8 +2,8 @@ import React, { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
-  getPortfoliosByEmail,
   getPortfolioConfiguration,
   updatePortfolioConfiguration,
   PortfolioConfiguration,
@@ -16,6 +16,7 @@ import {
   removeTargetAsset,
   TargetAsset,
   searchSymbols,
+  deletePortfolio,
 } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
@@ -47,8 +48,7 @@ import { formatNumberES, formatPercentES } from "../../lib/number-format";
 export default function Configuration() {
   const router = useRouter();
   const { user, loading } = useAuth();
-
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
+  const { activePortfolioId: portfolioId, portfolios, setActivePortfolioId, refreshPortfolios } = usePortfolio();
   const [_config, setConfig] = useState<PortfolioConfiguration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -90,6 +90,10 @@ export default function Configuration() {
   const [isAddingAsset, setIsAddingAsset] = useState(false);
   const [removingAsset, setRemovingAsset] = useState<string | null>(null);
 
+  // Delete portfolio state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Risk profile state
   const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([]);
   const [selectedRiskProfile, setSelectedRiskProfile] = useState<RiskProfileId | null>(null);
@@ -110,69 +114,52 @@ export default function Configuration() {
     loadRiskProfiles();
   }, []);
 
-  // Load portfolio and configuration
+  // Load portfolio configuration
   useEffect(() => {
+    if (!user || !portfolioId) return;
+
     async function loadConfig() {
-      const urlPortfolioId = router.query.portfolioId as string;
-      let pId = urlPortfolioId;
-
-      if (!pId && user?.email) {
-        try {
-          const portfolios = await getPortfoliosByEmail(user.email);
-          if (portfolios && portfolios.length > 0) {
-            pId = portfolios[0].id;
-          }
-        } catch {
-          setError("Failed to load portfolio");
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      if (pId) {
-        setPortfolioId(pId);
-        try {
-          const configData = await getPortfolioConfiguration(pId);
-          setConfig(configData);
-          setFormData({
-            monthlyContribution: configData.monthlyContribution || 0,
-            contributionFrequency:
-              configData.contributionFrequency || "monthly",
-            contributionDayOfMonth: configData.contributionDayOfMonth || 1,
-            contributionEnabled: configData.contributionEnabled ?? true,
-            leverageMin: configData.leverageMin || 2.5,
-            leverageMax: configData.leverageMax || 4.0,
-            leverageTarget: configData.leverageTarget || 3.0,
-            useDynamicSharpeRebalance:
-              configData.useDynamicSharpeRebalance ?? true,
-            sharpeWeightsLookbackMonths:
-              configData.sharpeWeightsLookbackMonths ?? 0,
-            meanReturnShrinkage: configData.meanReturnShrinkage || 0.6,
-            riskFreeRate: configData.riskFreeRate || 0.02,
-            maintenanceMarginRatio: configData.maintenanceMarginRatio || 0.05,
-            safeMarginRatio: configData.safeMarginRatio || 0.15,
-            criticalMarginRatio: configData.criticalMarginRatio || 0.1,
-            maxWeight: configData.maxWeight || 0.4,
-            minWeight: configData.minWeight || 0.05,
-          });
-          setTargetWeights(configData.targetWeights || []);
-          // Set risk profile from backend response
-          setSelectedRiskProfile(configData.riskProfile || null);
-        } catch {
-          setError("Failed to load configuration");
-        }
+      try {
+        const configData = await getPortfolioConfiguration(portfolioId!);
+        setConfig(configData);
+        setFormData({
+          monthlyContribution: configData.monthlyContribution || 0,
+          contributionFrequency:
+            configData.contributionFrequency || "monthly",
+          contributionDayOfMonth: configData.contributionDayOfMonth || 1,
+          contributionEnabled: configData.contributionEnabled ?? true,
+          leverageMin: configData.leverageMin || 2.5,
+          leverageMax: configData.leverageMax || 4.0,
+          leverageTarget: configData.leverageTarget || 3.0,
+          useDynamicSharpeRebalance:
+            configData.useDynamicSharpeRebalance ?? true,
+          sharpeWeightsLookbackMonths:
+            configData.sharpeWeightsLookbackMonths ?? 0,
+          meanReturnShrinkage: configData.meanReturnShrinkage || 0.6,
+          riskFreeRate: configData.riskFreeRate || 0.02,
+          maintenanceMarginRatio: configData.maintenanceMarginRatio || 0.05,
+          safeMarginRatio: configData.safeMarginRatio || 0.15,
+          criticalMarginRatio: configData.criticalMarginRatio || 0.1,
+          maxWeight: configData.maxWeight || 0.4,
+          minWeight: configData.minWeight || 0.05,
+        });
+        setTargetWeights(configData.targetWeights || []);
+        // Set risk profile from backend response
+        setSelectedRiskProfile(configData.riskProfile || null);
+      } catch {
+        setError("Failed to load configuration");
       }
       setIsLoading(false);
     }
 
-    if (!router.isReady || loading) return;
+    if (loading) return;
     if (!user) {
       router.push("/");
     } else {
       loadConfig();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading, router.isReady, router.query.portfolioId]);
+  }, [user, loading, portfolioId]);
 
   // Load target assets when portfolioId changes
   useEffect(() => {
@@ -376,7 +363,7 @@ export default function Configuration() {
   return (
     <>
       <Head>
-        <title>Configuración - Leveraged DCA App</title>
+        <title>Configuración - Margn</title>
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes spin {
             from { transform: rotate(0deg); }
@@ -421,7 +408,7 @@ export default function Configuration() {
           }
         `}} />
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
+      <DashboardSidebar>
         <div
           style={{
             padding: "2rem",
@@ -1434,6 +1421,123 @@ export default function Configuration() {
                 </button>
               </div>
             </form>
+
+            {/* Danger Zone */}
+            {portfolios.length > 1 && (
+              <div
+                style={{
+                  marginTop: "2rem",
+                  padding: "1.25rem",
+                  background: "rgba(239, 68, 68, 0.05)",
+                  border: "1px solid rgba(239, 68, 68, 0.2)",
+                  borderRadius: "8px",
+                }}
+              >
+                <h3
+                  style={{
+                    color: "#ef4444",
+                    fontSize: "1rem",
+                    fontWeight: "600",
+                    margin: "0 0 0.75rem 0",
+                  }}
+                >
+                  Zona de peligro
+                </h3>
+                <p
+                  style={{
+                    color: "var(--text-dim)",
+                    fontSize: "0.875rem",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  Eliminar este portfolio borrara todas las posiciones, metricas
+                  e historial de forma permanente.
+                </p>
+                {!showDeleteConfirm ? (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    style={{
+                      padding: "0.625rem 1.25rem",
+                      background: "transparent",
+                      border: "1px solid rgba(239, 68, 68, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ef4444",
+                      fontSize: "0.875rem",
+                      fontWeight: "500",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Eliminar portfolio
+                  </button>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.75rem",
+                    }}
+                  >
+                    <button
+                      onClick={async () => {
+                        if (!portfolioId) return;
+                        setIsDeleting(true);
+                        try {
+                          await deletePortfolio(portfolioId);
+                          refreshPortfolios();
+                          const remaining = portfolios.filter(
+                            (p) => p.id !== portfolioId
+                          );
+                          if (remaining.length > 0) {
+                            setActivePortfolioId(remaining[0].id);
+                          }
+                          router.push("/dashboard");
+                        } catch (err) {
+                          setError(
+                            err instanceof Error
+                              ? err.message
+                              : "Error al eliminar"
+                          );
+                          setIsDeleting(false);
+                          setShowDeleteConfirm(false);
+                        }
+                      }}
+                      disabled={isDeleting}
+                      style={{
+                        padding: "0.625rem 1.25rem",
+                        background: isDeleting
+                          ? "var(--text-dim)"
+                          : "#ef4444",
+                        border: "none",
+                        borderRadius: "8px",
+                        color: "white",
+                        fontSize: "0.875rem",
+                        fontWeight: "600",
+                        cursor: isDeleting ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {isDeleting
+                        ? "Eliminando..."
+                        : "Confirmar eliminacion"}
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={isDeleting}
+                      style={{
+                        padding: "0.625rem 1.25rem",
+                        background: "transparent",
+                        border: "1px solid var(--border)",
+                        borderRadius: "8px",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.875rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Messages */}
             {message && (

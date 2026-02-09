@@ -1,6 +1,7 @@
 import { AppProps } from "next/app";
 import Head from "next/head";
 import { AuthProvider } from "../contexts/AuthContext";
+import { PortfolioProvider } from "../contexts/PortfolioContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 
 /**
@@ -9,6 +10,7 @@ import { ThemeProvider } from "../contexts/ThemeContext";
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <AuthProvider>
+      <PortfolioProvider>
       <ThemeProvider>
         <Head>
           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -160,6 +162,7 @@ export default function App({ Component, pageProps }: AppProps) {
         `}</style>
         <Component {...pageProps} />
       </ThemeProvider>
+      </PortfolioProvider>
     </AuthProvider>
   );
 }

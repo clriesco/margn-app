@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePortfolio } from "../../contexts/PortfolioContext";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import { Recommendation, RecommendationPriority } from "../../lib/api";
 import {
-  usePortfolios,
   usePortfolioSummary,
   usePortfolioMetrics,
   useContributionHistory,
@@ -189,13 +189,8 @@ function Dashboard() {
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
 
-  // Use SWR hooks for cached data
-  const {
-    portfolios,
-    isLoading: portfoliosLoading,
-    error: portfoliosError,
-  } = usePortfolios();
-  const portfolioId = portfolios.length > 0 ? portfolios[0].id : null;
+  // Use portfolio context for active portfolio
+  const { activePortfolioId: portfolioId, portfolios, isLoading: portfoliosLoading, error: portfoliosError } = usePortfolio();
 
   const {
     summary,
@@ -433,7 +428,7 @@ function Dashboard() {
   return (
     <React.Fragment>
       <Head>
-        <title>Dashboard - Leveraged DCA App</title>
+        <title>Dashboard - Margn</title>
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -576,7 +571,7 @@ function Dashboard() {
           }}
         />
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
+      <DashboardSidebar>
         <div
           style={{
             padding: "2rem",
@@ -609,7 +604,7 @@ function Dashboard() {
                     letterSpacing: "-0.025em",
                   }}
                 >
-                  Mi portfolio
+                  {portfolios.find((p) => p.id === portfolioId)?.name || "Mi portfolio"}
                 </h1>
                 <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                   {userProfile?.fullName && userProfile.fullName.trim() !== ""

@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
 import DashboardSidebar from "../../components/DashboardSidebar";
+import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
   BookOpen,
   PlayCircle,
@@ -27,7 +28,7 @@ import {
 export default function Help() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const portfolioId = router.query.portfolioId as string | null;
+  const { activePortfolioId: portfolioId } = usePortfolio();
 
   // Redirect if not authenticated
   React.useEffect(() => {
@@ -63,10 +64,10 @@ export default function Help() {
   return (
     <>
       <Head>
-        <title>Ayuda - Leveraged DCA App</title>
+        <title>Ayuda - Margn</title>
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
-        <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
+      <DashboardSidebar>
+        <div style={{ padding: "2rem", paddingTop: "4rem", maxWidth: "1200px", margin: "0 auto" }}>
           {/* Header */}
           <div
             style={{

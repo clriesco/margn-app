@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -35,7 +39,23 @@ export class PortfoliosService {
       return [];
     }
 
-    return user.portfolios;
+    // Enrich each portfolio with latest equity/leverage from DailyMetric
+    const enriched = await Promise.all(
+      user.portfolios.map(async (portfolio) => {
+        const latestMetric = await this.prisma.dailyMetric.findFirst({
+          where: { portfolioId: portfolio.id },
+          orderBy: { date: "desc" },
+          select: { equity: true, leverage: true },
+        });
+        return {
+          ...portfolio,
+          latestEquity: latestMetric?.equity ?? null,
+          latestLeverage: latestMetric?.leverage ?? null,
+        };
+      })
+    );
+
+    return enriched;
   }
 
   /**
@@ -60,6 +80,28 @@ export class PortfoliosService {
     }
 
     return portfolio;
+  }
+
+  /**
+   * Delete a portfolio (cascade handles all children).
+   * Users must keep at least one portfolio.
+   */
+  async deletePortfolio(userId: string, portfolioId: string) {
+    const count = await this.prisma.portfolio.count({
+      where: { userId },
+    });
+
+    if (count <= 1) {
+      throw new BadRequestException(
+        "No puedes eliminar tu unico portfolio. Crea otro primero."
+      );
+    }
+
+    await this.prisma.portfolio.delete({
+      where: { id: portfolioId },
+    });
+
+    return { success: true };
   }
 
   /**

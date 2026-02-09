@@ -3,10 +3,11 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../../../contexts/AuthContext';
+import { usePortfolio } from '../../../contexts/PortfolioContext';
 import DashboardSidebar from '../../../components/DashboardSidebar';
+import CreatePortfolioModal from '../../../components/strategies/CreatePortfolioModal';
 import { StrategyCard } from '../../../components/StrategyCard';
 import {
-  getPortfoliosByEmail,
   getPublicStrategies,
   updateStrategyVisibility,
   fetchAPI,
@@ -49,7 +50,7 @@ function sortByRiskProfile(strategies: PublicStrategySummary[]): PublicStrategyS
 export default function StrategiesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
+  const { activePortfolioId: portfolioId } = usePortfolio();
   const initialTab = (router.query.tab as string) || 'mine';
   const [activeTab, setActiveTab] = useState<TabId>(
     ['mine', 'platform', 'community'].includes(initialTab) ? initialTab as TabId : 'mine'
@@ -78,23 +79,7 @@ export default function StrategiesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const [togglingVisibility, setTogglingVisibility] = useState<string | null>(null);
-  const [applyingId, setApplyingId] = useState<string | null>(null);
-  const [applyResult, setApplyResult] = useState<{ success: boolean; message: string } | null>(null);
-
-  // Load portfolioId
-  useEffect(() => {
-    async function loadPortfolio() {
-      let pId = router.query.portfolioId as string;
-      if (!pId && user?.email) {
-        try {
-          const portfolios = await getPortfoliosByEmail(user.email);
-          if (portfolios?.length > 0) pId = portfolios[0].id;
-        } catch { /* ignore */ }
-      }
-      if (pId) setPortfolioId(pId);
-    }
-    if (!authLoading && user) loadPortfolio();
-  }, [user, authLoading, router.query.portfolioId]);
+  const [createFromStrategy, setCreateFromStrategy] = useState<{ id: string; name: string; monthlyContribution?: number } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -178,23 +163,13 @@ export default function StrategiesPage() {
     }
   }, []);
 
-  const handleApply = useCallback(async (strategyId: string) => {
-    if (!portfolioId) return;
-    setApplyingId(strategyId);
-    setApplyResult(null);
-
-    try {
-      const result = await fetchAPI(`/strategies/${strategyId}/apply/${portfolioId}`, {
-        method: 'POST',
-      });
-      setApplyResult({ success: true, message: result.message });
-      setTimeout(() => router.push('/dashboard/rebalance'), 2000);
-    } catch (err) {
-      setApplyResult({ success: false, message: err instanceof Error ? err.message : 'Error' });
-    } finally {
-      setApplyingId(null);
-    }
-  }, [portfolioId, router]);
+  const handleCreateFromStrategy = useCallback((strategy: PublicStrategySummary) => {
+    setCreateFromStrategy({
+      id: strategy.id,
+      name: strategy.name,
+      monthlyContribution: strategy.config?.leverageTarget ? undefined : undefined,
+    });
+  }, []);
 
   if (authLoading) {
     return (
@@ -212,7 +187,7 @@ export default function StrategiesPage() {
   return (
     <>
       <Head>
-        <title>Estrategias | Leveraged DCA</title>
+        <title>Estrategias | Margn</title>
         <style dangerouslySetInnerHTML={{ __html: `
           @media (max-width: 768px) {
             .strategies-wrapper { padding: 1rem !important; padding-top: 4rem !important; }
@@ -220,7 +195,7 @@ export default function StrategiesPage() {
           }
         `}} />
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
+      <DashboardSidebar>
         <div style={{ padding: '2rem', paddingTop: '4rem' }} className="strategies-wrapper">
           <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             {/* Header */}
@@ -259,21 +234,6 @@ export default function StrategiesPage() {
                 </button>
               ))}
             </div>
-
-            {/* Apply result notification */}
-            {applyResult && (
-              <div style={{
-                padding: '0.75rem 1rem',
-                background: applyResult.success ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                border: `1px solid ${applyResult.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                borderRadius: '8px',
-                color: applyResult.success ? '#10b981' : '#ef4444',
-                fontSize: '0.875rem',
-                marginBottom: '1rem',
-              }}>
-                {applyResult.message}
-              </div>
-            )}
 
             {/* ============ TAB: Mis Estrategias ============ */}
             {activeTab === 'mine' && (
@@ -398,7 +358,7 @@ export default function StrategiesPage() {
                         key={strategy.id}
                         strategy={strategy}
                         href={`/dashboard/strategies/${strategy.id}?tab=${activeTab}`}
-                        onApply={portfolioId ? () => handleApply(strategy.id) : undefined}
+                        onApply={() => handleCreateFromStrategy(strategy)}
                       />
                     ))}
                   </div>
@@ -407,6 +367,16 @@ export default function StrategiesPage() {
             )}
           </div>
         </div>
+
+        {/* Create portfolio from strategy modal */}
+        {createFromStrategy && (
+          <CreatePortfolioModal
+            strategyId={createFromStrategy.id}
+            strategyName={createFromStrategy.name}
+            defaultContribution={createFromStrategy.monthlyContribution}
+            onClose={() => setCreateFromStrategy(null)}
+          />
+        )}
 
         {/* Delete confirmation modal */}
         {deleteConfirm && (

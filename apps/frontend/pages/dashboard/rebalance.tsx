@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
-  getPortfoliosByEmail,
   getRebalanceProposal,
   acceptRebalanceProposal,
   RebalanceProposal,
@@ -49,8 +49,8 @@ function formatQuantity(quantity: number, symbol: string, assetType?: string): s
 export default function Rebalance() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { activePortfolioId: portfolioId } = usePortfolio();
 
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
   const [proposal, setProposal] = useState<RebalanceProposal | null>(null);
   const [isCalculating, setIsCalculating] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,30 +60,14 @@ export default function Rebalance() {
   // Load portfolio and calculate proposal
   useEffect(() => {
     async function loadAndCalculate() {
-      if (!user?.email) return;
+      if (!user?.email || !portfolioId) return;
 
       setIsCalculating(true);
       setError("");
 
       try {
-        // Get portfolioId from URL or fetch
-        let pId = router.query.portfolioId as string;
-
-        if (!pId) {
-          const portfolios = await getPortfoliosByEmail(user.email);
-          if (portfolios && portfolios.length > 0) {
-            pId = portfolios[0].id;
-          } else {
-            setError("No se encontró portfolio");
-            setIsCalculating(false);
-            return;
-          }
-        }
-
-        setPortfolioId(pId);
-
         // Get rebalance proposal from backend
-        const proposalData = await getRebalanceProposal(pId);
+        const proposalData = await getRebalanceProposal(portfolioId);
         setProposal(proposalData);
       } catch (err) {
         console.error("Error calculating proposal:", err);
@@ -100,7 +84,7 @@ export default function Rebalance() {
     } else if (user) {
       loadAndCalculate();
     }
-  }, [user, loading, router, router.query.portfolioId]);
+  }, [user, loading, router, portfolioId]);
 
   const handleAccept = async () => {
     if (!portfolioId || !proposal) return;
@@ -155,10 +139,10 @@ export default function Rebalance() {
   return (
     <>
       <Head>
-        <title>Rebalancear Portfolio - Leveraged DCA App</title>
+        <title>Rebalancear Portfolio - Margn</title>
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
-        <div style={{ padding: "2rem" }}>
+      <DashboardSidebar>
+        <div style={{ padding: "2rem", paddingTop: "4rem" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
             {/* Header */}
             <div

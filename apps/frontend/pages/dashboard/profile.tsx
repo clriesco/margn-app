@@ -2,6 +2,7 @@ import React, { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePortfolio } from "../../contexts/PortfolioContext";
 import { getProfile, updateProfile, UserProfile } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import AvatarUpload from "../../components/AvatarUpload";
@@ -13,7 +14,7 @@ import { FileText, Bell } from "lucide-react";
 export default function Profile() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
+  const { activePortfolioId: portfolioId } = usePortfolio();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,14 +37,6 @@ export default function Profile() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading]);
-
-  // Get portfolioId from URL
-  useEffect(() => {
-    const pId = router.query.portfolioId as string;
-    if (pId) {
-      setPortfolioId(pId);
-    }
-  }, [router.query.portfolioId]);
 
   // Load profile data
   useEffect(() => {
@@ -146,10 +139,10 @@ export default function Profile() {
   return (
     <>
       <Head>
-        <title>Mi Perfil - Leveraged DCA App</title>
+        <title>Mi Perfil - Margn</title>
       </Head>
-      <DashboardSidebar portfolioId={portfolioId}>
-        <div style={{ padding: "2rem" }}>
+      <DashboardSidebar>
+        <div style={{ padding: "2rem", paddingTop: "4rem" }}>
           <div style={{ maxWidth: "800px", margin: "0 auto" }}>
             {/* Header */}
             <div

@@ -55,6 +55,8 @@ describe("StrategiesService", () => {
     createdAt: new Date("2024-06-01"),
   };
 
+  let mockOnboardingService: any;
+
   beforeEach(() => {
     mockPrisma = {
       savedStrategy: {
@@ -64,12 +66,13 @@ describe("StrategiesService", () => {
         update: jest.fn(),
         delete: jest.fn(),
       },
-      portfolio: { findUnique: jest.fn(), update: jest.fn() },
-      asset: { findUnique: jest.fn(), create: jest.fn() },
-      portfolioPosition: { create: jest.fn() },
     };
 
-    service = new StrategiesService(mockPrisma);
+    mockOnboardingService = {
+      createPortfolioWithAssets: jest.fn(),
+    };
+
+    service = new StrategiesService(mockPrisma, mockOnboardingService);
   });
 
   // ─────────────────────────────────────────────
@@ -438,130 +441,86 @@ describe("StrategiesService", () => {
   });
 
   // ─────────────────────────────────────────────
-  // applyToPortfolio
+  // createPortfolioFromStrategy
   // ─────────────────────────────────────────────
-  describe("applyToPortfolio", () => {
-    const baseAssets = [
-      { id: "asset-spy", symbol: "SPY", name: "S&P 500", assetType: "index" },
-    ];
-
-    const portfolioForApply = {
-      id: "port-1",
-      userId,
-      name: "Test Portfolio",
-      positions: [
-        {
-          id: "pos-1",
-          assetId: "asset-spy",
-          asset: baseAssets[0],
-          quantity: 60,
-        },
-      ],
+  describe("createPortfolioFromStrategy", () => {
+    const createDto = {
+      name: "New Growth Portfolio",
+      initialCapital: 15000,
+      monthlyContribution: 500,
     };
 
-    it("updates targetWeightsJson on portfolio", async () => {
+    it("creates portfolio via onboarding service with strategy config", async () => {
       mockPrisma.savedStrategy.findUnique.mockResolvedValue({
         ...sampleStrategy,
         isPublic: true,
       });
-      mockPrisma.portfolio.findUnique.mockResolvedValue(portfolioForApply);
-      mockPrisma.asset.findUnique.mockResolvedValue(null);
-      mockPrisma.asset.create.mockImplementation(({ data }: any) =>
-        Promise.resolve({ id: `asset-${data.symbol}`, ...data })
-      );
-      mockPrisma.portfolioPosition.create.mockResolvedValue({});
-      mockPrisma.portfolio.update.mockResolvedValue({});
-
-      const result = await service.applyToPortfolio(userId, "strat-1", "port-1");
-
-      expect(result.success).toBe(true);
-      expect(mockPrisma.portfolio.update).toHaveBeenCalledWith({
-        where: { id: "port-1" },
-        data: {
-          targetWeightsJson: JSON.stringify(sampleConfig.weights),
-        },
+      mockOnboardingService.createPortfolioWithAssets.mockResolvedValue({
+        portfolio: { id: "new-port-1", name: "New Growth Portfolio" },
       });
+
+      const result = await service.createPortfolioFromStrategy(userId, "strat-1", createDto);
+
+      expect(result.portfolioId).toBe("new-port-1");
+      expect(result.name).toBe("New Growth Portfolio");
+      expect(mockOnboardingService.createPortfolioWithAssets).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          name: "New Growth Portfolio",
+          initialCapital: 15000,
+          monthlyContribution: 500,
+          assets: expect.arrayContaining([
+            { symbol: "SPY" },
+            { symbol: "GLD" },
+            { symbol: "BTC-USD" },
+          ]),
+          weightAllocationMethod: "manual",
+          targetWeights: sampleConfig.weights,
+          leverageMin: sampleConfig.leverageMin,
+          leverageMax: sampleConfig.leverageMax,
+          leverageTarget: sampleConfig.leverageTarget,
+        }),
+      );
     });
 
-    it("creates new assets and positions for new symbols", async () => {
+    it("allows owner to create portfolio from their own private strategy", async () => {
       mockPrisma.savedStrategy.findUnique.mockResolvedValue({
         ...sampleStrategy,
-        isPublic: true,
+        isPublic: false,
       });
-      mockPrisma.portfolio.findUnique.mockResolvedValue(portfolioForApply);
-      // GLD and BTC-USD are new
-      mockPrisma.asset.findUnique.mockResolvedValue(null);
-      mockPrisma.asset.create.mockImplementation(({ data }: any) =>
-        Promise.resolve({ id: `asset-${data.symbol}`, ...data })
-      );
-      mockPrisma.portfolioPosition.create.mockResolvedValue({});
-      mockPrisma.portfolio.update.mockResolvedValue({});
+      mockOnboardingService.createPortfolioWithAssets.mockResolvedValue({
+        portfolio: { id: "new-port-2", name: "My Portfolio" },
+      });
 
-      const result = await service.applyToPortfolio(userId, "strat-1", "port-1");
+      const result = await service.createPortfolioFromStrategy(userId, "strat-1", createDto);
 
-      // GLD and BTC-USD are new symbols
-      expect(result.addedAssets).toEqual(
-        expect.arrayContaining(["GLD", "BTC-USD"])
-      );
-      expect(result.addedAssets).toHaveLength(2);
-
-      // Should create positions for new assets
-      expect(mockPrisma.portfolioPosition.create).toHaveBeenCalledTimes(2);
+      expect(result.portfolioId).toBe("new-port-2");
     });
 
-    it("keeps existing positions unchanged", async () => {
-      // SPY already exists in portfolio
+    it("allows non-owner to create portfolio from public strategy", async () => {
       mockPrisma.savedStrategy.findUnique.mockResolvedValue({
         ...sampleStrategy,
         isPublic: true,
       });
-      mockPrisma.portfolio.findUnique.mockResolvedValue(portfolioForApply);
-      mockPrisma.asset.findUnique.mockResolvedValue(null);
-      mockPrisma.asset.create.mockImplementation(({ data }: any) =>
-        Promise.resolve({ id: `asset-${data.symbol}`, ...data })
+      mockOnboardingService.createPortfolioWithAssets.mockResolvedValue({
+        portfolio: { id: "new-port-3", name: "New Growth Portfolio" },
+      });
+
+      const result = await service.createPortfolioFromStrategy(otherUserId, "strat-1", createDto);
+
+      expect(result.portfolioId).toBe("new-port-3");
+      expect(mockOnboardingService.createPortfolioWithAssets).toHaveBeenCalledWith(
+        otherUserId,
+        expect.anything(),
       );
-      mockPrisma.portfolioPosition.create.mockResolvedValue({});
-      mockPrisma.portfolio.update.mockResolvedValue({});
-
-      const result = await service.applyToPortfolio(userId, "strat-1", "port-1");
-
-      // SPY should NOT be in addedAssets
-      expect(result.addedAssets).not.toContain("SPY");
     });
 
     it("throws NotFoundException for missing strategy", async () => {
       mockPrisma.savedStrategy.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.applyToPortfolio(userId, "nonexistent", "port-1")
+        service.createPortfolioFromStrategy(userId, "nonexistent", createDto)
       ).rejects.toThrow(NotFoundException);
-    });
-
-    it("throws NotFoundException for missing portfolio", async () => {
-      mockPrisma.savedStrategy.findUnique.mockResolvedValue({
-        ...sampleStrategy,
-        isPublic: true,
-      });
-      mockPrisma.portfolio.findUnique.mockResolvedValue(null);
-
-      await expect(
-        service.applyToPortfolio(userId, "strat-1", "nonexistent")
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it("throws ForbiddenException for non-owner portfolio", async () => {
-      mockPrisma.savedStrategy.findUnique.mockResolvedValue({
-        ...sampleStrategy,
-        isPublic: true,
-      });
-      mockPrisma.portfolio.findUnique.mockResolvedValue({
-        ...portfolioForApply,
-        userId: otherUserId,
-      });
-
-      await expect(
-        service.applyToPortfolio(userId, "strat-1", "port-1")
-      ).rejects.toThrow(ForbiddenException);
     });
 
     it("throws ForbiddenException for private strategy owned by another user", async () => {
@@ -572,7 +531,7 @@ describe("StrategiesService", () => {
       });
 
       await expect(
-        service.applyToPortfolio(userId, "strat-1", "port-1")
+        service.createPortfolioFromStrategy(userId, "strat-1", createDto)
       ).rejects.toThrow(ForbiddenException);
     });
   });

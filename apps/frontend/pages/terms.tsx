@@ -7,7 +7,7 @@ export default function Terms() {
   return (
     <>
       <Head>
-        <title>Términos y Condiciones — Leveraged DCA</title>
+        <title>Términos y Condiciones — Margn</title>
       </Head>
       <div
         style={{
@@ -60,7 +60,7 @@ export default function Terms() {
 
           <Section title="1. Aceptación de los términos">
             <p>
-              Al acceder y utilizar Leveraged DCA (&quot;la Aplicación&quot;),
+              Al acceder y utilizar Margn (&quot;la Aplicación&quot;),
               aceptas quedar vinculado por estos Términos y Condiciones. Si no
               estás de acuerdo con alguna parte de estos términos, no debes
               utilizar la Aplicación.
@@ -69,7 +69,7 @@ export default function Terms() {
 
           <Section title="2. Descripción del servicio">
             <p>
-              Leveraged DCA es una herramienta de gestión de portfolios diseñada
+              Margn es una herramienta de gestión de portfolios diseñada
               para implementar una estrategia de Dollar Cost Averaging (DCA)
               condicional con apalancamiento dinámico. La Aplicación permite:
             </p>
@@ -100,7 +100,7 @@ export default function Terms() {
                 La Aplicación no constituye asesoramiento financiero, fiscal ni
                 de inversión.
               </strong>{" "}
-              Leveraged DCA no es un broker, asesor financiero registrado, ni
+              Margn no es un broker, asesor financiero registrado, ni
               entidad regulada por ningún organismo financiero.
             </p>
             <p>
@@ -207,7 +207,7 @@ export default function Terms() {
           <Section title="7. Propiedad intelectual">
             <p>
               El código fuente, diseño, contenido y algoritmos de la Aplicación
-              son propiedad de Leveraged DCA. Queda prohibida la reproducción,
+              son propiedad de Margn. Queda prohibida la reproducción,
               distribución o modificación no autorizada de cualquier parte de la
               Aplicación.
             </p>
@@ -215,7 +215,7 @@ export default function Terms() {
 
           <Section title="8. Limitación de responsabilidad">
             <p>
-              En la máxima medida permitida por la ley, Leveraged DCA{" "}
+              En la máxima medida permitida por la ley, Margn{" "}
               <strong>no será responsable</strong> por:
             </p>
             <ul>
@@ -285,7 +285,7 @@ export default function Terms() {
               textAlign: "center",
             }}
           >
-            © {new Date().getFullYear()} Leveraged DCA. Todos los derechos
+            © {new Date().getFullYear()} Margn. Todos los derechos
             reservados.
           </div>
         </article>

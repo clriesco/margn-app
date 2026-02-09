@@ -14,10 +14,8 @@ import {
   getPublicStrategies,
   PublicStrategySummary,
 } from "../../lib/api";
-import {
-  usePortfolios,
-  invalidatePortfolioCache,
-} from "../../lib/hooks/use-portfolio-data";
+import { usePortfolio } from "../../contexts/PortfolioContext";
+import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
 import {
   Rocket,
   TrendingUp,
@@ -55,7 +53,7 @@ import {
 export default function Onboarding() {
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
-  const { portfolios, isLoading: portfoliosLoading } = usePortfolios();
+  const { setActivePortfolioId, refreshPortfolios } = usePortfolio();
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -130,13 +128,6 @@ export default function Onboarding() {
       router.push("/");
     }
   }, [user, loading, router]);
-
-  // Redirect to dashboard if user already has portfolios
-  useEffect(() => {
-    if (!loading && !portfoliosLoading && user && portfolios.length > 0) {
-      router.push("/dashboard");
-    }
-  }, [user, loading, portfoliosLoading, portfolios.length, router]);
 
   // Load risk profiles on mount
   useEffect(() => {
@@ -457,6 +448,13 @@ export default function Onboarding() {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
+      // Set the new portfolio as active and refresh list
+      const newPortfolioId = finalResult?.portfolio?.id;
+      if (newPortfolioId) {
+        refreshPortfolios();
+        setActivePortfolioId(newPortfolioId);
+      }
+
       router.replace("/dashboard");
     } catch (err) {
       setError(
@@ -516,7 +514,7 @@ export default function Onboarding() {
     setWeightMethod("sharpe");
   };
 
-  if (loading || portfoliosLoading) {
+  if (loading) {
     return (
       <div style={containerStyle}>
         <p style={{ color: "var(--text-muted)" }}>Cargando...</p>
@@ -528,23 +526,13 @@ export default function Onboarding() {
     return null;
   }
 
-  if (portfolios.length > 0) {
-    return (
-      <div style={containerStyle}>
-        <p style={{ color: "var(--text-muted)" }}>
-          Redirigiendo al dashboard...
-        </p>
-      </div>
-    );
-  }
-
   // Determine current step label for rendering
   const currentStepLabel = getStepContent(currentStep);
 
   return (
     <>
       <Head>
-        <title>Configurar Portfolio - Leveraged DCA App</title>
+        <title>Configurar Portfolio - Margn</title>
       </Head>
       <div style={containerStyle}>
         {/* Logout button */}

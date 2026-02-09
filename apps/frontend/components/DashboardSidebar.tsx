@@ -21,7 +21,9 @@ import {
   Moon,
   Bookmark,
 } from "lucide-react";
+import { usePortfolio } from "../contexts/PortfolioContext";
 import { useTheme } from "../contexts/ThemeContext";
+import PortfolioSelector from "./PortfolioSelector";
 import TopBar from "./TopBar";
 
 /**
@@ -50,15 +52,14 @@ function useMediaQuery(query: string): boolean {
  */
 interface DashboardSidebarProps {
   children: ReactNode;
-  portfolioId: string | null;
 }
 
 export default function DashboardSidebar({
   children,
-  portfolioId,
 }: DashboardSidebarProps) {
   const router = useRouter();
   const { signOut } = useAuth();
+  const { activePortfolioId: portfolioId } = usePortfolio();
   const { theme, toggleTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -291,11 +292,14 @@ export default function DashboardSidebar({
                   e.currentTarget.style.color = "var(--text-primary)";
                 }}
               >
-                DCA App
+                Margn
               </a>
             )}
           </div>
         </div>
+
+        {/* Portfolio Selector */}
+        <PortfolioSelector isCollapsed={isCollapsed && !isMobile} />
 
         {/* Navigation Items */}
         <div
@@ -482,7 +486,6 @@ export default function DashboardSidebar({
 
       {/* Top Bar */}
       <TopBar
-        portfolioId={portfolioId}
         isMobile={isMobile}
         sidebarCollapsed={isCollapsed}
       />
@@ -513,7 +516,7 @@ export default function DashboardSidebar({
             color: "var(--text-dim)",
           }}
         >
-          <span>&copy; {new Date().getFullYear()} Leveraged DCA</span>
+          <span>&copy; {new Date().getFullYear()} Margn</span>
           <span>·</span>
           <Link
             href="/terms"
