@@ -2,8 +2,8 @@ name: Daily Jobs
 
 on:
   schedule:
-    # Run all update scripts every 30 minutes
-    - cron: "*/30 * * * *"
+    # Run all update scripts every hour
+    - cron: "0 * * * *"
   workflow_dispatch:
     inputs:
       job:

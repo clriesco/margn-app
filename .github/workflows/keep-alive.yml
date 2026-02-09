@@ -1,9 +1,7 @@
 name: Keep Alive
 
 on:
-  schedule:
-    # Run every 10 minutes to keep Render services awake
-    - cron: "*/10 * * * *"
+  # schedule disabled — Render services no longer need keep-alive pings
   workflow_dispatch: # Allow manual trigger
 
 jobs:
