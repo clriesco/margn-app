@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Pencil } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import DashboardSidebar from '../../../components/DashboardSidebar';
+import StrategyAIAnalysis from '../../../components/StrategyAIAnalysis';
 import { scoreColor } from '../../../lib/backtest/scoring';
 import { formatNumberES } from '../../../lib/number-format';
 import { getPortfoliosByEmail, updateStrategyVisibility } from '../../../lib/api';
@@ -39,6 +40,7 @@ interface StrategyDetail {
   isPlatform?: boolean;
   riskProfileId?: string | null;
   description?: string | null;
+  aiAnalysis?: string | null;
   isOwner?: boolean;
   config: {
     symbols: string[];
@@ -944,6 +946,15 @@ export default function StrategyDetailPage() {
                     </table>
                   </div>
                 </div>
+                )}
+
+                {/* AI Analysis */}
+                {strategy.metrics && (
+                  <StrategyAIAnalysis
+                    strategyId={strategy.id}
+                    existingAnalysis={strategy.aiAnalysis || null}
+                    isOwner={strategy.isOwner !== false}
+                  />
                 )}
 
                 {/* Apply section */}

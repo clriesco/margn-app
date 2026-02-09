@@ -7,15 +7,18 @@ import {
   Body,
   Param,
   Query,
+  Res,
   UseGuards,
   Request,
 } from '@nestjs/common';
 import { IsOptional, IsString, MinLength } from 'class-validator';
+import { Response } from 'express';
 
 import { AuthGuard } from '../auth/auth.guard';
 
 import { CreateStrategyDto, UpdateVisibilityDto } from './dto/create-strategy.dto';
 import { StrategiesService } from './strategies.service';
+import { StrategyAnalysisService } from './strategy-analysis.service';
 
 class UpdateStrategyDto {
   @IsOptional()
@@ -31,7 +34,10 @@ class UpdateStrategyDto {
 @Controller('strategies')
 @UseGuards(AuthGuard)
 export class StrategiesController {
-  constructor(private readonly strategiesService: StrategiesService) {}
+  constructor(
+    private readonly strategiesService: StrategiesService,
+    private readonly strategyAnalysisService: StrategyAnalysisService,
+  ) {}
 
   @Post()
   async create(@Request() req: any, @Body() dto: CreateStrategyDto) {
@@ -86,6 +92,37 @@ export class StrategiesController {
   @Delete(':id')
   async delete(@Request() req: any, @Param('id') id: string) {
     return this.strategiesService.delete(req.user.id, id);
+  }
+
+  @Post(':id/analyze')
+  async analyzeStrategy(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    // Verify access before streaming
+    await this.strategiesService.findOne(req.user.id, id);
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    try {
+      const stream = this.strategyAnalysisService.streamAnalysis(id);
+
+      for await (const text of stream) {
+        res.write(`data: ${JSON.stringify({ text })}\n\n`);
+      }
+
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to generate analysis';
+      res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+      res.end();
+    }
   }
 
   @Post(':id/apply/:portfolioId')

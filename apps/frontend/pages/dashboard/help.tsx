@@ -170,8 +170,8 @@ export default function Help() {
             icon={PlayCircle}
           >
             <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
-              Cuando creas tu cuenta por primera vez, necesitas configurar tu
-              portfolio. Este proceso solo se hace una vez.
+              Cuando creas tu cuenta por primera vez, un asistente de
+              configuración te guía paso a paso para crear tu portfolio.
             </p>
 
             <StepList>
@@ -180,43 +180,40 @@ export default function Help() {
                 mágico que recibirás por correo.
               </Step>
               <Step number={2}>
-                <strong>Configura tu portfolio</strong> en la página de
-                Configuración:
+                <strong>Selecciona tu perfil de riesgo:</strong> El asistente
+                te presenta cuatro perfiles predefinidos:
                 <ul style={{ marginTop: "0.75rem", paddingLeft: "1.5rem" }}>
-                  <li>
-                    <strong>Capital inicial:</strong> El dinero con el que
-                    empiezas
-                  </li>
-                  <li>
-                    <strong>Leverage:</strong> Rango entre 2.5x y 4.0x (por
-                    defecto 3.0x)
-                  </li>
-                  <li>
-                    <strong>Pesos objetivo:</strong> Distribución deseada de
-                    activos (debe sumar 100%)
-                  </li>
-                  <li>
-                    <strong>Aportación mensual:</strong> Cantidad que
-                    contribuirás cada mes
-                  </li>
+                  <li><strong>Conservador:</strong> Leverage 1.5x-2.5x, menor volatilidad</li>
+                  <li><strong>Moderado:</strong> Leverage 2x-3x, balance riesgo/retorno</li>
+                  <li><strong>Crecimiento:</strong> Leverage 2.5x-3.5x, mayor exposición</li>
+                  <li><strong>Agresivo:</strong> Leverage 3x-4.5x, máximo potencial</li>
                 </ul>
               </Step>
               <Step number={3}>
+                <strong>Elige una estrategia:</strong> Puedes elegir entre
+                estrategias de la plataforma (pre-configuradas y con backtest)
+                o crear una personalizada con tus propios activos y pesos.
+              </Step>
+              <Step number={4}>
+                <strong>Configura los parámetros básicos:</strong>
+                <ul style={{ marginTop: "0.75rem", paddingLeft: "1.5rem" }}>
+                  <li><strong>Capital inicial:</strong> El dinero con el que empiezas</li>
+                  <li><strong>Aportación mensual:</strong> Cantidad que contribuirás cada mes</li>
+                  <li><strong>Día de aportación:</strong> Día del mes para la contribución</li>
+                </ul>
+              </Step>
+              <Step number={5}>
+                <strong>Verifica el resumen</strong> y confirma. El sistema
+                creará tu portfolio con toda la configuración y descargará
+                el histórico de precios de tus activos.
+              </Step>
+              <Step number={6}>
                 <strong>Registra tus posiciones iniciales</strong> en{" "}
                 <em>Actualización Manual</em>:
                 <ul style={{ marginTop: "0.75rem", paddingLeft: "1.5rem" }}>
                   <li>Equity actual (capital disponible)</li>
                   <li>Cantidad de cada activo que posees</li>
                   <li>Precio medio de compra de cada activo</li>
-                </ul>
-              </Step>
-              <Step number={4}>
-                <strong>Verifica el dashboard</strong> para asegurarte de que
-                todo está correcto. El sistema calculará automáticamente:
-                <ul style={{ marginTop: "0.75rem", paddingLeft: "1.5rem" }}>
-                  <li>Exposición total</li>
-                  <li>Leverage actual</li>
-                  <li>Pesos actuales vs. objetivos</li>
                 </ul>
               </Step>
             </StepList>
@@ -1102,6 +1099,30 @@ export default function Help() {
               ))}
             </div>
 
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: "600",
+                color: "var(--text-primary)",
+                marginTop: "1.5rem",
+                marginBottom: "0.75rem",
+              }}
+            >
+              Score y Análisis IA
+            </h3>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
+              Después de ejecutar un backtest, el sistema calcula un{" "}
+              <strong>score compuesto (0-100)</strong> que evalúa la calidad de
+              la estrategia en cuatro dimensiones: consistencia, riesgo/retorno,
+              Sharpe y drawdown.
+            </p>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
+              También puedes generar un <strong>Análisis IA</strong> que conecta
+              los resultados numéricos con eventos macro y ciclos de mercado
+              específicos del período evaluado, proporcionando contexto y
+              recomendaciones accionables.
+            </p>
+
             <div
               style={{
                 background: "rgba(59, 130, 246, 0.1)",
@@ -1142,9 +1163,88 @@ export default function Help() {
           {/* Section 9: Strategies */}
           <Section id="strategies" title="9. Gestión de Estrategias" icon={Bookmark}>
             <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
-              Las estrategias te permiten guardar configuraciones de backtest para
-              reutilizarlas, compararlas y refinarlas con el tiempo.
+              Las estrategias te permiten guardar configuraciones de backtest,
+              explorar estrategias de la plataforma y de la comunidad, y aplicarlas
+              directamente a tu portfolio.
             </p>
+
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: "600",
+                color: "var(--text-primary)",
+                marginTop: "1.5rem",
+                marginBottom: "0.75rem",
+              }}
+            >
+              Tres pestañas de estrategias
+            </h3>
+            <div
+              style={{
+                display: "grid",
+                gap: "0.75rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              {[
+                {
+                  title: "Mis Estrategias",
+                  description:
+                    "Estrategias que has guardado desde tus propios backtests. Puedes editarlas, hacerlas públicas o eliminarlas.",
+                  color: "#3b82f6",
+                },
+                {
+                  title: "Plataforma",
+                  description:
+                    "Estrategias pre-configuradas por la plataforma, organizadas por perfil de riesgo (Conservador, Moderado, Crecimiento, Agresivo). Incluyen backtest y análisis IA.",
+                  color: "#8b5cf6",
+                },
+                {
+                  title: "Comunidad",
+                  description:
+                    "Estrategias compartidas públicamente por otros usuarios. Puedes ver sus métricas y aplicarlas a tu portfolio.",
+                  color: "#10b981",
+                },
+              ].map((tab, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: "var(--hover-bg)",
+                    border: "1px solid rgba(148, 163, 184, 0.2)",
+                    borderRadius: "8px",
+                    padding: "1rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        background: tab.color,
+                      }}
+                    />
+                    <strong style={{ color: "var(--text-primary)" }}>{tab.title}</strong>
+                  </div>
+                  <p
+                    style={{
+                      color: "var(--text-secondary)",
+                      fontSize: "0.875rem",
+                      margin: 0,
+                    }}
+                  >
+                    {tab.description}
+                  </p>
+                </div>
+              ))}
+            </div>
 
             <h3
               style={{
@@ -1165,8 +1265,8 @@ export default function Help() {
                 Una vez completado, haz clic en <strong>Guardar Estrategia</strong>
               </Step>
               <Step number={3}>
-                Asigna un <strong>nombre descriptivo</strong> (ej: "SPY+GLD
-                Conservador 3x")
+                Asigna un <strong>nombre descriptivo</strong> (ej: &quot;SPY+GLD
+                Conservador 3x&quot;)
               </Step>
               <Step number={4}>
                 Opcionalmente añade una <strong>descripción</strong> explicando
@@ -1186,10 +1286,10 @@ export default function Help() {
                 marginBottom: "0.75rem",
               }}
             >
-              Gestionar estrategias
+              Detalle de estrategia
             </h3>
             <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
-              Desde la página de <strong>Estrategias</strong> puedes:
+              Al hacer clic en una estrategia verás:
             </p>
             <ul
               style={{
@@ -1199,25 +1299,50 @@ export default function Help() {
               }}
             >
               <li>
-                <strong>Ver todas tus estrategias:</strong> Lista con nombre,
-                activos, período y métricas principales
+                <strong>Configuración completa:</strong> Capital, contribución,
+                leverage, pesos y modo de optimización
               </li>
               <li>
-                <strong>Ver detalles:</strong> Haz clic en una estrategia para
-                ver la configuración completa y los resultados del backtest
+                <strong>Trayectorias P10/P50/P90:</strong> Gráfica visual de
+                cómo evolucionó el equity en cada escenario
               </li>
               <li>
-                <strong>Repetir backtest:</strong> Ejecuta de nuevo el backtest
-                con la misma configuración (útil si hay datos nuevos)
+                <strong>Métricas detalladas:</strong> CAGR, Sharpe, drawdown,
+                recovery days, XIRR y score compuesto
               </li>
               <li>
-                <strong>Usar como base:</strong> Crea una nueva estrategia
-                partiendo de una existente y modifica los parámetros
+                <strong>Análisis IA:</strong> Genera un análisis estructural
+                de la estrategia con inteligencia artificial. Se guarda
+                automáticamente para futuras visitas.
               </li>
               <li>
-                <strong>Eliminar:</strong> Borra estrategias que ya no necesites
+                <strong>Nuevo backtest:</strong> Re-ejecuta el backtest con la
+                misma configuración (útil con datos más recientes)
+              </li>
+              <li>
+                <strong>Aplicar a portfolio:</strong> Actualiza los pesos
+                objetivo de tu portfolio con los de la estrategia y añade
+                activos faltantes
               </li>
             </ul>
+
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: "600",
+                color: "var(--text-primary)",
+                marginTop: "1.5rem",
+                marginBottom: "0.75rem",
+              }}
+            >
+              Visibilidad
+            </h3>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
+              Tus estrategias son <strong>privadas</strong> por defecto. Puedes
+              cambiar la visibilidad a <strong>pública</strong> para que otros
+              usuarios las vean en la pestaña de Comunidad. Haz clic en la
+              etiqueta &quot;Privada&quot;/&quot;Pública&quot; en el detalle de la estrategia.
+            </p>
 
             <div
               style={{
@@ -1255,15 +1380,15 @@ export default function Help() {
                     }}
                   >
                     <li>
-                      Nombra las estrategias de forma descriptiva (activos +
-                      característica principal)
+                      Explora las estrategias de plataforma como punto de partida
                     </li>
                     <li>
-                      Prueba múltiples combinaciones de activos y leverage
-                    </li>
-                    <li>
-                      Compara el Sharpe ratio entre estrategias, no solo el
+                      Compara el Sharpe ratio y score entre estrategias, no solo el
                       retorno
+                    </li>
+                    <li>
+                      Usa el análisis IA para entender las fortalezas y riesgos
+                      de cada estrategia
                     </li>
                     <li>
                       Presta atención al max drawdown para evaluar el riesgo real

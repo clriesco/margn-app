@@ -180,6 +180,7 @@ export class StrategiesService {
       isPlatform: strategy.isPlatform,
       riskProfileId: strategy.riskProfileId,
       description: strategy.description,
+      aiAnalysis: strategy.aiAnalysis || null,
       isOwner: strategy.userId === userId,
       config: JSON.parse(strategy.configJson),
       metrics: strategy.metricsJson

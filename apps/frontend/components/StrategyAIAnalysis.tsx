@@ -1,79 +1,24 @@
-import React, { useState, useCallback, useImperativeHandle, forwardRef } from 'react';
-import type { BacktestResult, WindowMetrics, WindowTrajectory } from '../../lib/backtest/types';
-import { renderMarkdown } from '../../lib/render-markdown';
-
-interface Props {
-  result: BacktestResult;
-}
-
-export type ExplanationState = 'idle' | 'streaming' | 'complete' | 'error';
-
-export interface BacktestExplanationHandle {
-  generate: () => void;
-  state: ExplanationState;
-}
+import React, { useState, useCallback } from 'react';
+import { renderMarkdown } from '../lib/render-markdown';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
 
-// Sanitize numbers with meaningful clamping
-const sanitize = {
-  returnPct: (v: number): number => {
-    if (!Number.isFinite(v)) return v < 0 ? -1 : 100;
-    return Math.max(-1, Math.min(100, v));
-  },
-  cagr: (v: number): number => {
-    if (!Number.isFinite(v)) return v < 0 ? -1 : 10;
-    return Math.max(-1, Math.min(10, v));
-  },
-  sharpe: (v: number): number => {
-    if (!Number.isFinite(v)) return 0;
-    return Math.max(-10, Math.min(10, v));
-  },
-  leverage: (v: number): number => {
-    if (!Number.isFinite(v)) return 0;
-    return Math.max(0, Math.min(100, v));
-  },
-  num: (v: number): number => (Number.isFinite(v) ? v : 0),
-};
+type AnalysisState = 'idle' | 'streaming' | 'complete' | 'error';
 
-// Get equity at end of each month for monthly returns
-function getMonthlyEquityReturns(trajectory: WindowTrajectory): Record<string, number> {
-  const { states } = trajectory;
-  if (!states || states.length === 0) return {};
-
-  const monthEndStates: Record<string, { equity: number; date: string }> = {};
-
-  for (const state of states) {
-    const month = state.date.substring(0, 7);
-    monthEndStates[month] = { equity: state.equity, date: state.date };
-  }
-
-  const months = Object.keys(monthEndStates).sort();
-  const monthlyReturns: Record<string, number> = {};
-
-  for (let i = 1; i < months.length; i++) {
-    const prevMonth = months[i - 1];
-    const currMonth = months[i];
-    const prevEquity = monthEndStates[prevMonth].equity;
-    const currEquity = monthEndStates[currMonth].equity;
-
-    if (prevEquity > 0) {
-      const ret = (currEquity - prevEquity) / prevEquity;
-      monthlyReturns[currMonth] = sanitize.returnPct(ret);
-    }
-  }
-
-  return monthlyReturns;
+interface Props {
+  strategyId: string;
+  existingAnalysis: string | null;
+  isOwner: boolean;
 }
 
-const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ result }, ref) => {
-  const [state, setState] = useState<ExplanationState>('idle');
-  const [explanation, setExplanation] = useState('');
+export default function StrategyAIAnalysis({ strategyId, existingAnalysis, isOwner }: Props) {
+  const [state, setState] = useState<AnalysisState>(existingAnalysis ? 'complete' : 'idle');
+  const [analysis, setAnalysis] = useState(existingAnalysis || '');
   const [error, setError] = useState<string | null>(null);
 
-  const generateExplanation = useCallback(async () => {
+  const generateAnalysis = useCallback(async () => {
     setState('streaming');
-    setExplanation('');
+    setAnalysis('');
     setError(null);
 
     const token = localStorage.getItem('supabase_token');
@@ -83,63 +28,12 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
       return;
     }
 
-    const buildScenario = (s: WindowMetrics) => {
-      const trajectory = result.trajectories[s.windowIndex];
-      const monthlyReturns = trajectory ? getMonthlyEquityReturns(trajectory) : {};
-
-      return {
-        startDate: s.startDate,
-        endDate: s.endDate,
-        finalCapital: sanitize.num(s.finalCapital),
-        totalContributed: sanitize.num(s.totalContributed),
-        returnPercent: sanitize.returnPct(s.returnPercent),
-        cagr: sanitize.cagr(s.cagr),
-        sharpe: sanitize.sharpe(s.sharpe),
-        maxDrawdownEquity: sanitize.returnPct(s.maxDrawdownEquity),
-        recoveryDays: sanitize.num(s.recoveryDays),
-        underwaterDays: sanitize.num(s.underwaterDays),
-        finalLeverage: sanitize.leverage(s.finalLeverage),
-        monthlyReturns,
-      };
-    };
-
-    const payload = {
-      weights: result.weightsUsed,
-      scenarios: {
-        p10: buildScenario(result.p10),
-        p50: buildScenario(result.p50),
-        p90: buildScenario(result.p90),
-      },
-      config: {
-        initialCapital: sanitize.num(result.config.initialCapital),
-        monthlyContribution: sanitize.num(result.config.monthlyContribution),
-        leverageMin: sanitize.num(result.config.leverageMin),
-        leverageMax: sanitize.num(result.config.leverageMax),
-        leverageTarget: sanitize.num(result.config.leverageTarget),
-        windowMonths: sanitize.num(result.config.windowMonths),
-        totalWindows: sanitize.num(result.totalWindows),
-        marginCallCount: sanitize.num(result.marginCallCount),
-        // Strategy configuration
-        weightMode: result.config.weightMode || 'manual',
-        dynamicWeights: result.config.dynamicWeights || false,
-        dynamicWeightsLookback: result.config.dynamicWeightsLookback || 12,
-        meanReturnShrinkage: sanitize.num(result.config.meanReturnShrinkage),
-        riskFreeRate: sanitize.num(result.config.riskFreeRate),
-        maxWeight: sanitize.num(result.config.maxWeight),
-        minWeight: sanitize.num(result.config.minWeight),
-        maintenanceMarginRatio: sanitize.num(result.config.maintenanceMarginRatio),
-      },
-      excludedSymbols: result.excludedSymbols,
-    };
-
     try {
-      const response = await fetch(`${API_BASE_URL}/backtest/explain`, {
+      const response = await fetch(`${API_BASE_URL}/strategies/${strategyId}/analyze`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -173,7 +67,7 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
             try {
               const parsed = JSON.parse(data);
               if (parsed.text) {
-                setExplanation((prev) => prev + parsed.text);
+                setAnalysis((prev) => prev + parsed.text);
               } else if (parsed.error) {
                 throw new Error(parsed.error);
               }
@@ -189,13 +83,12 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
       setError(err instanceof Error ? err.message : 'Error desconocido');
       setState('error');
     }
-  }, [result]);
+  }, [strategyId]);
 
-  // Expose methods to parent
-  useImperativeHandle(ref, () => ({
-    generate: generateExplanation,
-    state,
-  }), [generateExplanation, state]);
+  // Don't render anything if no existing analysis and not owner
+  if (!existingAnalysis && !isOwner) {
+    return null;
+  }
 
   return (
     <div
@@ -203,13 +96,12 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
         background: 'var(--bg-card)',
         border: '1px solid var(--border)',
         borderRadius: '8px',
-        padding: '1.5rem',
-        marginTop: '1.5rem',
+        padding: '1.25rem',
         marginBottom: '1.5rem',
       }}
     >
       <div
-        className="explanation-header"
+        className="analysis-header"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -223,23 +115,23 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
             style={{
               color: 'var(--text-primary)',
               fontWeight: '600',
-              fontSize: '1.125rem',
+              fontSize: '1rem',
               margin: 0,
             }}
           >
             Análisis IA
           </h3>
           {state === 'idle' && (
-            <p className="explanation-subtitle" style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
-              Genera una explicación de los resultados con inteligencia artificial
+            <p className="analysis-subtitle" style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
+              Genera un análisis estructural de esta estrategia con inteligencia artificial
             </p>
           )}
         </div>
 
-        {state === 'idle' && (
+        {state === 'idle' && isOwner && (
           <button
-            onClick={generateExplanation}
-            className="explanation-btn"
+            onClick={generateAnalysis}
+            className="analysis-btn"
             style={{
               padding: '0.625rem 1rem',
               background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
@@ -261,28 +153,28 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            Explicar con IA
+            Generar análisis
           </button>
         )}
 
         <style jsx>{`
           @media (max-width: 768px) {
-            .explanation-header {
+            .analysis-header {
               flex-direction: column !important;
               align-items: stretch !important;
             }
-            .explanation-subtitle {
+            .analysis-subtitle {
               display: none !important;
             }
-            .explanation-btn {
+            .analysis-btn {
               width: 100% !important;
             }
           }
         `}</style>
 
-        {state === 'complete' && (
+        {state === 'complete' && isOwner && (
           <button
-            onClick={generateExplanation}
+            onClick={generateAnalysis}
             style={{
               padding: '0.5rem 1rem',
               background: 'var(--hover-bg)',
@@ -306,7 +198,7 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
         )}
       </div>
 
-      {state === 'streaming' && explanation === '' && (
+      {state === 'streaming' && analysis === '' && (
         <div
           style={{
             display: 'flex',
@@ -326,23 +218,23 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
               animation: 'spin 1s linear infinite',
             }}
           />
-          Generando explicación...
+          Generando análisis...
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
 
-      {(state === 'streaming' || state === 'complete') && explanation && (
+      {(state === 'streaming' || state === 'complete') && analysis && (
         <div
           style={{
             color: 'var(--text-secondary)',
             fontSize: '0.9375rem',
             lineHeight: '1.7',
           }}
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(explanation) }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(analysis) }}
         />
       )}
 
-      {state === 'streaming' && explanation && (
+      {state === 'streaming' && analysis && (
         <div
           style={{
             display: 'inline-block',
@@ -373,7 +265,7 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
         >
           <span>{error}</span>
           <button
-            onClick={generateExplanation}
+            onClick={generateAnalysis}
             style={{
               padding: '0.375rem 0.75rem',
               background: 'rgba(239, 68, 68, 0.2)',
@@ -390,8 +282,4 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
       )}
     </div>
   );
-});
-
-BacktestExplanation.displayName = 'BacktestExplanation';
-
-export default BacktestExplanation;
+}

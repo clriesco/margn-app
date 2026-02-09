@@ -284,6 +284,9 @@ model SavedStrategy {
   // { p10: [{ date, equity }, ...], p50: [...], p90: [...] }
   trajectoriesJson String? @map("trajectories_json") @db.Text
 
+  // AI-generated analysis (persisted after first generation)
+  aiAnalysis  String? @map("ai_analysis") @db.Text
+
   // Visibility and type
   isPublic    Boolean @default(false) @map("is_public")
   isPlatform  Boolean @default(false) @map("is_platform")
