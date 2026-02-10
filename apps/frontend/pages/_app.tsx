@@ -5,12 +5,19 @@ import { ClerkTokenProvider } from "../components/ClerkTokenProvider";
 import { PortfolioProvider } from "../contexts/PortfolioContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 
+const clerkPubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
 /**
  * Custom App component with Clerk auth provider
  */
 export default function App({ Component, pageProps }: AppProps) {
+  // Skip ClerkProvider during CI build (no publishableKey available)
+  if (!clerkPubKey) {
+    return <Component {...pageProps} />;
+  }
+
   return (
-    <ClerkProvider {...pageProps}>
+    <ClerkProvider publishableKey={clerkPubKey} {...pageProps}>
       <ClerkTokenProvider>
       <PortfolioProvider>
       <ThemeProvider>
