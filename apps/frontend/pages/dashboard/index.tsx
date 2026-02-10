@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import { LegalDisclaimer } from "../../components/LegalDisclaimer";
@@ -249,12 +249,6 @@ function Dashboard() {
   const analyticsStats = summary?.analytics ?? null;
 
   // All useEffect hooks must be before any conditional returns
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
 
   // Redirect to onboarding if no portfolio found (but not if there was an error)
   useEffect(() => {

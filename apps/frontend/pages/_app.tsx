@@ -1,15 +1,17 @@
 import { AppProps } from "next/app";
 import Head from "next/head";
-import { AuthProvider } from "../contexts/AuthContext";
+import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkTokenProvider } from "../components/ClerkTokenProvider";
 import { PortfolioProvider } from "../contexts/PortfolioContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 
 /**
- * Custom App component with auth provider
+ * Custom App component with Clerk auth provider
  */
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <AuthProvider>
+    <ClerkProvider {...pageProps}>
+      <ClerkTokenProvider>
       <PortfolioProvider>
       <ThemeProvider>
         <Head>
@@ -163,6 +165,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <Component {...pageProps} />
       </ThemeProvider>
       </PortfolioProvider>
-    </AuthProvider>
+      </ClerkTokenProvider>
+    </ClerkProvider>
   );
 }

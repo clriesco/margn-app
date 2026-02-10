@@ -1,7 +1,7 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import { createContribution } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
@@ -26,13 +26,6 @@ export default function Contribution() {
 
   // Check if this is an extra contribution (from recommendations)
   const isExtraContribution = router.query.extra === "true";
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
 
   // Pre-fill amount and note from URL query params (e.g., from recommendations)
   useEffect(() => {
@@ -114,10 +107,6 @@ export default function Contribution() {
         </div>
       </>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (

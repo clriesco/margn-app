@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
   updatePositions,
@@ -145,9 +145,7 @@ export default function ManualUpdate() {
     }
 
     if (!router.isReady || loading) return;
-    if (!user) {
-      router.push("/");
-    } else {
+    if (user) {
       loadPortfolio();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -402,10 +400,6 @@ export default function ManualUpdate() {
         </div>
       </>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (

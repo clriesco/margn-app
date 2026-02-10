@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import type { BacktestResult, WindowMetrics, WindowTrajectory } from '../../lib/backtest/types';
 import { renderMarkdown } from '../../lib/render-markdown';
 
@@ -67,6 +68,7 @@ function getMonthlyEquityReturns(trajectory: WindowTrajectory): Record<string, n
 }
 
 const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ result }, ref) => {
+  const { getToken } = useAuth();
   const [state, setState] = useState<ExplanationState>('idle');
   const [explanation, setExplanation] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +78,7 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
     setExplanation('');
     setError(null);
 
-    const token = localStorage.getItem('supabase_token');
+    const token = await getToken();
     if (!token) {
       setError('No autenticado. Por favor inicia sesión.');
       setState('error');
@@ -189,7 +191,7 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
       setError(err instanceof Error ? err.message : 'Error desconocido');
       setState('error');
     }
-  }, [result]);
+  }, [result, getToken]);
 
   // Expose methods to parent
   useImperativeHandle(ref, () => ({

@@ -1,7 +1,5 @@
 import {
   Controller,
-  Post,
-  Body,
   Get,
   Headers,
   UnauthorizedException,
@@ -10,33 +8,11 @@ import {
 import { AuthService } from "./auth.service";
 
 /**
- * Authentication controller for passwordless login
+ * Authentication controller
  */
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
-
-  /**
-   * Send magic link to user email
-   * POST /api/auth/login
-   */
-  @Post("login")
-  async login(@Body("email") email: string) {
-    if (!email) {
-      throw new UnauthorizedException("Email is required");
-    }
-
-    const result = await this.authService.sendMagicLink(email);
-
-    if (!result.success) {
-      throw new UnauthorizedException(result.error);
-    }
-
-    return {
-      message: "Magic link sent to your email",
-      email,
-    };
-  }
 
   /**
    * Verify current session

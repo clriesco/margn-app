@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth } from '@clerk/nextjs';
 import { computeBacktestScore } from '../../lib/backtest/scoring';
 import type { BacktestResult, WindowTrajectory } from '../../lib/backtest/types';
 
@@ -20,6 +21,7 @@ function extractDailyEquity(trajectory: WindowTrajectory): { date: string; equit
 
 export default function SaveStrategyButton({ result }: Props) {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -36,7 +38,7 @@ export default function SaveStrategyButton({ result }: Props) {
     setSaving(true);
     setError(null);
 
-    const token = localStorage.getItem('supabase_token');
+    const token = await getToken();
     if (!token) {
       setError('No autenticado');
       setSaving(false);
@@ -151,7 +153,7 @@ export default function SaveStrategyButton({ result }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [name, description, isPublic, result, router]);
+  }, [name, description, isPublic, result, router, getToken]);
 
   return (
     <>

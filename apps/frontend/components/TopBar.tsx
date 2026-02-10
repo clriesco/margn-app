@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import useSWR from "swr";
-import { useAuth } from "../contexts/AuthContext";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { usePortfolio } from "../contexts/PortfolioContext";
 import { usePortfolioSummary } from "../lib/hooks/use-portfolio-data";
 import { getProfile, UserProfile } from "../lib/api";
@@ -25,13 +25,14 @@ export default function TopBar({
   const leverageMin = summary?.portfolio?.leverageMin;
   const leverageMax = summary?.portfolio?.leverageMax;
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user: clerkUser } = useUser();
+  const { signOut } = useClerk();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch user profile for avatar
   const { data: profile } = useSWR<UserProfile>(
-    user ? "profile" : null,
+    clerkUser ? "profile" : null,
     () => getProfile(),
     { revalidateOnFocus: false }
   );
@@ -68,12 +69,12 @@ export default function TopBar({
       const names = profile.fullName.split(" ");
       return names.map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
     }
-    if (user?.user_metadata?.full_name) {
-      const names = user.user_metadata.full_name.split(" ");
+    if (clerkUser?.fullName) {
+      const names = clerkUser.fullName.split(" ");
       return names.map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
     }
-    if (user?.email) {
-      return user.email[0].toUpperCase();
+    if (clerkUser?.primaryEmailAddress?.emailAddress) {
+      return clerkUser.primaryEmailAddress.emailAddress[0].toUpperCase();
     }
     return "U";
   };
@@ -238,7 +239,7 @@ export default function TopBar({
                   fontWeight: "600",
                 }}
               >
-                {profile?.fullName || user?.user_metadata?.full_name || "Usuario"}
+                {profile?.fullName || clerkUser?.fullName || "Usuario"}
               </div>
               <div
                 style={{
@@ -247,7 +248,7 @@ export default function TopBar({
                   marginTop: "0.125rem",
                 }}
               >
-                {user?.email}
+                {clerkUser?.primaryEmailAddress?.emailAddress}
               </div>
             </div>
 

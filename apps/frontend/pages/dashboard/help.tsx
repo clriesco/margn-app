@@ -1,7 +1,7 @@
 import React from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../lib/auth";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
@@ -27,15 +27,8 @@ import {
  */
 export default function Help() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const { activePortfolioId: portfolioId } = usePortfolio();
-
-  // Redirect if not authenticated
-  React.useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
 
   if (loading) {
     return (
@@ -55,10 +48,6 @@ export default function Help() {
         </div>
       </>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (

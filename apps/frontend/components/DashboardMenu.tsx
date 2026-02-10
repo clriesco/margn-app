@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
-import { useAuth } from "../contexts/AuthContext";
+import { useClerk } from "@clerk/nextjs";
 import {
   Menu,
   DollarSign,
@@ -18,7 +18,7 @@ import {
  */
 export default function DashboardMenu({ portfolioId }: { portfolioId: string | null }) {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut } = useClerk();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleSignOut = async () => {

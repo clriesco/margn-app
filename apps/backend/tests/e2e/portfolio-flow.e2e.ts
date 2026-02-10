@@ -2,18 +2,21 @@
  * E2E Test: Complete Portfolio Flow
  *
  * This test validates the entire portfolio lifecycle:
- * 1. Creates a test user programmatically (via JWT)
+ * 1. Creates a test user directly in DB (bypassing Clerk auth)
  * 2. Creates a portfolio with onboarding
  * 3. Tests contribution, rebalance, manual update, config change flows
  * 4. Runs daily scripts (price-ingestion, metrics-refresh, daily-check)
  * 5. Validates all portfolio metrics (equity, totalInvested, returns, CAGR)
  * 6. Cleans up: deletes the user and all related data
+ *
+ * Auth strategy: Creates a test user in the DB and generates a mock Clerk
+ * session token. The backend AuthService is overridden to accept test tokens
+ * when CLERK_TEST_MODE=true (set automatically by this test).
  */
 
 import { exec } from "child_process";
 import { promisify } from "util";
 import * as path from "path";
-import * as jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 
 const execAsync = promisify(exec);
@@ -21,7 +24,7 @@ const execAsync = promisify(exec);
 // Configuration
 const API_BASE_URL = process.env.API_URL || "http://localhost:3003/api";
 const TEST_EMAIL = `e2e-test-${Date.now()}@test.local`;
-const JWT_SECRET = "test-secret-for-e2e";
+const TEST_CLERK_ID = `test_clerk_${Date.now()}`;
 const INITIAL_CAPITAL = 10000;
 
 // Initialize Prisma
@@ -76,31 +79,12 @@ interface PortfolioSummary {
 }
 
 /**
- * Generate a valid JWT token for the test user
+ * Generate a test token. For E2E tests, the backend must be running with
+ * CLERK_TEST_MODE=true which makes AuthService accept tokens prefixed
+ * with "e2e-test-token:" and extract the clerkId from the token value.
  */
-function generateTestToken(email: string): string {
-  const payload = {
-    iss: "https://test.supabase.co/auth/v1",
-    sub: `test-user-${Date.now()}`,
-    aud: "authenticated",
-    exp: Math.floor(Date.now() / 1000) + 3600,
-    iat: Math.floor(Date.now() / 1000),
-    email: email,
-    phone: "",
-    app_metadata: { provider: "email", providers: ["email"] },
-    user_metadata: {
-      email: email,
-      email_verified: true,
-      phone_verified: false,
-    },
-    role: "authenticated",
-    aal: "aal1",
-    amr: [{ method: "otp", timestamp: Math.floor(Date.now() / 1000) }],
-    session_id: `test-session-${Date.now()}`,
-    is_anonymous: false,
-  };
-
-  return jwt.sign(payload, JWT_SECRET);
+function generateTestToken(): string {
+  return `e2e-test-token:${TEST_CLERK_ID}`;
 }
 
 /**
@@ -231,13 +215,22 @@ describe("E2E: Portfolio Flow", () => {
   beforeAll(async () => {
     console.log(`\n🧪 Setting up test with email: ${TEST_EMAIL}`);
 
-    // Generate JWT token
-    bearerToken = generateTestToken(TEST_EMAIL);
+    // Create test user directly in DB with clerkId
+    const testUser = await prisma.user.create({
+      data: {
+        email: TEST_EMAIL,
+        clerkId: TEST_CLERK_ID,
+      },
+    });
+    testUserId = testUser.id;
 
-    // Verify the token works and creates user
+    // Generate test token
+    bearerToken = generateTestToken();
+
+    // Verify the token works
     const me = await apiRequest("/auth/me");
-    testUserId = me.id;
-    expect(testUserId).toBeDefined();
+    expect(me.id).toBe(testUserId);
+    expect(me.email).toBe(TEST_EMAIL);
 
     // Create portfolio via onboarding
     const portfolio = await apiRequest("/portfolios", {

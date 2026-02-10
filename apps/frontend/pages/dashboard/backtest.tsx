@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../lib/auth';
 import { usePortfolio } from '../../contexts/PortfolioContext';
 import { getBacktestPrices, getPortfolioSummary, getPortfolioConfiguration } from '../../lib/api';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -24,7 +23,6 @@ import type {
 type Stage = 'config' | 'loading-prices' | 'running' | 'results';
 
 export default function BacktestPage() {
-  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { activePortfolioId: portfolioId } = usePortfolio();
   const [stage, setStage] = useState<Stage>('config');
@@ -231,7 +229,6 @@ export default function BacktestPage() {
   }
 
   if (!user) {
-    router.push('/');
     return null;
   }
 

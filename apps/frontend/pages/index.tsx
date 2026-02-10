@@ -1,49 +1,27 @@
-import React, { useState, FormEvent } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Image from "next/image";
-import { useAuth } from "../contexts/AuthContext";
+import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
 import { useTheme } from "../contexts/ThemeContext";
 
 /**
- * Login page with passwordless authentication
+ * Login page — uses Clerk for magic link + Google OAuth
  */
 export default function Home() {
   const router = useRouter();
-  const { user, signIn, loading } = useAuth();
   const { theme } = useTheme();
-  const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const { isSignedIn, isLoaded } = useUser();
 
-  // Redirect to dashboard if already logged in
-  React.useEffect(() => {
-    if (user && !loading) {
+  // Redirect to dashboard if already signed in
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
       router.push("/dashboard");
     }
-  }, [user, loading, router]);
+  }, [isLoaded, isSignedIn, router]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError("");
-    setMessage("");
-
-    try {
-      await signIn(email);
-      setMessage("✓ ¡Enlace mágico enviado! Revisa tu email para iniciar sesión.");
-      setEmail("");
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Error al enviar el enlace mágico"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (loading) {
+  // Loading state
+  if (!isLoaded) {
     return (
       <>
         <Head>
@@ -57,7 +35,32 @@ export default function Home() {
             minHeight: "100vh",
           }}
         >
-          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>Cargando...</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>
+            Cargando...
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  // Already signed in — show redirect
+  if (isSignedIn) {
+    return (
+      <>
+        <Head>
+          <title>Redirigiendo... - Margn</title>
+        </Head>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "100vh",
+          }}
+        >
+          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>
+            Redirigiendo...
+          </p>
         </div>
       </>
     );
@@ -72,6 +75,7 @@ export default function Home() {
           content="Inicia sesión para gestionar tu portfolio apalancado"
         />
       </Head>
+
       <div
         style={{
           display: "flex",
@@ -132,103 +136,61 @@ export default function Home() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <label
-              style={{
-                display: "block",
-                fontWeight: "500",
-                marginBottom: "0.5rem",
-                color: "var(--text-secondary)",
-                fontSize: "0.875rem",
-              }}
-            >
-              Dirección de Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-              disabled={isSubmitting}
-              style={{
-                width: "100%",
-                padding: "0.75rem 1rem",
-                background: "var(--input-bg)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--input-border)",
-                borderRadius: "6px",
-                fontSize: "0.95rem",
-                marginBottom: "1.25rem",
-                transition: "border-color 0.2s, box-shadow 0.2s",
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "#3b82f6";
-                e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.1)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "#334155";
-                e.target.style.boxShadow = "none";
-              }}
-            />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.75rem",
+            }}
+          >
+            <SignInButton mode="modal">
+              <button
+                style={{
+                  width: "100%",
+                  padding: "0.875rem",
+                  background: "var(--accent-blue)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "0.95rem",
+                  fontWeight: "600",
+                  transition: "background 0.2s",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "#2563eb";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "var(--accent-blue)";
+                }}
+              >
+                Iniciar Sesión
+              </button>
+            </SignInButton>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                width: "100%",
-                padding: "0.875rem",
-                background: "var(--accent-blue)",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "0.95rem",
-                fontWeight: "600",
-                opacity: isSubmitting ? 0.7 : 1,
-                transition: "background 0.2s",
-              }}
-              onMouseOver={(e) => {
-                if (!isSubmitting) e.currentTarget.style.background = "#2563eb";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = "#3b82f6";
-              }}
-            >
-              {isSubmitting ? "Enviando..." : "Enviar Enlace de Inicio de Sesión"}
-            </button>
-          </form>
-
-          {message && (
-            <div
-              style={{
-                marginTop: "1rem",
-                padding: "0.75rem",
-                background: "rgba(34, 197, 94, 0.1)",
-                color: "#22c55e",
-                borderRadius: "6px",
-                fontSize: "0.875rem",
-                border: "1px solid rgba(34, 197, 94, 0.2)",
-              }}
-            >
-              {message}
-            </div>
-          )}
-
-          {error && (
-            <div
-              style={{
-                marginTop: "1rem",
-                padding: "0.75rem",
-                background: "rgba(239, 68, 68, 0.1)",
-                color: "#ef4444",
-                borderRadius: "6px",
-                fontSize: "0.875rem",
-                border: "1px solid rgba(239, 68, 68, 0.2)",
-              }}
-            >
-              {error}
-            </div>
-          )}
+            <SignUpButton mode="modal">
+              <button
+                style={{
+                  width: "100%",
+                  padding: "0.875rem",
+                  background: "transparent",
+                  color: "var(--text-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "6px",
+                  fontSize: "0.95rem",
+                  fontWeight: "600",
+                  transition: "background 0.2s",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "var(--hover-bg)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                Crear Cuenta
+              </button>
+            </SignUpButton>
+          </div>
 
           <div
             style={{
@@ -239,7 +201,7 @@ export default function Home() {
             }}
           >
             <p style={{ color: "var(--text-dim)", fontSize: "0.8rem" }}>
-              Autenticación segura sin contraseña
+              Autenticación segura con email o Google
             </p>
           </div>
         </div>

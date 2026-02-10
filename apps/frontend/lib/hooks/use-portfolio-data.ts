@@ -1,5 +1,5 @@
 import useSWR, { mutate } from "swr";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../auth";
 import {
   getPortfoliosByEmail,
   getPortfolioSummary,
