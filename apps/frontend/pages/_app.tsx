@@ -1,6 +1,7 @@
 import { AppProps } from "next/app";
 import Head from "next/head";
 import { ClerkProvider } from "@clerk/nextjs";
+import { esES } from "@clerk/localizations";
 import { ClerkTokenProvider } from "../components/ClerkTokenProvider";
 import { PortfolioProvider } from "../contexts/PortfolioContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
@@ -16,7 +17,7 @@ const clerkPubKey =
  */
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <ClerkProvider publishableKey={clerkPubKey} {...pageProps}>
+    <ClerkProvider publishableKey={clerkPubKey} localization={esES} {...pageProps}>
       <ClerkTokenProvider>
       <PortfolioProvider>
       <ThemeProvider>

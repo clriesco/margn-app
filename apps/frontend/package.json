@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@clerk/localizations": "^3.35.3",
     "@clerk/nextjs": "^6.37.3",
     "lucide-react": "^0.562.0",
     "next": "^14.0.0",
