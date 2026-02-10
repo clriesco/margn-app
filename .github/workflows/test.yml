@@ -103,8 +103,8 @@ jobs:
           cat > apps/backend/.env << EOF
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/leveraged_dca_test
           DIRECT_URL=postgresql://postgres:postgres@localhost:5432/leveraged_dca_test
-          SUPABASE_URL=https://test.supabase.co
-          SUPABASE_ANON_KEY=test-key
+          CLERK_TEST_MODE=true
+          FRONTEND_URL=http://localhost:3002
           API_URL=http://localhost:3003/api
           EOF
 
