@@ -72,7 +72,11 @@ describe("StrategiesService", () => {
       createPortfolioWithAssets: jest.fn(),
     };
 
-    service = new StrategiesService(mockPrisma, mockOnboardingService);
+    const mockStrategyAnalysisService = {
+      streamAnalysis: jest.fn(),
+    };
+
+    service = new StrategiesService(mockPrisma, mockOnboardingService, mockStrategyAnalysisService as any);
   });
 
   // ─────────────────────────────────────────────

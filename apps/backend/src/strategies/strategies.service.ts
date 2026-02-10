@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { CreatePortfolioFromStrategyDto } from './dto/create-portfolio-from-strategy.dto';
 import { CreateStrategyDto } from './dto/create-strategy.dto';
+import { StrategyAnalysisService } from './strategy-analysis.service';
 
 @Injectable()
 export class StrategiesService {
@@ -19,6 +20,7 @@ export class StrategiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly onboardingService: OnboardingService,
+    private readonly strategyAnalysisService: StrategyAnalysisService,
   ) {}
 
   async create(userId: string, dto: CreateStrategyDto) {
@@ -42,11 +44,30 @@ export class StrategiesService {
       },
     });
 
+    // Generate AI analysis in background (fire-and-forget)
+    this.generateAnalysisInBackground(strategy.id);
+
     return {
       id: strategy.id,
       name: strategy.name,
       createdAt: strategy.createdAt,
     };
+  }
+
+  private generateAnalysisInBackground(strategyId: string): void {
+    (async () => {
+      try {
+        // Consume the async generator to trigger full generation + persistence
+        for await (const _ of this.strategyAnalysisService.streamAnalysis(strategyId)) {
+          // discard streamed text — persistence happens inside streamAnalysis
+        }
+        this.logger.log(`AI analysis generated for strategy ${strategyId}`);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to generate AI analysis for strategy ${strategyId}: ${error instanceof Error ? error.message : error}`,
+        );
+      }
+    })();
   }
 
   async findAllByUser(userId: string) {

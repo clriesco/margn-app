@@ -6,8 +6,8 @@ import { Pencil } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import DashboardSidebar from '../../../components/DashboardSidebar';
 import CreatePortfolioModal from '../../../components/strategies/CreatePortfolioModal';
-import StrategyAIAnalysis from '../../../components/StrategyAIAnalysis';
 import { scoreColor } from '../../../lib/backtest/scoring';
+import { renderMarkdown } from '../../../lib/render-markdown';
 import { formatNumberES } from '../../../lib/number-format';
 import { usePortfolio } from '../../../contexts/PortfolioContext';
 import { updateStrategyVisibility } from '../../../lib/api';
@@ -899,13 +899,32 @@ export default function StrategyDetailPage() {
                 </div>
                 )}
 
-                {/* AI Analysis */}
-                {strategy.metrics && (
-                  <StrategyAIAnalysis
-                    strategyId={strategy.id}
-                    existingAnalysis={strategy.aiAnalysis || null}
-                    isOwner={strategy.isOwner !== false}
-                  />
+                {/* AI Analysis (read-only, generated on save) */}
+                {strategy.aiAnalysis && (
+                  <div style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    padding: '1.25rem',
+                    marginBottom: '1.5rem',
+                  }}>
+                    <h3 style={{
+                      color: 'var(--text-primary)',
+                      fontWeight: '600',
+                      fontSize: '1rem',
+                      margin: '0 0 1rem 0',
+                    }}>
+                      Análisis IA
+                    </h3>
+                    <div
+                      style={{
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.9375rem',
+                        lineHeight: '1.7',
+                      }}
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(strategy.aiAnalysis) }}
+                    />
+                  </div>
                 )}
 
                 {/* Actions section */}

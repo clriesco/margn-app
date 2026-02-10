@@ -1,0 +1,72 @@
+name: Backfill AI Analysis
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Which environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+          - both
+      dry_run:
+        description: "List strategies without generating?"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - env_name: staging
+            database_url_secret: DATABASE_URL_STAGING
+          - env_name: production
+            database_url_secret: DATABASE_URL
+    steps:
+      - name: Check if should run
+        id: check
+        run: |
+          INPUT_ENV="${{ github.event.inputs.environment }}"
+          if [ "$INPUT_ENV" = "both" ] || [ "$INPUT_ENV" = "${{ matrix.env_name }}" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.should_run == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.should_run == 'true'
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          npm ci
+          cd infra/scripts && npm ci
+
+      - name: Generate Prisma Client
+        if: steps.check.outputs.should_run == 'true'
+        run: npm --workspace apps/backend run prisma:generate
+
+      - name: Backfill AI analysis (${{ matrix.env_name }})
+        if: steps.check.outputs.should_run == 'true'
+        working-directory: infra/scripts
+        run: npx ts-node backfill-ai-analysis.ts
+        env:
+          DATABASE_URL: ${{ secrets[matrix.database_url_secret] }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
