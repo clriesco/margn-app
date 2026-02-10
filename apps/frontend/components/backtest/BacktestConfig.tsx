@@ -541,8 +541,12 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
                 onChange={() => {
                   update('weightMode', mode);
                   if (mode === 'manual' && config.symbols.length > 0) {
-                    const eq = 1 / config.symbols.length;
-                    setManualWeights(Object.fromEntries(config.symbols.map((s) => [s, eq])));
+                    // Keep existing weights if they match current symbols (e.g. from previous backtest)
+                    const hasMatchingWeights = config.symbols.every((s) => s in manualWeights);
+                    if (!hasMatchingWeights) {
+                      const eq = 1 / config.symbols.length;
+                      setManualWeights(Object.fromEntries(config.symbols.map((s) => [s, eq])));
+                    }
                   }
                 }} style={{ accentColor: '#3b82f6' }} />
               <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.875rem' }}>{label}</span>
