@@ -4,12 +4,13 @@ import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import DashboardSidebar from "../../components/DashboardSidebar";
-import { Recommendation, RecommendationPriority } from "../../lib/api";
+import { LegalDisclaimer } from "../../components/LegalDisclaimer";
+import { Notification, NotificationLevel } from "../../lib/api";
 import {
   usePortfolioSummary,
   usePortfolioMetrics,
   useContributionHistory,
-  usePortfolioRecommendations,
+  usePortfolioNotifications,
 } from "../../lib/hooks/use-portfolio-data";
 import { getProfile, UserProfile } from "../../lib/api";
 import {
@@ -203,10 +204,10 @@ function Dashboard() {
     mutate: refreshMetrics,
   } = usePortfolioMetrics(portfolioId);
   const {
-    recommendations,
-    isLoading: recommendationsLoading,
-    mutate: refreshRecommendations,
-  } = usePortfolioRecommendations(portfolioId);
+    notifications,
+    isLoading: notificationsLoading,
+    mutate: refreshNotifications,
+  } = usePortfolioNotifications(portfolioId);
   const {
     history: contributionHistory,
     isLoading: contributionHistoryLoading,
@@ -226,7 +227,7 @@ function Dashboard() {
     summaryLoading ||
     metricsLoading ||
     contributionHistoryLoading ||
-    recommendationsLoading;
+    notificationsLoading;
   const error = portfoliosError
     ? portfoliosError instanceof Error
       ? portfoliosError.message
@@ -659,7 +660,7 @@ function Dashboard() {
                   ))}
                 </div>
 
-                {/* Recommendations Skeleton */}
+                {/* Notifications Skeleton */}
                 <div
                   style={{
                     background: "var(--bg-card)",
@@ -964,9 +965,9 @@ function Dashboard() {
                   />
                 </div>
 
-                {/* Recommendations Section */}
-                {recommendations &&
-                  recommendations.recommendations.length > 0 && (
+                {/* Notifications Section */}
+                {notifications &&
+                  notifications.notifications.length > 0 && (
                     <div
                       style={{
                         background: "var(--bg-card)",
@@ -992,7 +993,7 @@ function Dashboard() {
                           }}
                         >
                           <Target size={20} />
-                          Recomendaciones
+                          Notificaciones
                         </div>
                       </h2>
 
@@ -1003,14 +1004,20 @@ function Dashboard() {
                           gap: "1rem",
                         }}
                       >
-                        {recommendations.recommendations.map((rec, idx) => (
-                          <DashboardRecommendationCard
+                        {notifications.notifications.map((rec, idx) => (
+                          <DashboardNotificationCard
                             key={`${rec.type}-${idx}`}
-                            recommendation={rec}
+                            notification={rec}
                             router={router}
                             portfolioId={portfolioId}
                           />
                         ))}
+                      </div>
+                      <div style={{ marginTop: "1rem" }}>
+                        <LegalDisclaimer
+                          compact
+                          text="Las notificaciones se generan automáticamente según los parámetros que configuraste. No constituyen asesoramiento financiero."
+                        />
                       </div>
                     </div>
                   )}
@@ -1186,6 +1193,12 @@ function Dashboard() {
                           description={stat.description}
                         />
                       ))}
+                    </div>
+                    <div style={{ marginTop: "1rem" }}>
+                      <LegalDisclaimer
+                        compact
+                        text="Las métricas se calculan a partir de datos históricos y no predicen rendimientos futuros."
+                      />
                     </div>
                   </div>
                 )}
@@ -2361,67 +2374,61 @@ const tableCellStyle: React.CSSProperties = {
 };
 
 /**
- * Priority colors and labels for recommendations
+ * Level colors and labels for notifications
  */
 const PRIORITY_CONFIG: Record<
-  RecommendationPriority,
+  NotificationLevel,
   { color: string; bg: string; border: string; label: string }
 > = {
-  urgent: {
+  attention: {
     color: "#ef4444",
     bg: "rgba(239, 68, 68, 0.1)",
     border: "rgba(239, 68, 68, 0.4)",
-    label: "URGENTE",
+    label: "ATENCION",
   },
-  high: {
+  warning: {
     color: "#f59e0b",
     bg: "rgba(245, 158, 11, 0.1)",
     border: "rgba(245, 158, 11, 0.4)",
-    label: "ALTA",
+    label: "AVISO",
   },
-  medium: {
+  info: {
     color: "#3b82f6",
     bg: "rgba(59, 130, 246, 0.1)",
     border: "rgba(59, 130, 246, 0.4)",
-    label: "MEDIA",
-  },
-  low: {
-    color: "#22c55e",
-    bg: "rgba(34, 197, 94, 0.1)",
-    border: "rgba(34, 197, 94, 0.4)",
-    label: "BAJA",
+    label: "INFO",
   },
 };
 
 /**
- * Type icons for recommendations
+ * Type icons for notifications
  */
 const TYPE_ICONS: Record<
   string,
   React.ComponentType<{ size?: number; color?: string }>
 > = {
-  contribution_due: Calendar,
-  leverage_low: TrendingDown,
-  leverage_high: TrendingUp,
-  deploy_signal: Rocket,
-  rebalance_needed: Scale,
+  contribution_reminder: Calendar,
+  leverage_below_range: TrendingDown,
+  leverage_above_range: TrendingUp,
+  deploy_condition_met: Rocket,
+  rebalance_deviation_detected: Scale,
   in_range: Check,
 };
 
 /**
- * Simplified recommendation card for dashboard
+ * Simplified notification card for dashboard
  */
-function DashboardRecommendationCard({
-  recommendation,
+function DashboardNotificationCard({
+  notification,
   router,
   portfolioId,
 }: {
-  recommendation: Recommendation;
+  notification: Notification;
   router: ReturnType<typeof useRouter>;
   portfolioId: string | null;
 }) {
-  const priorityConfig = PRIORITY_CONFIG[recommendation.priority];
-  const IconComponent = TYPE_ICONS[recommendation.type] || Target;
+  const priorityConfig = PRIORITY_CONFIG[notification.level];
+  const IconComponent = TYPE_ICONS[notification.type] || Target;
 
   return (
     <div
@@ -2452,7 +2459,7 @@ function DashboardRecommendationCard({
                 margin: 0,
               }}
             >
-              {recommendation.title}
+              {notification.title}
             </h3>
           </div>
         </div>
@@ -2472,12 +2479,12 @@ function DashboardRecommendationCard({
 
       {/* Description */}
       <p style={{ color: "var(--text-secondary)", marginBottom: "1rem", lineHeight: "1.5" }}>
-        {recommendation.description}
+        {notification.description}
       </p>
 
       {/* Actions - Purchases (simplified) */}
-      {recommendation.actions?.purchases &&
-        recommendation.actions.purchases.length > 0 && (
+      {notification.actions?.purchases &&
+        notification.actions.purchases.length > 0 && (
           <div
             style={{
               background: "rgba(0,0,0,0.2)",
@@ -2494,7 +2501,7 @@ function DashboardRecommendationCard({
                 fontWeight: "600",
               }}
             >
-              Compras Recomendadas: {recommendation.actions.purchases.length}{" "}
+              Resultado del Calculo: {notification.actions.purchases.length}{" "}
               activos
             </p>
             <p
@@ -2505,15 +2512,15 @@ function DashboardRecommendationCard({
               }}
             >
               Total:{" "}
-              {recommendation.actions.totalPurchaseValue
-                ? formatCurrencyES(recommendation.actions.totalPurchaseValue)
+              {notification.actions.totalPurchaseValue
+                ? formatCurrencyES(notification.actions.totalPurchaseValue)
                 : formatCurrencyES(0)}
             </p>
           </div>
         )}
 
       {/* Actions - Extra Contribution */}
-      {recommendation.actions?.extraContribution && (
+      {notification.actions?.extraContribution && (
         <div
           style={{
             background: "rgba(239, 68, 68, 0.15)",
@@ -2545,14 +2552,14 @@ function DashboardRecommendationCard({
             }}
           >
             {formatCurrencyES(
-              Math.ceil(recommendation.actions.extraContribution.amount)
+              Math.ceil(notification.actions.extraContribution.amount)
             )}
           </p>
         </div>
       )}
 
       {/* Actions - Contribution Reminder */}
-      {recommendation.actions?.contributionReminder && (
+      {notification.actions?.contributionReminder && (
         <div
           style={{
             background: "rgba(59, 130, 246, 0.15)",
@@ -2567,7 +2574,7 @@ function DashboardRecommendationCard({
               style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
             >
               <DollarSign size={16} />
-              Aportación Sugerida
+              Aportacion Calculada
             </div>
           </p>
           <p
@@ -2578,18 +2585,18 @@ function DashboardRecommendationCard({
             }}
           >
             {formatCurrencyES(
-              recommendation.actions.contributionReminder.suggestedAmount
+              notification.actions.contributionReminder.suggestedAmount
             )}
           </p>
         </div>
       )}
 
       {/* Action Button */}
-      {recommendation.actionUrl && (
+      {notification.actionUrl && (
         <div style={{ marginTop: "1rem", textAlign: "right" }}>
           <button
             onClick={() => {
-              let url = recommendation.actionUrl!;
+              let url = notification.actionUrl!;
               if (!url.includes("portfolioId") && portfolioId) {
                 url += url.includes("?")
                   ? `&portfolioId=${portfolioId}`

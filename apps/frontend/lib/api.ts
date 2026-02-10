@@ -276,22 +276,22 @@ export interface RebalanceProposal {
 }
 
 /**
- * Get rebalance proposal for a portfolio
+ * Get rebalance simulation for a portfolio
  */
-export async function getRebalanceProposal(
+export async function getRebalanceSimulation(
   portfolioId: string
 ): Promise<RebalanceProposal> {
-  return fetchAPI(`/portfolios/${portfolioId}/rebalance/proposal`);
+  return fetchAPI(`/portfolios/${portfolioId}/rebalance/simulation`);
 }
 
 /**
- * Accept a rebalance proposal
+ * Apply a rebalance simulation
  */
-export async function acceptRebalanceProposal(
+export async function applyRebalanceSimulation(
   portfolioId: string,
   proposal: RebalanceProposal
 ): Promise<{ success: boolean; message: string }> {
-  return fetchAPI(`/portfolios/${portfolioId}/rebalance/accept`, {
+  return fetchAPI(`/portfolios/${portfolioId}/rebalance/apply`, {
     method: "POST",
     body: JSON.stringify(proposal),
   });
@@ -439,7 +439,7 @@ export async function updatePortfolioConfiguration(
 }
 
 // ============================================
-// PORTFOLIO RECOMMENDATIONS
+// PORTFOLIO NOTIFICATIONS
 // ============================================
 
 /**
@@ -457,23 +457,23 @@ export interface PortfolioCurrentState {
 }
 
 /**
- * Deploy signals
+ * Deploy conditions
  */
-export interface DeploySignals {
+export interface DeployConditions {
   drawdown: number;
   drawdownTriggered: boolean;
   weightDeviation: number;
   weightDeviationTriggered: boolean;
   volatility: number | null;
   volatilityTriggered: boolean;
-  anySignalTriggered: boolean;
+  anyConditionTriggered: boolean;
   deployFraction: number;
 }
 
 /**
- * Purchase recommendation
+ * Purchase calculation
  */
-export interface PurchaseRecommendation {
+export interface PurchaseCalculation {
   assetId: string;
   assetSymbol: string;
   assetName: string;
@@ -485,9 +485,9 @@ export interface PurchaseRecommendation {
 }
 
 /**
- * Extra contribution recommendation
+ * Extra contribution calculation
  */
-export interface ExtraContributionRecommendation {
+export interface ExtraContributionCalculation {
   amount: number;
   currency: string;
   reason: string;
@@ -504,40 +504,39 @@ export interface ContributionReminder {
 }
 
 /**
- * Recommendation actions
+ * Notification actions
  */
-export interface RecommendationActions {
-  purchases?: PurchaseRecommendation[];
+export interface NotificationActions {
+  purchases?: PurchaseCalculation[];
   totalPurchaseValue?: number;
-  extraContribution?: ExtraContributionRecommendation;
+  extraContribution?: ExtraContributionCalculation;
   contributionReminder?: ContributionReminder;
 }
 
-export type RecommendationPriority = "low" | "medium" | "high" | "urgent";
-export type RecommendationType =
-  | "contribution_due"
-  | "leverage_low"
-  | "leverage_high"
-  | "deploy_signal"
-  | "rebalance_needed"
-  | "in_range";
+export type NotificationLevel = "info" | "warning" | "attention";
+export type NotificationType =
+  | "contribution_reminder"
+  | "leverage_below_range"
+  | "leverage_above_range"
+  | "deploy_condition_met"
+  | "rebalance_deviation_detected";
 
 /**
- * Single recommendation
+ * Single notification
  */
-export interface Recommendation {
-  type: RecommendationType;
-  priority: RecommendationPriority;
+export interface Notification {
+  type: NotificationType;
+  level: NotificationLevel;
   title: string;
   description: string;
-  actions?: RecommendationActions;
+  actions?: NotificationActions;
   actionUrl?: string;
 }
 
 /**
- * Full recommendations response
+ * Full notifications response
  */
-export interface PortfolioRecommendationsResponse {
+export interface PortfolioNotificationsResponse {
   portfolioId: string;
   portfolioName: string;
   timestamp: string;
@@ -550,24 +549,24 @@ export interface PortfolioRecommendationsResponse {
     contributionDayOfMonth: number;
     targetWeights: Record<string, number>;
   };
-  signals: DeploySignals;
-  recommendations: Recommendation[];
+  conditions: DeployConditions;
+  notifications: Notification[];
   isContributionDay: boolean;
   nextContributionDate: string | null;
   summary: {
     leverageStatus: "low" | "in_range" | "high";
-    actionRequired: boolean;
-    primaryRecommendation: string | null;
+    attentionRequired: boolean;
+    primaryNotification: string | null;
   };
 }
 
 /**
- * Get portfolio recommendations
+ * Get portfolio notifications
  */
-export async function getPortfolioRecommendations(
+export async function getPortfolioNotifications(
   portfolioId: string
-): Promise<PortfolioRecommendationsResponse> {
-  return fetchAPI(`/portfolios/${portfolioId}/recommendations`);
+): Promise<PortfolioNotificationsResponse> {
+  return fetchAPI(`/portfolios/${portfolioId}/notifications`);
 }
 
 // ============================================
@@ -582,7 +581,7 @@ export interface UserProfile {
   email: string;
   fullName: string | null;
   avatarUrl: string | null;
-  notifyOnRecommendations: boolean;
+  notifyOnNotifications: boolean;
   notifyOnContributions: boolean;
   notifyOnLeverageAlerts: boolean;
   notifyOnRebalance: boolean;
@@ -596,7 +595,7 @@ export interface UserProfile {
 export interface UpdateProfileDto {
   fullName?: string;
   avatarUrl?: string | null;
-  notifyOnRecommendations?: boolean;
+  notifyOnNotifications?: boolean;
   notifyOnContributions?: boolean;
   notifyOnLeverageAlerts?: boolean;
   notifyOnRebalance?: boolean;

@@ -4,11 +4,12 @@ import Head from "next/head";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
-  getRebalanceProposal,
-  acceptRebalanceProposal,
+  getRebalanceSimulation,
+  applyRebalanceSimulation,
   RebalanceProposal,
 } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
+import { LegalDisclaimer } from "../../components/LegalDisclaimer";
 import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
 import { DollarSign, Lightbulb, Brain, ClipboardList } from "lucide-react";
 import {
@@ -43,8 +44,8 @@ function formatQuantity(quantity: number, symbol: string, assetType?: string): s
 }
 
 /**
- * Rebalance page - Shows algorithm-calculated optimal allocation
- * Implements the full rebalancing logic from BacktestHistorical.ipynb
+ * Rebalance page - Shows algorithm-calculated allocation simulation
+ * based on user-defined parameters and market data
  */
 export default function Rebalance() {
   const router = useRouter();
@@ -66,13 +67,13 @@ export default function Rebalance() {
       setError("");
 
       try {
-        // Get rebalance proposal from backend
-        const proposalData = await getRebalanceProposal(portfolioId);
+        // Get rebalance simulation from backend
+        const proposalData = await getRebalanceSimulation(portfolioId);
         setProposal(proposalData);
       } catch (err) {
         console.error("Error calculating proposal:", err);
         setError(
-          err instanceof Error ? err.message : "Error al calcular la propuesta"
+          err instanceof Error ? err.message : "Error al calcular la simulación"
         );
       } finally {
         setIsCalculating(false);
@@ -93,19 +94,19 @@ export default function Rebalance() {
     setError("");
 
     try {
-      await acceptRebalanceProposal(portfolioId, proposal);
+      await applyRebalanceSimulation(portfolioId, proposal);
 
       // Invalidate cache so dashboard shows updated data
       invalidatePortfolioCache(portfolioId, user?.email);
 
-      setMessage("✅ ¡Rebalance aceptado! Nueva composición guardada.");
+      setMessage("✅ Simulación aplicada. Nueva composición guardada.");
 
       setTimeout(() => {
         router.push("/dashboard");
       }, 2000);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error al guardar el rebalance"
+        err instanceof Error ? err.message : "Error al aplicar la simulación"
       );
     } finally {
       setIsSubmitting(false);
@@ -139,7 +140,7 @@ export default function Rebalance() {
   return (
     <>
       <Head>
-        <title>Rebalancear Portfolio - Margn</title>
+        <title>Simulador de Rebalanceo - Margn</title>
       </Head>
       <DashboardSidebar>
         <div style={{ padding: "2rem", paddingTop: "4rem" }}>
@@ -161,12 +162,16 @@ export default function Rebalance() {
                   letterSpacing: "-0.025em",
                 }}
               >
-                Rebalancear Portfolio
+                Simulador de Rebalanceo
               </h1>
               <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                Asignación óptima calculada por algoritmo basada en las
-                condiciones actuales del mercado
+                Cálculo de asignación basado en tus parámetros configurados
+                y datos de mercado
               </p>
+            </div>
+
+            <div style={{ marginBottom: "1.5rem" }}>
+              <LegalDisclaimer text="Esta simulación calcula ajustes teóricos basados en tu configuración y datos de mercado. Los resultados son informativos y no constituyen asesoramiento financiero. Toda operación en tu broker es decisión y responsabilidad tuya." />
             </div>
 
             {isCalculating ? (
@@ -186,10 +191,10 @@ export default function Rebalance() {
                     marginBottom: "1rem",
                   }}
                 >
-                  Calculando asignación óptima...
+                  Calculando simulación...
                 </p>
                 <p style={{ color: "var(--text-on-glass-muted)" }}>
-                  Analizando señales de drawdown, desviación de pesos y
+                  Procesando condiciones de drawdown, desviación de pesos y
                   volatilidad
                 </p>
               </div>
@@ -223,7 +228,7 @@ export default function Rebalance() {
                           margin: 0,
                         }}
                       >
-                        ✅ No es necesario rebalancear
+                        ✅ Sin ajustes necesarios
                       </p>
                       <p
                         style={{
@@ -233,8 +238,8 @@ export default function Rebalance() {
                           margin: 0,
                         }}
                       >
-                        Todos los activos están en su posición correcta y no se
-                        requiere aumentar la exposición.
+                        Según el cálculo, todos los activos están en su posición
+                        configurada y no se requieren ajustes de exposición.
                       </p>
                     </div>
                   ) : null;
@@ -310,7 +315,7 @@ export default function Rebalance() {
                         marginBottom: "1rem",
                       }}
                     >
-                      DESPUÉS DEL REBALANCE
+                      RESULTADO DE LA SIMULACIÓN
                     </h3>
                     <div style={{ marginBottom: "0.5rem" }}>
                       <span style={{ color: "var(--text-on-glass-muted)" }}>
@@ -440,7 +445,7 @@ export default function Rebalance() {
                       }}
                     >
                       <ClipboardList size={20} />
-                      Instrucciones de Rebalance
+                      Ajustes Calculados
                     </div>
                   </h2>
 
@@ -659,8 +664,9 @@ export default function Rebalance() {
                   >
                     <Lightbulb size={16} style={{ flexShrink: 0 }} />
                     <span>
-                      Ejecuta estas operaciones en tu broker, luego haz clic en
-                      &quot;Aceptar&quot; para guardar la nueva composición.
+                      Si decides operar en tu broker, haz clic en
+                      &quot;Aplicar Simulación&quot; para registrar la nueva
+                      composición en Margn.
                     </span>
                   </p>
                 </div>
@@ -705,7 +711,7 @@ export default function Rebalance() {
                           cursor: isDisabled ? "not-allowed" : "pointer",
                         }}
                       >
-                        {isSubmitting ? "Guardando..." : "✓ Aceptar y Guardar"}
+                        {isSubmitting ? "Aplicando..." : "✓ Aplicar Simulación"}
                       </button>
                     </div>
                   );

@@ -90,7 +90,7 @@ export default function DashboardSidebar({
       color: "#34d399",
     },
     {
-      label: "Rebalancear",
+      label: "Simulador",
       icon: Scale,
       path: "/dashboard/rebalance",
       color: "#a5b4fc",
@@ -516,6 +516,9 @@ export default function DashboardSidebar({
             color: "var(--text-dim)",
           }}
         >
+          <span style={{ textAlign: "center" }}>
+            Margn es una herramienta de cálculo y visualización. No constituye asesoramiento financiero.
+          </span>
           <span>&copy; {new Date().getFullYear()} Margn</span>
           <span>·</span>
           <Link

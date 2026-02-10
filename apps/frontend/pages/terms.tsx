@@ -69,21 +69,23 @@ export default function Terms() {
 
           <Section title="2. Descripción del servicio">
             <p>
-              Margn es una herramienta de gestión de portfolios diseñada
-              para implementar una estrategia de Dollar Cost Averaging (DCA)
-              condicional con apalancamiento dinámico. La Aplicación permite:
+              Margn es una <strong>herramienta de cálculo, optimización matemática
+              y visualización de datos financieros</strong> diseñada para analizar
+              estrategias de Dollar Cost Averaging (DCA) condicional con
+              apalancamiento dinámico. La Aplicación permite:
             </p>
             <ul>
-              <li>Crear y gestionar portfolios de inversión apalancados.</li>
+              <li>Configurar y visualizar portfolios de datos financieros.</li>
               <li>
                 Registrar contribuciones y posiciones de forma manual.
               </li>
               <li>
-                Recibir propuestas de rebalanceo basadas en optimización
-                cuantitativa (maximización del ratio Sharpe).
+                Ejecutar simulaciones de rebalanceo basadas en optimización
+                cuantitativa (maximización del ratio Sharpe) con parámetros
+                definidos íntegramente por el usuario.
               </li>
               <li>
-                Monitorizar métricas de rendimiento, apalancamiento y riesgo.
+                Visualizar métricas calculadas de rendimiento, apalancamiento y riesgo.
               </li>
             </ul>
             <p>

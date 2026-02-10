@@ -13,23 +13,23 @@ export interface PortfolioCurrentState {
 }
 
 /**
- * Deploy signals evaluation
+ * Deploy conditions evaluation
  */
-export interface DeploySignals {
+export interface DeployConditions {
   drawdown: number;
   drawdownTriggered: boolean;
   weightDeviation: number;
   weightDeviationTriggered: boolean;
   volatility: number | null;
   volatilityTriggered: boolean;
-  anySignalTriggered: boolean;
+  anyConditionTriggered: boolean;
   deployFraction: number;
 }
 
 /**
- * Purchase recommendation for a single asset
+ * Purchase calculation for a single asset
  */
-export interface PurchaseRecommendation {
+export interface PurchaseCalculation {
   assetId: string;
   assetSymbol: string;
   assetName: string;
@@ -41,9 +41,9 @@ export interface PurchaseRecommendation {
 }
 
 /**
- * Extra contribution recommendation
+ * Extra contribution calculation
  */
-export interface ExtraContributionRecommendation {
+export interface ExtraContributionCalculation {
   amount: number;
   currency: string;
   reason: string;
@@ -60,52 +60,51 @@ export interface ContributionReminder {
 }
 
 /**
- * Recommendation actions based on type
+ * Notification actions based on type
  */
-export interface RecommendationActions {
-  // For leverage_low: specific purchases
-  purchases?: PurchaseRecommendation[];
+export interface NotificationActions {
+  // For leverage_below_range: specific purchases
+  purchases?: PurchaseCalculation[];
   totalPurchaseValue?: number;
 
-  // For leverage_high: extra contribution needed
-  extraContribution?: ExtraContributionRecommendation;
+  // For leverage_above_range: extra contribution needed
+  extraContribution?: ExtraContributionCalculation;
 
-  // For contribution_due: reminder
+  // For contribution_reminder: reminder
   contributionReminder?: ContributionReminder;
 }
 
 /**
- * Priority levels for recommendations
+ * Notification levels
  */
-export type RecommendationPriority = "low" | "medium" | "high" | "urgent";
+export type NotificationLevel = "info" | "warning" | "attention";
 
 /**
- * Recommendation types
+ * Notification types
  */
-export type RecommendationType =
-  | "contribution_due"
-  | "leverage_low"
-  | "leverage_high"
-  | "deploy_signal"
-  | "rebalance_needed"
-  | "in_range";
+export type NotificationType =
+  | "contribution_reminder"
+  | "leverage_below_range"
+  | "leverage_above_range"
+  | "deploy_condition_met"
+  | "rebalance_deviation_detected";
 
 /**
- * Single recommendation
+ * Single notification
  */
-export interface Recommendation {
-  type: RecommendationType;
-  priority: RecommendationPriority;
+export interface Notification {
+  type: NotificationType;
+  level: NotificationLevel;
   title: string;
   description: string;
-  actions?: RecommendationActions;
+  actions?: NotificationActions;
   actionUrl?: string;
 }
 
 /**
- * Full recommendations response
+ * Full notifications response
  */
-export interface PortfolioRecommendationsResponse {
+export interface PortfolioNotificationsResponse {
   portfolioId: string;
   portfolioName: string;
   timestamp: string;
@@ -123,11 +122,11 @@ export interface PortfolioRecommendationsResponse {
     targetWeights: Record<string, number>;
   };
 
-  // Deploy signals
-  signals: DeploySignals;
+  // Deploy conditions
+  conditions: DeployConditions;
 
-  // Recommendations list
-  recommendations: Recommendation[];
+  // Notifications list
+  notifications: Notification[];
 
   // Contribution info
   isContributionDay: boolean;
@@ -136,10 +135,7 @@ export interface PortfolioRecommendationsResponse {
   // Summary
   summary: {
     leverageStatus: "low" | "in_range" | "high";
-    actionRequired: boolean;
-    primaryRecommendation: string | null;
+    attentionRequired: boolean;
+    primaryNotification: string | null;
   };
 }
-
-
-

@@ -884,12 +884,18 @@ export default function StrategyDetailPage() {
                             {row('Capital Aportado', [fmtUsd(strategy.config.initialCapital + m.p10.totalContributed), fmtUsd(strategy.config.initialCapital + m.p50.totalContributed), fmtUsd(strategy.config.initialCapital + m.p90.totalContributed)], neutral, [0, 0, 0], 1)}
                             {row('Retorno %', [fmtPct(m.p10.returnPercent), fmtPct(m.p50.returnPercent), fmtPct(m.p90.returnPercent)], green, [m.p10.returnPercent, m.p50.returnPercent, m.p90.returnPercent], 2)}
                             {row('CAGR', [fmtPct(m.p10.cagr), fmtPct(m.p50.cagr), fmtPct(m.p90.cagr)], green, [m.p10.cagr, m.p50.cagr, m.p90.cagr], 3)}
-                            <tr className="table-row-hoverable" style={{ background: 'var(--hover-bg)', transition: 'background 0.15s ease' }}>
-                              <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 500, borderBottom: '1px solid var(--border)' }}>XIRR</td>
-                              {[m.p10.xirr, m.p50.xirr, m.p90.xirr].map((v, i) => (
-                                <td key={i} style={{ padding: '0.75rem 1rem', textAlign: 'right', color: xirrColor(v), borderBottom: '1px solid var(--border)' }}>{fmtXirr(v)}</td>
-                              ))}
-                            </tr>
+                            {(() => {
+                              const xirrVals: [string, string, string] = [fmtXirr(m.p10.xirr), fmtXirr(m.p50.xirr), fmtXirr(m.p90.xirr)];
+                              const xirrRaw: [number, number, number] = [m.p10.xirr ?? 0, m.p50.xirr ?? 0, m.p90.xirr ?? 0];
+                              return (
+                                <tr className="table-row-hoverable" style={{ background: 4 % 2 === 1 ? 'var(--hover-bg)' : 'transparent', transition: 'background 0.15s ease' }}>
+                                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 500, borderBottom: '1px solid var(--border)' }}>XIRR</td>
+                                  {xirrVals.map((v, i) => (
+                                    <td key={i} style={{ padding: '0.75rem 1rem', textAlign: 'right', color: xirrColor(xirrRaw[i] != null ? xirrRaw[i] : null), borderBottom: '1px solid var(--border)' }}>{v}</td>
+                                  ))}
+                                </tr>
+                              );
+                            })()}
                             {row('Sharpe', [fmtNum(m.p10.sharpe), fmtNum(m.p50.sharpe), fmtNum(m.p90.sharpe)], neutral, [0, 0, 0], 5)}
                             {row('Max Drawdown', [fmtPct(m.p10.maxDrawdownEquity), fmtPct(m.p50.maxDrawdownEquity), fmtPct(m.p90.maxDrawdownEquity)], red, [m.p10.maxDrawdownEquity, m.p50.maxDrawdownEquity, m.p90.maxDrawdownEquity], 6)}
                             {row('Recovery (días)', [fmtDays(m.p10.recoveryDays), fmtDays(m.p50.recoveryDays), fmtDays(m.p90.recoveryDays)], neutral, [0, 0, 0], 7)}

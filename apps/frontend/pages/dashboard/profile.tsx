@@ -24,7 +24,7 @@ export default function Profile() {
 
   const [formData, setFormData] = useState({
     fullName: "",
-    notifyOnRecommendations: true,
+    notifyOnNotifications: true,
     notifyOnContributions: true,
     notifyOnLeverageAlerts: true,
     notifyOnRebalance: true,
@@ -51,7 +51,7 @@ export default function Profile() {
         setProfile(profileData);
         setFormData({
           fullName: profileData.fullName || "",
-          notifyOnRecommendations: profileData.notifyOnRecommendations,
+          notifyOnNotifications: profileData.notifyOnNotifications,
           notifyOnContributions: profileData.notifyOnContributions,
           notifyOnLeverageAlerts: profileData.notifyOnLeverageAlerts,
           notifyOnRebalance: profileData.notifyOnRebalance,
@@ -91,7 +91,7 @@ export default function Profile() {
     try {
       const updated = await updateProfile({
         fullName: formData.fullName || undefined,
-        notifyOnRecommendations: formData.notifyOnRecommendations,
+        notifyOnNotifications: formData.notifyOnNotifications,
         notifyOnContributions: formData.notifyOnContributions,
         notifyOnLeverageAlerts: formData.notifyOnLeverageAlerts,
         notifyOnRebalance: formData.notifyOnRebalance,
@@ -368,9 +368,9 @@ export default function Profile() {
                   >
                     <input
                       type="checkbox"
-                      checked={formData.notifyOnRecommendations}
+                      checked={formData.notifyOnNotifications}
                       onChange={(e) =>
-                        handleInputChange("notifyOnRecommendations", e.target.checked)
+                        handleInputChange("notifyOnNotifications", e.target.checked)
                       }
                       disabled={isSubmitting}
                       style={{
@@ -381,7 +381,7 @@ export default function Profile() {
                     />
                     <div>
                       <div style={{ color: "var(--text-secondary)", fontWeight: "500" }}>
-                        Notificaciones de Recomendaciones
+                        Notificaciones de Estado
                       </div>
                       <div
                         style={{
@@ -390,7 +390,7 @@ export default function Profile() {
                           marginTop: "0.25rem",
                         }}
                       >
-                        Recibe notificaciones cuando haya nuevas recomendaciones para tu portfolio
+                        Recibe notificaciones cuando haya cambios relevantes en el estado de tu portfolio
                       </div>
                     </div>
                   </label>
@@ -492,7 +492,7 @@ export default function Profile() {
                     />
                     <div>
                       <div style={{ color: "var(--text-secondary)", fontWeight: "500" }}>
-                        Notificaciones de Rebalance
+                        Notificaciones de Rebalanceo
                       </div>
                       <div
                         style={{
@@ -501,7 +501,7 @@ export default function Profile() {
                           marginTop: "0.25rem",
                         }}
                       >
-                        Recibe notificaciones cuando se recomiende realizar un rebalance del portfolio
+                        Recibe notificaciones cuando los cálculos detecten desviación en los pesos del portfolio
                       </div>
                     </div>
                   </label>

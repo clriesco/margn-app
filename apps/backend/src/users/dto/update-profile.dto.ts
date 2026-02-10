@@ -22,7 +22,7 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsBoolean()
-  notifyOnRecommendations?: boolean;
+  notifyOnNotifications?: boolean;
 
   @IsOptional()
   @IsBoolean()
@@ -45,7 +45,7 @@ export interface ProfileResponse {
   email: string;
   fullName: string | null;
   avatarUrl: string | null;
-  notifyOnRecommendations: boolean;
+  notifyOnNotifications: boolean;
   notifyOnContributions: boolean;
   notifyOnLeverageAlerts: boolean;
   notifyOnRebalance: boolean;

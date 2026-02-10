@@ -97,8 +97,8 @@ export default function Help() {
               </h1>
             </div>
             <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>
-              Aprende a usar la aplicación y gestiona tu portfolio de forma
-              eficiente
+              Aprende a usar la herramienta de cálculo y visualización de tu
+              portfolio
             </p>
           </div>
 
@@ -136,7 +136,7 @@ export default function Help() {
                 { id: "updates", label: "4. Actualizaciones" },
                 { id: "rebalancing", label: "5. Rebalanceo" },
                 { id: "new-assets", label: "6. Añadir Activos" },
-                { id: "recommendations", label: "7. Recomendaciones" },
+                { id: "recommendations", label: "7. Notificaciones" },
                 { id: "backtest", label: "8. Backtest" },
                 { id: "strategies", label: "9. Estrategias" },
               ].map((item) => (
@@ -227,8 +227,8 @@ export default function Help() {
             icon={Calendar}
           >
             <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
-              La operativa mensual sigue un flujo específico diseñado para
-              mantener tu portfolio optimizado. Aquí está el diagrama del proceso:
+              La operativa mensual sigue un flujo específico. Aquí está el
+              diagrama del proceso:
             </p>
 
             {/* Workflow Diagram */}
@@ -273,10 +273,10 @@ export default function Help() {
                     Importante
                   </p>
                   <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
-                    Las contribuciones se añaden directamente al equity. El
-                    sistema evalúa el <strong>leverage actual</strong> para decidir
-                    si aumentar exposición (si leverage {"<"} mínimo) o mantenerla
-                    constante (si está en rango o por encima).
+                    Las contribuciones se añaden directamente al equity. La
+                    herramienta calcula el <strong>leverage actual</strong> y
+                    muestra si está fuera del rango configurado (por debajo del
+                    mínimo o por encima del máximo).
                   </p>
                 </div>
               </div>
@@ -346,7 +346,7 @@ export default function Help() {
                 {
                   title: "Leverage < Mínimo",
                   description:
-                    "El leverage está por debajo del mínimo configurado. Se aumenta la exposición (reborrow) hasta alcanzar el leverage objetivo.",
+                    "El leverage está por debajo del mínimo configurado. La herramienta calcula cuánta exposición adicional sería necesaria para alcanzar el leverage objetivo.",
                   color: "#eab308",
                 },
                 {
@@ -429,10 +429,10 @@ export default function Help() {
                     Aportación Extra
                   </p>
                   <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
-                    Si el leverage está por encima del máximo (4.0x), el sistema
-                    puede recomendar una aportación extra. Esta aportación se usa
-                    como colateral adicional sin aumentar la exposición, reduciendo
-                    así el leverage.
+                    Si el leverage está por encima del máximo (4.0x), la
+                    herramienta calcula una aportación extra necesaria como
+                    colateral adicional sin aumentar la exposición, lo que
+                    reduciría el leverage.
                   </p>
                 </div>
               </div>
@@ -563,12 +563,12 @@ export default function Help() {
           {/* Section 5: Rebalancing */}
           <Section
             id="rebalancing"
-            title="5. Rebalanceo del Portfolio"
+            title="5. Simulador de Rebalanceo"
             icon={Scale}
           >
             <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
-              El rebalanceo ajusta las posiciones para mantener los pesos
-              objetivo y el leverage dentro del rango deseado.
+              El simulador calcula los ajustes teóricos necesarios para
+              alinear los pesos y el leverage con tu configuración.
             </p>
 
             <h3
@@ -580,14 +580,14 @@ export default function Help() {
                 marginBottom: "0.75rem",
               }}
             >
-              Cómo funciona el rebalanceo
+              Cómo funciona el simulador
             </h3>
             <StepList>
               <Step number={1}>
-                Ve a <strong>Rebalancear Portfolio</strong> en el menú
+                Ve a <strong>Simulador</strong> en el menú
               </Step>
               <Step number={2}>
-                El sistema calcula automáticamente:
+                La herramienta calcula automáticamente:
                 <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
                   <li>Estado actual vs. estado objetivo</li>
                   <li>Leverage actual y si está fuera del rango configurado</li>
@@ -596,11 +596,10 @@ export default function Help() {
                 </ul>
               </Step>
               <Step number={3}>
-                Revisa la propuesta:
+                Revisa el resultado de la simulación:
                 <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
                   <li>
-                    <strong>Instrucciones:</strong> Qué comprar/vender y en qué
-                    cantidad
+                    <strong>Ajustes calculados:</strong> Cantidades por activo
                   </li>
                   <li>
                     <strong>Equity usado:</strong> Cuánto capital se usará
@@ -615,16 +614,16 @@ export default function Help() {
                 </ul>
               </Step>
               <Step number={4}>
-                <strong>Ejecuta las operaciones en tu broker</strong> según las
-                instrucciones
+                Si decides actuar, <strong>ejecuta las operaciones en tu
+                broker</strong>
               </Step>
               <Step number={5}>
                 Vuelve a <strong>Actualización Manual</strong> y actualiza las
                 posiciones con los valores reales
               </Step>
               <Step number={6}>
-                Regresa a <strong>Rebalancear</strong> y haz clic en{" "}
-                <strong>Aceptar y Guardar</strong> para registrar el rebalanceo
+                Regresa a <strong>Simulador</strong> y haz clic en{" "}
+                <strong>Aplicar Simulación</strong> para registrar la composición
               </Step>
             </StepList>
 
@@ -706,13 +705,13 @@ export default function Help() {
                       marginBottom: "0.5rem",
                     }}
                   >
-                    Recomendación
+                    Nota
                   </p>
                   <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
-                    Se recomienda usar la optimización Sharpe desde el principio.
-                    Una vez que el algoritmo sugiera los pesos optimizados, puedes
-                    copiarlos manualmente a los pesos objetivo estáticos si prefieres
-                    mantener un control más directo sobre la asignación.
+                    La optimización Sharpe calcula pesos basándose en datos
+                    históricos. Puedes copiar los pesos calculados a los pesos
+                    estáticos si prefieres mantener un control más directo sobre
+                    la asignación.
                   </p>
                 </div>
               </div>
@@ -813,12 +812,12 @@ export default function Help() {
           {/* Section 7: Recommendations */}
           <Section
             id="recommendations"
-            title="7. Sistema de Recomendaciones"
+            title="7. Sistema de Notificaciones"
             icon={AlertCircle}
           >
             <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
-              El sistema genera recomendaciones automáticas basadas en el estado
-              actual de tu portfolio. Estas aparecen en el dashboard principal.
+              La herramienta genera notificaciones automáticas basadas en los
+              parámetros que configuraste. Estas aparecen en el dashboard principal.
             </p>
 
             <h3
@@ -830,37 +829,37 @@ export default function Help() {
                 marginBottom: "0.75rem",
               }}
             >
-              Tipos de recomendaciones
+              Tipos de notificaciones
             </h3>
             <div style={{ display: "grid", gap: "1rem", marginBottom: "1.5rem" }}>
               {[
                 {
                   type: "Leverage Bajo",
-                  priority: "alta",
+                  priority: "warning",
                   description:
-                    "El leverage está por debajo del mínimo configurado. Necesitas reborrow y comprar más activos para aumentar la exposición.",
-                  action: "Ir a Rebalancear",
+                    "El leverage está por debajo del mínimo configurado. La herramienta calcula cuánta exposición adicional sería necesaria.",
+                  action: "Ir a Simulador",
                   color: "#eab308",
                 },
                 {
                   type: "Leverage Alto",
-                  priority: "urgente",
+                  priority: "attention",
                   description:
-                    "El leverage está por encima del máximo configurado. Necesitas una aportación extra como colateral para reducir el leverage.",
+                    "El leverage está por encima del máximo configurado. La herramienta calcula la aportación extra necesaria como colateral.",
                   action: "Ir a Añadir Aportación (extra)",
                   color: "#ef4444",
                 },
                 {
-                  type: "Rebalanceo Necesario",
-                  priority: "media",
+                  type: "Desviación Detectada",
+                  priority: "info",
                   description:
-                    "Los pesos actuales se desvían significativamente de los objetivos. Considera rebalancear.",
-                  action: "Ir a Rebalancear",
+                    "Los pesos actuales se desvían de los configurados como objetivo.",
+                  action: "Ir a Simulador",
                   color: "#3b82f6",
                 },
                 {
-                  type: "Aportación Debida",
-                  priority: "media",
+                  type: "Recordatorio de Aportación",
+                  priority: "info",
                   description:
                     "Es el día programado para tu aportación mensual.",
                   action: "Ir a Añadir Aportación",
@@ -943,9 +942,9 @@ export default function Help() {
           {/* Section 8: Backtest */}
           <Section id="backtest" title="8. Simulador de Backtest" icon={BarChart3}>
             <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
-              El backtest permite simular cómo habría funcionado tu estrategia de
-              inversión con datos históricos reales. Esto te ayuda a evaluar
-              diferentes configuraciones antes de aplicarlas a tu portfolio real.
+              El backtest permite simular cómo habrían evolucionado los cálculos
+              con datos históricos reales. Esto te permite comparar diferentes
+              configuraciones.
             </p>
 
             <h3
@@ -1120,8 +1119,8 @@ export default function Help() {
             <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
               También puedes generar un <strong>Análisis IA</strong> que conecta
               los resultados numéricos con eventos macro y ciclos de mercado
-              específicos del período evaluado, proporcionando contexto y
-              recomendaciones accionables.
+              específicos del período evaluado, proporcionando contexto
+              histórico.
             </p>
 
             <div
@@ -1381,7 +1380,7 @@ export default function Help() {
                     }}
                   >
                     <li>
-                      Explora las estrategias de plataforma como punto de partida
+                      Explora las estrategias de plataforma como referencia
                     </li>
                     <li>
                       Compara el Sharpe ratio y score entre estrategias, no solo el
@@ -1476,7 +1475,7 @@ export default function Help() {
                   icon: DollarSign,
                 },
                 {
-                  label: "Rebalancear",
+                  label: "Simulador",
                   path: `/dashboard/rebalance?portfolioId=${portfolioId}`,
                   icon: Scale,
                 },
