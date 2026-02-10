@@ -1,14 +1,14 @@
-import React, { useState, useEffect, FormEvent } from "react";
+import React, { useState, useEffect, useRef, FormEvent } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
+import { usePageState } from "../../lib/hooks/use-page-state";
 import {
   getPortfolioConfiguration,
   updatePortfolioConfiguration,
   PortfolioConfiguration,
   TargetWeight,
-  getRiskProfiles,
   RiskProfile,
   RiskProfileId,
   getTargetAssets,
@@ -20,7 +20,7 @@ import {
 } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import { LegalDisclaimer } from "../../components/LegalDisclaimer";
-import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
+import { invalidatePortfolioCache, useRiskProfiles } from "../../lib/hooks/use-portfolio-data";
 import {
   DollarSign,
   BarChart,
@@ -95,25 +95,30 @@ export default function Configuration() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Risk profile state
-  const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([]);
+  // Risk profiles from SWR cache
+  const { riskProfiles, isLoading: isLoadingProfiles } = useRiskProfiles();
   const [selectedRiskProfile, setSelectedRiskProfile] = useState<RiskProfileId | null>(null);
-  const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
 
-  // Load risk profiles on mount
-  useEffect(() => {
-    async function loadRiskProfiles() {
-      try {
-        const profiles = await getRiskProfiles();
-        setRiskProfiles(profiles);
-      } catch (err) {
-        console.error("Failed to load risk profiles:", err);
-      } finally {
-        setIsLoadingProfiles(false);
-      }
-    }
-    loadRiskProfiles();
-  }, []);
+  // Track whether state was restored to prevent API overwrite
+  const wasRestoredRef = useRef(false);
+
+  // Persist form state across navigation
+  const { clear: clearPageState } = usePageState({
+    key: 'configuration',
+    portfolioId,
+    snapshot: () => ({
+      formData,
+      targetWeights,
+      selectedRiskProfile,
+    }),
+    restore: (saved) => {
+      setFormData(saved.formData);
+      setTargetWeights(saved.targetWeights);
+      setSelectedRiskProfile(saved.selectedRiskProfile);
+      wasRestoredRef.current = true;
+    },
+    deps: [formData, targetWeights, selectedRiskProfile],
+  });
 
   // Load portfolio configuration
   useEffect(() => {
@@ -123,6 +128,12 @@ export default function Configuration() {
       try {
         const configData = await getPortfolioConfiguration(portfolioId!);
         setConfig(configData);
+        // Skip overwriting form data if state was restored from sessionStorage
+        if (wasRestoredRef.current) {
+          wasRestoredRef.current = false;
+          setIsLoading(false);
+          return;
+        }
         setFormData({
           monthlyContribution: configData.monthlyContribution || 0,
           contributionFrequency:
@@ -321,6 +332,7 @@ export default function Configuration() {
 
       // Invalidate cache, especially recommendations which depend on configuration
       invalidatePortfolioCache(portfolioId, user?.email);
+      clearPageState();
 
       setMessage("✅ Configuración guardada correctamente");
       setTimeout(() => setMessage(""), 3000);

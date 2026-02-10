@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
+import { usePageState } from "../../lib/hooks/use-page-state";
 import { createContribution } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
@@ -23,6 +24,19 @@ export default function Contribution() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  // Persist form state across navigation
+  const { clear: clearPageState } = usePageState({
+    key: 'contribution',
+    portfolioId,
+    snapshot: () => ({ amount, note, movementType }),
+    restore: (saved) => {
+      setAmount(saved.amount);
+      if (saved.note) setNote(saved.note);
+      setMovementType(saved.movementType);
+    },
+    deps: [amount, note, movementType],
+  });
 
   // Check if this is an extra contribution (from recommendations)
   const isExtraContribution = router.query.extra === "true";
@@ -70,6 +84,7 @@ export default function Contribution() {
 
       // Invalidate cache so dashboard shows updated data
       invalidatePortfolioCache(portfolioId, user?.email);
+      clearPageState();
 
       setMessage(
         movementType === "withdrawal"

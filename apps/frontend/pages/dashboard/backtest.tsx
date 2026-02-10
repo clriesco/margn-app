@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import { useAuth } from '../../lib/auth';
 import { usePortfolio } from '../../contexts/PortfolioContext';
-import { getBacktestPrices, getPortfolioSummary, getPortfolioConfiguration } from '../../lib/api';
+import { usePageState } from '../../lib/hooks/use-page-state';
+import { getBacktestPrices } from '../../lib/api';
+import { usePortfolioSummary, usePortfolioConfiguration } from '../../lib/hooks/use-portfolio-data';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import { LegalDisclaimer } from '../../components/LegalDisclaimer';
-import BacktestConfigForm from '../../components/backtest/BacktestConfig';
+import BacktestConfigForm, { type BacktestConfigHandle } from '../../components/backtest/BacktestConfig';
 import BacktestExplanation, { BacktestExplanationHandle } from '../../components/backtest/BacktestExplanation';
 import BacktestProgress from '../../components/backtest/BacktestProgress';
 import BacktestResults from '../../components/backtest/BacktestResults';
@@ -25,6 +27,8 @@ type Stage = 'config' | 'loading-prices' | 'running' | 'results';
 export default function BacktestPage() {
   const { user, loading: authLoading } = useAuth();
   const { activePortfolioId: portfolioId } = usePortfolio();
+  const { summary } = usePortfolioSummary(portfolioId);
+  const { configuration } = usePortfolioConfiguration(portfolioId);
   const [stage, setStage] = useState<Stage>('config');
   const [progress, setProgress] = useState<ProgressType | null>(null);
   const [result, setResult] = useState<BacktestResult | null>(null);
@@ -49,70 +53,103 @@ export default function BacktestPage() {
   const workerRef = useRef<Worker | null>(null);
   const explanationRef = useRef<BacktestExplanationHandle>(null);
   const strategyLoadedRef = useRef(false);
+  const configFormRef = useRef<BacktestConfigHandle>(null);
 
-  // Load portfolio ID and user defaults (or from strategy if redirected)
-  useEffect(() => {
-    async function load() {
-      // Check if we have strategy config in localStorage (from strategy detail page)
-      // Only process once — prevents double-consumption in React StrictMode
-      // and prevents portfolio loading from overwriting strategy config
-      if (!strategyLoadedRef.current) {
-        const strategyConfigStr = localStorage.getItem('backtest_from_strategy');
-        if (strategyConfigStr) {
-          try {
-            const strategyConfig = JSON.parse(strategyConfigStr);
-            localStorage.removeItem('backtest_from_strategy');
+  // State restored from sessionStorage (passed to BacktestConfigForm as initial values)
+  const [restoredFormState, setRestoredFormState] = useState<{
+    config: import('../../lib/backtest/types').BacktestConfig;
+    manualWeights: Record<string, number>;
+    selectedRiskProfile: import('../../lib/api').RiskProfileId | null;
+  } | null>(null);
 
-            setUserDefaults({
-              symbols: strategyConfig.symbols,
-              weights: strategyConfig.weights,
-              initialCapital: strategyConfig.initialCapital,
-              monthlyContribution: strategyConfig.monthlyContribution,
-              leverageMin: strategyConfig.leverageMin,
-              leverageMax: strategyConfig.leverageMax,
-              leverageTarget: strategyConfig.leverageTarget,
-              windowMonths: strategyConfig.windowMonths,
-              weightMode: strategyConfig.weightMode,
-              dynamicWeights: strategyConfig.dynamicWeights,
-              fromStrategy: strategyConfig.strategyName,
-            });
-            setDefaultsLoaded(true);
-            strategyLoadedRef.current = true;
-            return;
-          } catch { /* ignore parse errors */ }
-        }
+  // Counter bumped by child form changes to trigger save effect
+  const [formVersion, setFormVersion] = useState(0);
+  const handleConfigChange = useCallback(() => setFormVersion(v => v + 1), []);
+
+  // Persist form state across navigation
+  const { clear: clearPageState } = usePageState({
+    key: 'backtest',
+    portfolioId,
+    snapshot: () => {
+      // Read live form state from the BacktestConfigForm ref
+      const formSnap = configFormRef.current?.getSnapshot();
+      return {
+        stage: stage === 'results' ? 'results' as const : 'config' as const,
+        result,
+        priceExcludedSymbols,
+        formState: formSnap ?? null,
+      };
+    },
+    restore: (saved) => {
+      if (saved.stage === 'results' && saved.result) {
+        setStage('results');
+        setResult(saved.result);
+        setDefaultsLoaded(true);
+        strategyLoadedRef.current = true;
       }
+      if (saved.formState) {
+        setRestoredFormState(saved.formState);
+        setDefaultsLoaded(true);
+        strategyLoadedRef.current = true;
+      }
+      if (saved.priceExcludedSymbols) setPriceExcludedSymbols(saved.priceExcludedSymbols);
+    },
+    deps: [stage, result, priceExcludedSymbols, formVersion],
+  });
 
-      // Skip portfolio loading if we already loaded from strategy
-      if (strategyLoadedRef.current) return;
+  // Load defaults from strategy (localStorage) or portfolio (SWR)
+  useEffect(() => {
+    // Check if we have strategy config in localStorage (from strategy detail page)
+    // Only process once — prevents double-consumption in React StrictMode
+    // and prevents portfolio loading from overwriting strategy config
+    if (!strategyLoadedRef.current) {
+      const strategyConfigStr = localStorage.getItem('backtest_from_strategy');
+      if (strategyConfigStr) {
+        try {
+          const strategyConfig = JSON.parse(strategyConfigStr);
+          localStorage.removeItem('backtest_from_strategy');
 
-      // Normal flow: load from portfolio
-      if (!portfolioId) return;
-
-      // Load user's portfolio data for defaults
-      try {
-        const [summary, config] = await Promise.all([
-          getPortfolioSummary(portfolioId),
-          getPortfolioConfiguration(portfolioId),
-        ]);
-        // Extract symbols from user's positions
-        const userSymbols = summary.positions
-          ?.map((p: { asset: { symbol: string } }) => p.asset.symbol)
-          .filter(Boolean) || [];
-
-        setUserDefaults({
-          symbols: userSymbols.length > 0 ? userSymbols : undefined,
-          initialCapital: config.initialCapital,
-          monthlyContribution: config.monthlyContribution ?? undefined,
-          leverageMin: config.leverageMin,
-          leverageMax: config.leverageMax,
-          leverageTarget: config.leverageTarget,
-        });
-      } catch { /* ignore - will use defaults */ }
-      setDefaultsLoaded(true);
+          setUserDefaults({
+            symbols: strategyConfig.symbols,
+            weights: strategyConfig.weights,
+            initialCapital: strategyConfig.initialCapital,
+            monthlyContribution: strategyConfig.monthlyContribution,
+            leverageMin: strategyConfig.leverageMin,
+            leverageMax: strategyConfig.leverageMax,
+            leverageTarget: strategyConfig.leverageTarget,
+            windowMonths: strategyConfig.windowMonths,
+            weightMode: strategyConfig.weightMode,
+            dynamicWeights: strategyConfig.dynamicWeights,
+            fromStrategy: strategyConfig.strategyName,
+          });
+          setDefaultsLoaded(true);
+          strategyLoadedRef.current = true;
+          return;
+        } catch { /* ignore parse errors */ }
+      }
     }
-    if (!authLoading && user) load();
-  }, [user, authLoading, portfolioId]);
+
+    // Skip portfolio loading if we already loaded from strategy
+    if (strategyLoadedRef.current) return;
+
+    // Wait for SWR data to be ready
+    if (!summary || !configuration) return;
+
+    // Extract symbols from user's positions
+    const userSymbols = summary.positions
+      ?.map((p: { asset: { symbol: string } }) => p.asset.symbol)
+      .filter(Boolean) || [];
+
+    setUserDefaults({
+      symbols: userSymbols.length > 0 ? userSymbols : undefined,
+      initialCapital: configuration.initialCapital,
+      monthlyContribution: configuration.monthlyContribution ?? undefined,
+      leverageMin: configuration.leverageMin,
+      leverageMax: configuration.leverageMax,
+      leverageTarget: configuration.leverageTarget,
+    });
+    setDefaultsLoaded(true);
+  }, [summary, configuration]);
 
   // Cleanup worker on unmount
   useEffect(() => {
@@ -299,7 +336,16 @@ export default function BacktestPage() {
               </div>
             )}
             {stage === 'config' && defaultsLoaded && (
-              <BacktestConfigForm onSubmit={handleSubmit} loading={false} userDefaults={userDefaults} />
+              <BacktestConfigForm
+                ref={configFormRef}
+                onSubmit={handleSubmit}
+                loading={false}
+                userDefaults={userDefaults}
+                restoredConfig={restoredFormState?.config}
+                restoredManualWeights={restoredFormState?.manualWeights}
+                restoredRiskProfile={restoredFormState?.selectedRiskProfile}
+                onConfigChange={handleConfigChange}
+              />
             )}
 
             {stage === 'loading-prices' && (
@@ -495,6 +541,7 @@ export default function BacktestPage() {
                         });
                         strategyLoadedRef.current = true;
                       }
+                      clearPageState();
                       setStage('config'); setResult(null); setProgress(null);
                     }}
                     className="backtest-action-btn"

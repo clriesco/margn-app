@@ -6,8 +6,12 @@ import {
   getPortfolioMetrics,
   getContributionHistory,
   getPortfolioNotifications,
+  getPortfolioConfiguration,
+  getRiskProfiles,
   PortfolioSummary,
+  PortfolioConfiguration,
   PortfolioNotificationsResponse,
+  RiskProfile,
 } from "../api";
 import { swrConfig } from "../swr-config";
 
@@ -151,6 +155,47 @@ export function usePortfolioNotifications(portfolioId: string | null) {
 }
 
 /**
+ * Hook to get portfolio configuration (cached)
+ */
+export function usePortfolioConfiguration(portfolioId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR<PortfolioConfiguration>(
+    portfolioId ? `portfolio-configuration-${portfolioId}` : null,
+    () => getPortfolioConfiguration(portfolioId!),
+    {
+      ...swrConfig,
+      revalidateIfStale: false,
+    }
+  );
+
+  return {
+    configuration: data || null,
+    isLoading,
+    error,
+    mutate,
+  };
+}
+
+/**
+ * Hook to get risk profiles (cached, public endpoint)
+ */
+export function useRiskProfiles() {
+  const { data, error, isLoading } = useSWR<RiskProfile[]>(
+    "risk-profiles",
+    () => getRiskProfiles(),
+    {
+      ...swrConfig,
+      revalidateIfStale: false,
+    }
+  );
+
+  return {
+    riskProfiles: data || [],
+    isLoading,
+    error,
+  };
+}
+
+/**
  * Invalidate all portfolio-related cache for a specific portfolio
  * Use this after operations that modify portfolio data (rebalance, position updates, etc.)
  *
@@ -163,6 +208,7 @@ export function invalidatePortfolioCache(portfolioId: string | null, userEmail?:
     mutate(`portfolio-summary-${portfolioId}`, undefined, { revalidate: true });
     mutate(`portfolio-metrics-${portfolioId}`, undefined, { revalidate: true });
     mutate(`portfolio-notifications-${portfolioId}`, undefined, { revalidate: true });
+    mutate(`portfolio-configuration-${portfolioId}`, undefined, { revalidate: true });
   }
 
   if (userEmail) {

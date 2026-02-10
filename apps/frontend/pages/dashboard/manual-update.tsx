@@ -9,6 +9,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
+import { usePageState } from "../../lib/hooks/use-page-state";
 import {
   updatePositions,
   getPortfolioSummary,
@@ -54,6 +55,31 @@ export default function ManualUpdate() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  // Persist form state across navigation
+  const { clear: clearPageState } = usePageState({
+    key: 'manual-update',
+    portfolioId,
+    snapshot: () => ({
+      equity,
+      positions: positions.map(p => ({
+        assetId: p.assetId,
+        assetSymbol: p.assetSymbol,
+        assetName: p.assetName,
+        quantity: p.quantity,
+        currentQuantity: p.currentQuantity,
+        tempId: p.tempId,
+      })),
+    }),
+    restore: (saved) => {
+      if (saved.equity) setEquity(saved.equity);
+      if (saved.positions?.length) {
+        setPositions(saved.positions);
+        setIsLoading(false);
+      }
+    },
+    deps: [equity, positions],
+  });
 
   // Symbol search state
   const [searchResults, setSearchResults] = useState<
@@ -354,6 +380,7 @@ export default function ManualUpdate() {
 
       // Invalidate cache so dashboard shows updated data
       invalidatePortfolioCache(portfolioId, user?.email);
+      clearPageState();
 
       const newAssetsCount = positions.filter(
         (p) => !p.assetId && p.assetSymbol
