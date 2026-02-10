@@ -1,4 +1,5 @@
 import React, { useState, ReactNode, useEffect, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useAuth } from "../contexts/AuthContext";
@@ -269,8 +270,9 @@ export default function DashboardSidebar({
               gap: "0.75rem",
             }}
           >
-            <TrendingUp size={24} color="var(--accent-blue-light)" />
-            {!isCollapsed && (
+            {isCollapsed && !isMobile ? (
+              <TrendingUp size={24} color="var(--accent-blue-light)" />
+            ) : (
               <a
                 href={`/dashboard${portfolioId ? `?portfolioId=${portfolioId}` : ""}`}
                 onClick={(e) => {
@@ -278,21 +280,19 @@ export default function DashboardSidebar({
                   router.push(`/dashboard${portfolioId ? `?portfolioId=${portfolioId}` : ""}`);
                 }}
                 style={{
-                  color: "var(--text-primary)",
-                  fontWeight: "700",
-                  fontSize: "1.125rem",
+                  display: "flex",
+                  alignItems: "center",
                   textDecoration: "none",
                   cursor: "pointer",
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "var(--accent-blue-light)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "var(--text-primary)";
                 }}
               >
-                Margn
+                <Image
+                  src={theme === "dark" ? "/margn-logo-white.png" : "/margn-logo.png"}
+                  alt="Margn"
+                  width={145}
+                  height={38}
+                  priority
+                />
               </a>
             )}
           </div>
