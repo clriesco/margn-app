@@ -5,81 +5,78 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inicia sesión en Margn</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8fafc; padding: 60px 20px;">
+<body style="margin: 0; padding: 0; background-color: #0a0e27; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0a0e27; padding: 60px 20px;">
     <tr>
       <td align="center">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); overflow: hidden;">
-          
-          <!-- Header elegante con gradiente sutil -->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #131b2e; border-radius: 16px; border: 1px solid #1e293b; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); overflow: hidden;">
+
+          <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%); padding: 48px 40px 40px 40px; text-align: center; position: relative;">
-              <!-- Decoración sutil -->
-              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E') repeat; opacity: 0.1;"></div>
-              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.8px; position: relative; z-index: 1;">
+            <td style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.10) 100%); border-bottom: 1px solid #1e293b; padding: 40px 40px 32px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #f1f5f9; font-size: 32px; font-weight: 700; letter-spacing: -0.8px;">
                 Margn
               </h1>
-              <p style="margin: 10px 0 0 0; color: rgba(255, 255, 255, 0.95); font-size: 15px; font-weight: 400; letter-spacing: 0.2px; position: relative; z-index: 1;">
+              <p style="margin: 10px 0 0 0; color: #64748b; font-size: 14px; font-weight: 400; letter-spacing: 0.2px;">
                 Gestión Inteligente de Portfolios
               </p>
             </td>
           </tr>
 
-          <!-- Contenido principal con mejor espaciado -->
+          <!-- Contenido principal -->
           <tr>
             <td style="padding: 48px 40px;">
-              <!-- Saludo -->
-              <h2 style="margin: 0 0 20px 0; color: #0f172a; font-size: 26px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.2;">
+              <h2 style="margin: 0 0 20px 0; color: #f1f5f9; font-size: 24px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.2;">
                 Inicia sesión en tu cuenta
               </h2>
-              
-              <p style="margin: 0 0 36px 0; color: #475569; font-size: 16px; line-height: 1.7; letter-spacing: 0.01em;">
-                Hemos recibido una solicitud para iniciar sesión en tu cuenta de <strong style="color: #1e293b; font-weight: 600;">Margn</strong>. Haz clic en el botón de abajo para acceder de forma segura a tu portfolio.
+
+              <p style="margin: 0 0 36px 0; color: #94a3b8; font-size: 15px; line-height: 1.7;">
+                Hemos recibido una solicitud para iniciar sesión en tu cuenta de <strong style="color: #cbd5e1; font-weight: 600;">Margn</strong>. Haz clic en el botón de abajo para acceder de forma segura a tu portfolio.
               </p>
-              
-              <!-- Botón principal mejorado -->
+
+              <!-- Botón principal -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td align="center" style="padding: 8px 0 40px 0;">
-                    <a href="{{ .ConfirmationURL }}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 18px 40px; border-radius: 10px; font-weight: 600; font-size: 16px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35); transition: all 0.3s ease;">
+                    <a href="{{ .ConfirmationURL }}" style="display: inline-block; background: #3b82f6; color: #ffffff; text-decoration: none; padding: 16px 36px; border-radius: 8px; font-weight: 600; font-size: 15px; letter-spacing: 0.2px;">
                       Acceder a mi Portfolio
                     </a>
                   </td>
                 </tr>
               </table>
 
-              <!-- Divider sutil -->
+              <!-- Divider -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="padding: 0 0 32px 0; border-bottom: 1px solid #e2e8f0;"></td>
+                  <td style="padding: 0 0 32px 0; border-bottom: 1px solid #1e293b;"></td>
                 </tr>
               </table>
 
-              <!-- Enlace alternativo con mejor diseño -->
-              <p style="margin: 0 0 12px 0; color: #64748b; font-size: 14px; line-height: 1.6; font-weight: 500;">
+              <!-- Enlace alternativo -->
+              <p style="margin: 0 0 12px 0; color: #64748b; font-size: 13px; line-height: 1.6; font-weight: 500;">
                 Si el botón no funciona, copia y pega este enlace:
               </p>
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0a0e27; border-radius: 8px; border: 1px solid #1e293b;">
                 <tr>
                   <td style="padding: 14px 16px;">
-                    <p style="margin: 0; color: #3b82f6; font-size: 12px; word-break: break-all; line-height: 1.6; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
+                    <p style="margin: 0; color: #60a5fa; font-size: 12px; word-break: break-all; line-height: 1.6; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
                       {{ .ConfirmationURL }}
                     </p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Información de seguridad mejorada -->
+              <!-- Información de seguridad -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 40px;">
                 <tr>
-                  <td style="background: linear-gradient(to right, #eff6ff 0%, #f8fafc 100%); border-left: 3px solid #3b82f6; padding: 20px 20px 20px 24px; border-radius: 6px;">
+                  <td style="background-color: rgba(59, 130, 246, 0.08); border-left: 3px solid #3b82f6; padding: 20px 20px 20px 24px; border-radius: 6px;">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                       <tr>
                         <td style="padding: 0;">
-                          <p style="margin: 0 0 8px 0; color: #1e40af; font-size: 14px; font-weight: 600; letter-spacing: 0.2px;">
-                            🔒 Información de Seguridad
+                          <p style="margin: 0 0 8px 0; color: #60a5fa; font-size: 13px; font-weight: 600;">
+                            Información de Seguridad
                           </p>
-                          <p style="margin: 0; color: #475569; font-size: 13px; line-height: 1.6;">
+                          <p style="margin: 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">
                             Este enlace de acceso caducará automáticamente por seguridad. Si no solicitaste este correo, puedes ignorarlo con total tranquilidad.
                           </p>
                         </td>
@@ -91,13 +88,13 @@
             </td>
           </tr>
 
-          <!-- Footer profesional -->
+          <!-- Footer -->
           <tr>
-            <td style="background-color: #f8fafc; padding: 32px 40px; border-top: 1px solid #e2e8f0;">
+            <td style="background-color: #0f172a; padding: 28px 40px; border-top: 1px solid #1e293b;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td align="center" style="padding: 0 0 16px 0;">
-                    <p style="margin: 0; color: #1e293b; font-size: 13px; font-weight: 600; letter-spacing: 0.3px;">
+                    <p style="margin: 0; color: #cbd5e1; font-size: 13px; font-weight: 600; letter-spacing: 0.3px;">
                       Margn
                     </p>
                     <p style="margin: 6px 0 0 0; color: #64748b; font-size: 12px; line-height: 1.6;">
@@ -106,8 +103,8 @@
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding: 20px 0 0 0; border-top: 1px solid #e2e8f0;">
-                    <p style="margin: 0; color: #94a3b8; font-size: 11px; line-height: 1.5; letter-spacing: 0.2px;">
+                  <td align="center" style="padding: 16px 0 0 0; border-top: 1px solid #1e293b;">
+                    <p style="margin: 0; color: #475569; font-size: 11px; line-height: 1.5;">
                       Este es un correo automático generado por el sistema.<br>
                       Por favor, no respondas a este mensaje.
                     </p>
@@ -118,13 +115,13 @@
           </tr>
 
         </table>
-        
+
         <!-- Espaciado inferior -->
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
           <tr>
             <td style="padding: 20px 0; text-align: center;">
-              <p style="margin: 0; color: #94a3b8; font-size: 11px; line-height: 1.5;">
-                © 2025 Margn. Todos los derechos reservados.
+              <p style="margin: 0; color: #475569; font-size: 11px; line-height: 1.5;">
+                &copy; 2026 Margn. Todos los derechos reservados.
               </p>
             </td>
           </tr>
@@ -134,4 +131,3 @@
   </table>
 </body>
 </html>
-
