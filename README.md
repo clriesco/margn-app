@@ -343,7 +343,7 @@ The system calculates comprehensive portfolio analytics:
 
 ### Frontend
 - **Platform:** Vercel
-- **Repository:** `github.com/clriesco/margn`
+- **Repository:** `github.com/clriesco/margn-app`
 - **Build:** Automatic on push to main branch
 
 ## 🧪 Testing
