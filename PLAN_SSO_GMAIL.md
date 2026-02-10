@@ -2,7 +2,7 @@
 
 ## 📋 Resumen Ejecutivo
 
-Este documento describe el plan completo para implementar autenticación SSO (Single Sign-On) con Gmail en la aplicación Leveraged DCA App, manteniendo la compatibilidad con el sistema actual de magic links.
+Este documento describe el plan completo para implementar autenticación SSO (Single Sign-On) con Gmail en la aplicación Margn, manteniendo la compatibilidad con el sistema actual de magic links.
 
 **Objetivo:** Permitir a los usuarios iniciar sesión con su cuenta de Google además de la opción actual de magic links.
 
@@ -60,7 +60,7 @@ Usuario → [Email + Magic Link] O [Google OAuth] → Supabase → JWT → Backe
    - **Internal** (solo para usuarios de tu organización)
    - **External** (para cualquier usuario de Google) ⭐ Recomendado
 3. Completar información:
-   - **App name:** Leveraged DCA App
+   - **App name:** Margn
    - **User support email:** tu-email@ejemplo.com
    - **Developer contact:** tu-email@ejemplo.com
 4. Agregar scopes (opcional, mínimo requerido):
@@ -76,7 +76,7 @@ Usuario → [Email + Magic Link] O [Google OAuth] → Supabase → JWT → Backe
 2. Click en **Create Credentials** → **OAuth client ID**
 3. Seleccionar tipo: **Web application**
 4. Configurar:
-   - **Name:** Leveraged DCA App - Web Client
+   - **Name:** Margn - Web Client
    - **Authorized JavaScript origins:**
      - `http://localhost:3002` (desarrollo)
      - `https://tu-dominio.vercel.app` (producción)

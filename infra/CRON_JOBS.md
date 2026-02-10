@@ -1,6 +1,6 @@
 # Cron Jobs Configuration
 
-This document describes how to configure the scheduled jobs (cron) for the Leveraged DCA App.
+This document describes how to configure the scheduled jobs (cron) for Margn.
 
 ## Overview
 

@@ -20,7 +20,7 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@leveraged-dca/shared": ["packages/shared/src"]
+      "@margn/shared": ["packages/shared/src"]
     }
   }
 }

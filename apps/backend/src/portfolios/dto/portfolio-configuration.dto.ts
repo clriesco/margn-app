@@ -1,4 +1,4 @@
-import type { RiskProfileId } from "@leveraged-dca/shared";
+import type { RiskProfileId } from "@margn/shared";
 import {
   IsBoolean,
   IsIn,

@@ -3,7 +3,7 @@ import {
   detectRiskProfile,
   isValidRiskProfileId,
   type RiskProfileId,
-} from "@leveraged-dca/shared";
+} from "@margn/shared";
 import {
   Injectable,
   NotFoundException,
