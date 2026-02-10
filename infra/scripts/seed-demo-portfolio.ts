@@ -224,7 +224,7 @@ async function seedDemoPortfolio() {
     const portfolio = await prisma.portfolio.create({
       data: {
         userId: user.id,
-        name: "Demo Leveraged DCA Portfolio",
+        name: "Demo Margn Portfolio",
         leverageMin: 2.5,
         leverageMax: 3.0,
       },

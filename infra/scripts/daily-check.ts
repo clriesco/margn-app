@@ -498,7 +498,7 @@ async function sendNotifications(result: DailyCheckResult): Promise<void> {
     // TODO: Implement actual email sending
     // Example with Resend:
     // await resend.emails.send({
-    //   from: 'alerts@leveraged-dca.app',
+    //   from: 'alerts@margn.app',
     //   to: notification.email,
     //   subject: `[${notification.alert.priority.toUpperCase()}] Portfolio Alert: ${notification.portfolioName}`,
     //   html: `<p>${notification.alert.message}</p>`,

@@ -1,5 +1,5 @@
 {
-  "name": "@leveraged-dca/shared",
+  "name": "@margn/shared",
   "version": "0.1.0",
   "private": true,
   "main": "dist/index.js",

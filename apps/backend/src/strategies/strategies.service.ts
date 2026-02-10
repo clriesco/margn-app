@@ -1,4 +1,4 @@
-import { detectRiskProfile } from '@leveraged-dca/shared';
+import { detectRiskProfile } from '@margn/shared';
 import {
   Injectable,
   NotFoundException,

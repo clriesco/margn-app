@@ -18,7 +18,7 @@ The strategy is based on quantitative analysis from the `leveraged-dca-simulator
 ### Monorepo Structure
 
 ```
-leveraged-dca-app/
+margn/
 ├── apps/
 │   ├── backend/          # NestJS API (Port 3003)
 │   └── frontend/         # Next.js Dashboard (Port 3002)
@@ -343,7 +343,7 @@ The system calculates comprehensive portfolio analytics:
 
 ### Frontend
 - **Platform:** Vercel
-- **Repository:** `github.com/clriesco/leveraged-dca-app`
+- **Repository:** `github.com/clriesco/margn`
 - **Build:** Automatic on push to main branch
 
 ## 🧪 Testing

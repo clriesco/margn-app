@@ -1,4 +1,4 @@
-# Leveraged DCA App
+# Margn
 
 Aplicación full-stack que operacionaliza la estrategia de DCA condicional con apalancamiento dinámico.
 
@@ -13,7 +13,7 @@ Aplicación full-stack que operacionaliza la estrategia de DCA condicional con a
 ## Estructura
 
 ```
-leveraged-dca-app/
+margn/
 ├── apps/
 │   ├── backend/                # NestJS API (puerto 3003)
 │   │   ├── src/

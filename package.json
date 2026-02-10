@@ -1,5 +1,5 @@
 {
-  "name": "leveraged-dca-app",
+  "name": "margn",
   "version": "0.13.3",
   "private": true,
   "workspaces": [

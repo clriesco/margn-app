@@ -1,7 +1,7 @@
 import {
   RISK_PROFILES,
   isValidRiskProfileId,
-} from "@leveraged-dca/shared";
+} from "@margn/shared";
 import {
   Injectable,
   BadRequestException,

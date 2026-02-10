@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: leveraged-dca-backend
+    name: margn-backend
     env: docker
     dockerfilePath: ./apps/backend/Dockerfile
     dockerContext: .

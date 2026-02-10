@@ -1,4 +1,4 @@
-import { getAllRiskProfiles } from "@leveraged-dca/shared";
+import { getAllRiskProfiles } from "@margn/shared";
 import {
   Body,
   Controller,
