@@ -8,14 +8,14 @@ import {
   OnboardingAsset,
   CreatePortfolioRequest,
   SymbolSearchResult,
-  getRiskProfiles,
   RiskProfile,
   RiskProfileId,
   getPublicStrategies,
   PublicStrategySummary,
 } from "../../lib/api";
 import { usePortfolio } from "../../contexts/PortfolioContext";
-import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
+import { usePageState } from "../../lib/hooks/use-page-state";
+import { invalidatePortfolioCache, useRiskProfiles } from "../../lib/hooks/use-portfolio-data";
 import {
   Rocket,
   TrendingUp,
@@ -63,9 +63,8 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
 
   // Step 1: Risk Profile
-  const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([]);
+  const { riskProfiles, isLoading: isLoadingProfiles } = useRiskProfiles();
   const [selectedRiskProfile, setSelectedRiskProfile] = useState<RiskProfileId | null>("moderate");
-  const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
 
   // Leverage (derived from risk profile or custom)
   const [leverageMin, setLeverageMin] = useState(2.0);
@@ -108,6 +107,53 @@ export default function Onboarding() {
   const [creationProgress, setCreationProgress] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
+  // Persist wizard state across navigation
+  const { clear: clearPageState } = usePageState({
+    key: 'onboarding',
+    snapshot: () => ({
+      currentStep,
+      selectedRiskProfile,
+      selectedStrategy: selectedStrategy ? { id: selectedStrategy.id, name: selectedStrategy.name, config: selectedStrategy.config, description: selectedStrategy.description } : null,
+      isCustomPath,
+      assets,
+      manualWeights,
+      weightMethod,
+      portfolioName,
+      initialCapital,
+      monthlyContribution,
+      contributionFrequency,
+      contributionDayOfMonth,
+      leverageMin,
+      leverageMax,
+      leverageTarget,
+      acceptedTerms,
+    }),
+    restore: (saved) => {
+      setCurrentStep(saved.currentStep);
+      setSelectedRiskProfile(saved.selectedRiskProfile);
+      if (saved.selectedStrategy) setSelectedStrategy(saved.selectedStrategy as PublicStrategySummary);
+      setIsCustomPath(saved.isCustomPath);
+      if (saved.assets?.length) setAssets(saved.assets);
+      if (saved.manualWeights) setManualWeights(saved.manualWeights);
+      setWeightMethod(saved.weightMethod);
+      setPortfolioName(saved.portfolioName);
+      setInitialCapital(saved.initialCapital);
+      setMonthlyContribution(saved.monthlyContribution);
+      setContributionFrequency(saved.contributionFrequency);
+      setContributionDayOfMonth(saved.contributionDayOfMonth);
+      setLeverageMin(saved.leverageMin);
+      setLeverageMax(saved.leverageMax);
+      setLeverageTarget(saved.leverageTarget);
+      setAcceptedTerms(saved.acceptedTerms);
+    },
+    deps: [
+      currentStep, selectedRiskProfile, selectedStrategy?.id, isCustomPath,
+      assets, manualWeights, weightMethod, portfolioName, initialCapital,
+      monthlyContribution, contributionFrequency, contributionDayOfMonth,
+      leverageMin, leverageMax, leverageTarget, acceptedTerms,
+    ],
+  });
+
   // Dynamic step calculation
   const getSteps = useCallback(() => {
     if (isCustomPath || !selectedStrategy) {
@@ -126,21 +172,6 @@ export default function Onboarding() {
     },
     [steps]
   );
-
-  // Load risk profiles on mount
-  useEffect(() => {
-    async function loadRiskProfiles() {
-      try {
-        const profiles = await getRiskProfiles();
-        setRiskProfiles(profiles);
-      } catch (err) {
-        console.error("Failed to load risk profiles:", err);
-      } finally {
-        setIsLoadingProfiles(false);
-      }
-    }
-    loadRiskProfiles();
-  }, []);
 
   // Update leverage values when risk profile changes
   useEffect(() => {
@@ -446,6 +477,7 @@ export default function Onboarding() {
         setActivePortfolioId(newPortfolioId);
       }
 
+      clearPageState();
       router.replace("/dashboard");
     } catch (err) {
       setError(

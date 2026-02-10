@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { X, ChevronDown, ChevronRight } from 'lucide-react';
 import { NumberInput } from '../NumberInput';
 import { RangeSlider } from '../RangeSlider';
 import { Tooltip } from '../Tooltip';
 import { RiskProfileSelector, type RiskProfileId } from '../RiskProfileSelector';
-import { searchSymbols, getRiskProfiles, type SymbolSearchResult, type RiskProfile } from '../../lib/api';
+import { searchSymbols, type SymbolSearchResult, type RiskProfile } from '../../lib/api';
+import { useRiskProfiles } from '../../lib/hooks/use-portfolio-data';
 import type { BacktestConfig as BacktestConfigType } from '../../lib/backtest/types';
 
 interface UserDefaults {
@@ -26,6 +27,20 @@ interface Props {
   onSubmit: (config: BacktestConfigType) => void;
   loading: boolean;
   userDefaults?: UserDefaults;
+  /** Pre-fill form state from restored session (bypasses userDefaults) */
+  restoredConfig?: BacktestConfigType | null;
+  restoredManualWeights?: Record<string, number> | null;
+  restoredRiskProfile?: RiskProfileId | null;
+  /** Called when form state changes (for parent to trigger save) */
+  onConfigChange?: () => void;
+}
+
+export interface BacktestConfigHandle {
+  getSnapshot: () => {
+    config: BacktestConfigType;
+    manualWeights: Record<string, number>;
+    selectedRiskProfile: RiskProfileId | null;
+  };
 }
 
 const FALLBACK_SYMBOLS = ['SPY', 'TLT', 'QQQ', 'GLD', 'BTC-USD', 'SLV', '^STOXX50E'];
@@ -117,18 +132,26 @@ const TIPS = {
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-export default function BacktestConfig({ onSubmit, loading, userDefaults }: Props) {
+const BacktestConfig = forwardRef<BacktestConfigHandle, Props>(function BacktestConfig(
+  { onSubmit, loading, userDefaults, restoredConfig, restoredManualWeights, restoredRiskProfile, onConfigChange },
+  ref,
+) {
   const [hasAppliedDefaults, setHasAppliedDefaults] = useState(false);
-  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [config, setConfig] = useState(() => restoredConfig ?? DEFAULT_CONFIG);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Risk profile state
-  const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([]);
-  const [selectedRiskProfile, setSelectedRiskProfile] = useState<RiskProfileId | null>('moderate');
-  const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
+  // If we were initialized from restored state, skip applying userDefaults
+  const [hasAppliedRestore] = useState(() => !!restoredConfig);
 
-  // Apply user defaults when they arrive (async)
+  // Risk profiles from SWR cache
+  const { riskProfiles, isLoading: isLoadingProfiles } = useRiskProfiles();
+  const [selectedRiskProfile, setSelectedRiskProfile] = useState<RiskProfileId | null>(
+    restoredRiskProfile !== undefined ? restoredRiskProfile : 'moderate',
+  );
+
+  // Apply user defaults when they arrive (async) — skip if restored from session
   useEffect(() => {
+    if (hasAppliedRestore) return;
     if (userDefaults && !hasAppliedDefaults) {
       const userSymbols = userDefaults.symbols && userDefaults.symbols.length > 0
         ? userDefaults.symbols
@@ -157,7 +180,7 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
       }
       setHasAppliedDefaults(true);
     }
-  }, [userDefaults, hasAppliedDefaults]);
+  }, [userDefaults, hasAppliedDefaults, hasAppliedRestore]);
 
   // Auto-detect risk profile from user's leverage config
   useEffect(() => {
@@ -172,21 +195,6 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
     );
     setSelectedRiskProfile(match ? match.id as RiskProfileId : null);
   }, [userDefaults, riskProfiles]);
-
-  // Load risk profiles on mount
-  useEffect(() => {
-    async function loadRiskProfiles() {
-      try {
-        const profiles = await getRiskProfiles();
-        setRiskProfiles(profiles);
-      } catch (err) {
-        console.error('Failed to load risk profiles:', err);
-      } finally {
-        setIsLoadingProfiles(false);
-      }
-    }
-    loadRiskProfiles();
-  }, []);
 
   // Handle risk profile change
   const handleRiskProfileChange = useCallback((profileId: RiskProfileId | null) => {
@@ -212,10 +220,26 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
   const [searchResults, setSearchResults] = useState<SymbolSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [manualWeights, setManualWeights] = useState<Record<string, number>>({});
+  const [manualWeights, setManualWeights] = useState<Record<string, number>>(
+    () => restoredManualWeights ?? {},
+  );
   const [showPeriodSettings, setShowPeriodSettings] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Expose snapshot for parent to save/restore
+  useImperativeHandle(ref, () => ({
+    getSnapshot: () => ({ config, manualWeights, selectedRiskProfile }),
+  }), [config, manualWeights, selectedRiskProfile]);
+
+  // Notify parent when form state changes
+  const onConfigChangeRef = useRef(onConfigChange);
+  onConfigChangeRef.current = onConfigChange;
+  const configChangeInitRef = useRef(false);
+  useEffect(() => {
+    if (!configChangeInitRef.current) { configChangeInitRef.current = true; return; }
+    onConfigChangeRef.current?.();
+  }, [config, manualWeights, selectedRiskProfile]);
 
   const update = (field: string, value: number | string | boolean) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
@@ -743,4 +767,6 @@ export default function BacktestConfig({ onSubmit, loading, userDefaults }: Prop
       })()}
     </form>
   );
-}
+});
+
+export default BacktestConfig;

@@ -269,10 +269,10 @@ export default function Terms() {
               Para cualquier consulta sobre estos términos, puedes contactarnos
               en:{" "}
               <a
-                href="mailto:contact@leverageddca.com"
+                href="mailto:trapfocussl@gmail.com"
                 style={{ color: "#3b82f6" }}
               >
-                contact@leverageddca.com
+                trapfocussl@gmail.com
               </a>
             </p>
           </Section>

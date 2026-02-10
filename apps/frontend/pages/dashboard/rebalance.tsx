@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
+import { usePageState } from "../../lib/hooks/use-page-state";
 import {
   getRebalanceSimulation,
   applyRebalanceSimulation,
@@ -58,10 +59,33 @@ export default function Rebalance() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  // Track whether proposal was restored to skip API fetch
+  const wasRestoredRef = useRef(false);
+
+  // Persist proposal across navigation (short TTL: 5 min for market data)
+  const { clear: clearPageState } = usePageState({
+    key: 'rebalance',
+    portfolioId,
+    snapshot: () => ({ proposal }),
+    restore: (saved) => {
+      if (saved.proposal) {
+        setProposal(saved.proposal);
+        setIsCalculating(false);
+        wasRestoredRef.current = true;
+      }
+    },
+    deps: [proposal],
+    ttlMs: 5 * 60 * 1000,
+  });
+
   // Load portfolio and calculate proposal
   useEffect(() => {
     async function loadAndCalculate() {
       if (!user?.email || !portfolioId) return;
+      if (wasRestoredRef.current) {
+        wasRestoredRef.current = false;
+        return;
+      }
 
       setIsCalculating(true);
       setError("");
@@ -96,6 +120,7 @@ export default function Rebalance() {
 
       // Invalidate cache so dashboard shows updated data
       invalidatePortfolioCache(portfolioId, user?.email);
+      clearPageState();
 
       setMessage("✅ Simulación aplicada. Nueva composición guardada.");
 
