@@ -1,7 +1,9 @@
 import React, { useState, FormEvent } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import Image from "next/image";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 /**
  * Login page with passwordless authentication
@@ -9,6 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 export default function Home() {
   const router = useRouter();
   const { user, signIn, loading } = useAuth();
+  const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -110,17 +113,14 @@ export default function Home() {
           }}
         >
           <div style={{ marginBottom: "2rem", textAlign: "center" }}>
-            <h1
-              style={{
-                fontSize: "1.75rem",
-                fontWeight: "700",
-                marginBottom: "0.5rem",
-                color: "var(--text-primary)",
-                letterSpacing: "-0.025em",
-              }}
-            >
-              Margn
-            </h1>
+            <Image
+              src={theme === "dark" ? "/margn-logo-white.png" : "/margn-logo.png"}
+              alt="Margn"
+              width={200}
+              height={53}
+              priority
+              style={{ marginBottom: "0.25rem" }}
+            />
             <p
               style={{
                 color: "var(--text-muted)",
