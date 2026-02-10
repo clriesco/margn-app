@@ -5,8 +5,8 @@ import { AuthModule } from "../auth/auth.module";
 import { OnboardingService } from "./onboarding.service";
 import { PortfolioConfigurationController } from "./portfolio-configuration.controller";
 import { PortfolioConfigurationService } from "./portfolio-configuration.service";
-import { PortfolioRecommendationsController } from "./portfolio-recommendations.controller";
-import { PortfolioRecommendationsService } from "./portfolio-recommendations.service";
+import { PortfolioNotificationsController } from "./portfolio-notifications.controller";
+import { PortfolioNotificationsService } from "./portfolio-notifications.service";
 import { PortfoliosController } from "./portfolios.controller";
 import { PortfoliosService } from "./portfolios.service";
 import { TargetAssetsController } from "./target-assets.controller";
@@ -18,23 +18,22 @@ import { TargetAssetsService } from "./target-assets.service";
   controllers: [
     PortfoliosController,
     PortfolioConfigurationController,
-    PortfolioRecommendationsController,
+    PortfolioNotificationsController,
     TargetAssetsController,
   ],
   providers: [
     PortfoliosService,
     PortfolioConfigurationService,
-    PortfolioRecommendationsService,
+    PortfolioNotificationsService,
     OnboardingService,
     TargetAssetsService,
   ],
   exports: [
     PortfoliosService,
     PortfolioConfigurationService,
-    PortfolioRecommendationsService,
+    PortfolioNotificationsService,
     OnboardingService,
     TargetAssetsService,
   ],
 })
 export class PortfoliosModule {}
-

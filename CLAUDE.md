@@ -1,6 +1,8 @@
 # Margn
 
-Aplicación full-stack que operacionaliza la estrategia de DCA condicional con apalancamiento dinámico.
+Herramienta de cálculo, optimización matemática y visualización de datos financieros para estrategias de DCA condicional con apalancamiento dinámico.
+
+**Posicionamiento regulatorio:** Margn es una herramienta de cálculo y visualización, **no** un asesor financiero. No emite recomendaciones de inversión. Las simulaciones, notificaciones y métricas son informativas. Toda decisión de inversión es responsabilidad exclusiva del usuario. Esta distinción permite operar sin licencia EAFI/MiFID.
 
 ## Tech stack
 
@@ -19,7 +21,7 @@ margn/
 │   │   ├── src/
 │   │   │   ├── auth/           # Supabase JWT auth, guards, decorators
 │   │   │   ├── users/          # Perfiles y preferencias de notificación
-│   │   │   ├── portfolios/     # CRUD portfolios, recomendaciones, onboarding
+│   │   │   ├── portfolios/     # CRUD portfolios, notificaciones, onboarding
 │   │   │   ├── contributions/  # Tracking de contribuciones DCA
 │   │   │   ├── positions/      # Gestión de posiciones
 │   │   │   ├── rebalance/      # Motor de rebalanceo (~1,200 líneas)
@@ -36,7 +38,7 @@ margn/
 │       │       ├── index.tsx            # Dashboard principal
 │       │       ├── onboarding.tsx       # Wizard de creación (SSE progress)
 │       │       ├── contribution.tsx     # Registro de contribuciones
-│       │       ├── rebalance.tsx        # Propuesta de rebalanceo
+│       │       ├── rebalance.tsx        # Simulador de rebalanceo
 │       │       ├── configuration.tsx    # Configuración del portfolio
 │       │       ├── manual-update.tsx    # Actualización manual de posiciones
 │       │       ├── profile.tsx          # Perfil de usuario
@@ -59,7 +61,7 @@ margn/
     └── scripts/                # Cron jobs en TypeScript
         ├── price-ingestion.ts  # Ingestión de precios (Yahoo Finance v8 API)
         ├── metrics-refresh.ts  # Recálculo de métricas (~552 líneas)
-        ├── daily-check.ts      # Generación de recomendaciones (~590 líneas)
+        ├── daily-check.ts      # Generación de notificaciones de estado (~590 líneas)
         ├── run-daily-jobs.ts   # Orquestador de jobs (secuencial, fail-fast en step 1)
         ├── reset-database.ts   # Reset de BD para desarrollo
         └── seed-demo-portfolio.ts  # Seed de datos demo
@@ -74,7 +76,7 @@ margn/
 id            String    @id @default(uuid())
 email         String    @unique
 fullName      String?
-notifyOnRecommendations   Boolean @default(true)
+notifyOnNotifications     Boolean @default(true)
 notifyOnContributions     Boolean @default(true)
 notifyOnLeverageAlerts    Boolean @default(true)
 notifyOnRebalance         Boolean @default(true)
@@ -305,11 +307,11 @@ Ejecutados por `run-daily-jobs.ts` en orden secuencial estricto. Si el paso 1 fa
 1. Calcula estado actual: exposure (de precios), equity (de último DailyMetric/MetricsTimeseries ajustado por contribuciones recientes)
 2. Calcula leverage y margin ratio
 3. Verifica si hoy es día de contribución (`contributionDayOfMonth`, con ajuste de fin de mes)
-4. Genera alertas:
-   - **contribution_due** (medium): si hoy es día de contribución y no ha contribuido hoy
-   - **leverage_low** (high): si leverage < leverageMin
-   - **leverage_high** (urgent): si leverage > leverageMax, calcula `extraNeeded = exposure/leverageMax - equity`
-   - **margin_warning** (urgent/high): si marginRatio ≤ criticalMargin (0.1) o ≤ safeMargin (0.15)
+4. Genera notificaciones de estado:
+   - **contribution_reminder** (info): si hoy es día de contribución y no ha contribuido hoy
+   - **leverage_below_range** (warning): si leverage < leverageMin
+   - **leverage_above_range** (attention): si leverage > leverageMax, calcula `extraNeeded = exposure/leverageMax - equity`
+   - **margin_ratio_alert** (attention/warning): si marginRatio ≤ criticalMargin (0.1) o ≤ safeMargin (0.15)
 5. Upsert `DailyMetric` con `peakEquity`
 
 **Tablas:** Lee `Portfolio`, `PortfolioPosition`, `Asset`, `AssetPrice`, `MetricsTimeseries`, `MonthlyContribution` → Escribe `DailyMetric`
@@ -409,18 +411,18 @@ Ejecutados por `run-daily-jobs.ts` en orden secuencial estricto. Si el paso 1 fa
 - Parámetros NM: alpha=1.0, gamma=2.0, rho=0.5, sigma=0.5, tol=1e-8, maxIter=500
 - Fallback a `targetWeights` si optimización falla
 
-`acceptProposal()`:
+`applySimulation()`:
 1. Crea `RebalanceEvent` + `RebalancePosition` por activo
 2. Upsert posiciones con cantidades objetivo
 3. Upsert `MetricsTimeseries` con source='rebalance' y metadata
 
-### Recomendaciones (`portfolios/portfolio-recommendations.service.ts`)
+### Notificaciones (`portfolios/portfolio-notifications.service.ts`)
 
-Tipos: `contribution_due`, `leverage_low`, `leverage_high`, `deploy_signal`, `rebalance_needed`.
-Prioridades: low, medium, high, urgent.
+Tipos: `contribution_reminder`, `leverage_below_range`, `leverage_above_range`, `deploy_condition_met`, `rebalance_deviation_detected`.
+Niveles: info, warning, attention.
 
-- `contribution_due`: solo si hoy es día de contribución Y no ha contribuido hoy (verifica `MonthlyContribution` del día).
-- `leverage_low/high`: incluye cantidades exactas de ajuste necesarias.
+- `contribution_reminder`: solo si hoy es día de contribución Y no ha contribuido hoy (verifica `MonthlyContribution` del día).
+- `leverage_below_range/above_range`: incluye cantidades exactas de ajuste calculadas.
 - `in_range` fue eliminado por ser ruido informativo.
 
 ---
@@ -430,22 +432,23 @@ Prioridades: low, medium, high, urgent.
 ### Páginas
 
 - **`/`** — Login (magic link). Redirige a dashboard si ya autenticado.
-- **`/dashboard`** — Dashboard principal: métricas (equity, exposure, leverage, returns), panel de recomendaciones, gráfica SVG de equity interactiva con tooltip, grid de analytics (CAGR, Sharpe, drawdown…), historial mensual paginado (24/página), tabla de posiciones actuales. Skeleton loading en todas las secciones.
+- **`/dashboard`** — Dashboard principal: métricas (equity, exposure, leverage, returns), panel de notificaciones, gráfica SVG de equity interactiva con tooltip, grid de analytics (CAGR, Sharpe, drawdown…), historial mensual paginado (24/página), tabla de posiciones actuales. Skeleton loading en todas las secciones. Disclaimers contextuales en secciones de notificaciones y métricas.
 - **`/dashboard/onboarding`** — Wizard de creación de portfolio con SSE progress.
 - **`/dashboard/contribution`** — Formulario de contribución (monto, nota). Soporta contribución extra vía query params `?extra=true&amount=X`.
 - **`/dashboard/manual-update`** — Actualización manual de posiciones (equity actual, cantidades por activo).
-- **`/dashboard/rebalance`** — Propuesta de rebalanceo: estado actual vs objetivo, tabla BUY/SELL/HOLD con cantidades exactas, desglose equity/borrow. Botón "Accept and Save" (deshabilitado si no hay acciones).
-- **`/dashboard/configuration`** — Panel completo: contribución (monto, frecuencia, día, enabled), leverage (min/max/target), editor visual de pesos (valida suma 100%), thresholds de señales, parámetros Sharpe (solo visible si `useDynamicSharpeRebalance`).
-- **`/dashboard/backtest`** — Simulador de backtest con configuración, progreso y resultados (trayectorias, equity breakdown).
+- **`/dashboard/rebalance`** — Simulador de rebalanceo: estado actual vs resultado de simulación, tabla con cantidades calculadas, desglose equity/borrow. Botón "Aplicar Simulación" (deshabilitado si no hay acciones). Disclaimer legal contextual.
+- **`/dashboard/configuration`** — Panel completo: contribución (monto, frecuencia, día, enabled), leverage (min/max/target), editor visual de pesos (valida suma 100%), thresholds de condiciones, parámetros Sharpe (solo visible si `useDynamicSharpeRebalance`). Disclaimer legal contextual.
+- **`/dashboard/backtest`** — Simulador de backtest con configuración, progreso y resultados (trayectorias, equity breakdown). Disclaimer legal contextual.
 - **`/dashboard/profile`** — Info personal (email read-only, nombre), preferencias de notificación.
 - **`/dashboard/help`** — Ayuda.
 
 ### Componentes reutilizables
 
-- **DashboardSidebar** — Sidebar colapsable (icons only cuando colapsado). Items: Dashboard, +Contribution, Rebalance, Manual Update, Configuration, Profile. Sign out al fondo. Responsive: drawer en mobile, sidebar en desktop.
+- **DashboardSidebar** — Sidebar colapsable (icons only cuando colapsado). Items: Dashboard, +Contribution, Simulador, Manual Update, Configuration, Profile. Sign out al fondo. Disclaimer legal persistente en footer. Responsive: drawer en mobile, sidebar en desktop.
 - **AnalyticsCard** — Card de métrica con tooltip (icono info + descripción on hover).
 - **EquityChart** — Gráfica SVG custom de equity history, interactiva con tooltip y punto seleccionado.
-- **DashboardRecommendationCard** — Card de recomendación con colores por prioridad (urgent=red, high=orange…), acciones específicas, botón "Go to action" con URL dinámica.
+- **DashboardNotificationCard** — Card de notificación con colores por nivel (attention=red, warning=orange, info=blue), acciones específicas, botón "Go to action" con URL dinámica.
+- **LegalDisclaimer** — Componente de disclaimer contextual reutilizable. Props: `text`, `compact`.
 - **NumberInput** — Input numérico.
 - **Backtest components** — BacktestConfig, BacktestResults, BacktestProgress, TrajectoryChart, EquityBreakdownChart.
 
@@ -475,11 +478,11 @@ GET    /api/portfolios                           # Listar portfolios
 GET    /api/portfolios/:id                       # Detalle
 GET    /api/portfolios/:id/metrics               # Métricas (CAGR, XIRR, Sharpe, drawdown, etc.)
 GET    /api/portfolios/:id/summary               # Resumen completo para dashboard
-GET    /api/portfolios/:id/recommendations       # Recomendaciones accionables
+GET    /api/portfolios/:id/notifications          # Notificaciones de estado
 GET    /api/portfolios/:id/configuration         # Obtener configuración
 PUT    /api/portfolios/:id/configuration         # Actualizar configuración
-GET    /api/portfolios/:id/rebalance/proposal    # Propuesta de rebalanceo
-POST   /api/portfolios/:id/rebalance/accept      # Aceptar rebalanceo
+GET    /api/portfolios/:id/rebalance/simulation  # Simulación de rebalanceo
+POST   /api/portfolios/:id/rebalance/apply       # Aplicar simulación de rebalanceo
 POST   /api/portfolios/:id/contributions         # Registrar contribución
 GET    /api/portfolios/:id/contributions         # Listar contribuciones
 PUT    /api/portfolios/:id/positions             # Actualizar posiciones (+ descarga histórica de nuevos tickers)
@@ -490,7 +493,7 @@ PUT    /api/users/profile                        # Actualizar perfil
 
 POST   /api/cron/price-ingestion                 # Trigger ingestión precios
 POST   /api/cron/metrics-refresh                 # Trigger recálculo métricas
-POST   /api/cron/daily-check                     # Trigger recomendaciones
+POST   /api/cron/daily-check                     # Trigger notificaciones de estado
 ```
 
 ---
@@ -581,9 +584,9 @@ Al crear un release, seguir este orden estricto:
 - Portfolio management (CRUD, onboarding wizard SSE, summary, analytics)
 - Contributions (recording, history endpoint, deployed tracking)
 - Position updates (auto-fetch prices, descarga histórica de nuevos tickers)
-- Rebalanceo (Sharpe Nelder-Mead, deploy signals)
+- Rebalanceo (Sharpe Nelder-Mead, deploy conditions)
 - Configuración (panel completo con todos los parámetros)
-- Recomendaciones (alertas en tiempo real)
+- Notificaciones de estado (condiciones de deploy, leverage, contribuciones)
 - Visualizaciones (dashboard charts, backtest simulator)
 - Analytics (CAGR, XIRR, Sharpe, drawdown, underwater days)
 - Modelo de equity (borrowedAmount tracked en todos los servicios)
@@ -593,9 +596,9 @@ Al crear un release, seguir este orden estricto:
 - ~~Configurar cron jobs en producción~~ — Completado: GitHub Actions (ver `infra/CRON_JOBS.md`)
 
 ### Pendiente — Media prioridad
-- Notificaciones email/SMS para alertas urgentes
+- Notificaciones email/SMS para alertas de atención
 - ~~Tests (al menos para rebalanceo)~~ — Completado: unit tests para `RebalanceService` (17 tests) y `PortfolioOwnershipGuard` (6 tests) en `tests/unit/`
-- Persistencia de historial de recomendaciones
+- Persistencia de historial de notificaciones
 
 ### Pendiente — Baja prioridad
 - Múltiples portfolios por usuario

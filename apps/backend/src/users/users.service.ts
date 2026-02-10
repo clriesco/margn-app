@@ -30,7 +30,7 @@ export class UsersService {
       email: user.email,
       fullName: user.fullName,
       avatarUrl: user.avatarUrl,
-      notifyOnRecommendations: user.notifyOnRecommendations ?? true,
+      notifyOnNotifications: user.notifyOnNotifications ?? true,
       notifyOnContributions: user.notifyOnContributions ?? true,
       notifyOnLeverageAlerts: user.notifyOnLeverageAlerts ?? true,
       notifyOnRebalance: user.notifyOnRebalance ?? true,
@@ -58,7 +58,7 @@ export class UsersService {
       email: user.email,
       fullName: user.fullName,
       avatarUrl: user.avatarUrl,
-      notifyOnRecommendations: user.notifyOnRecommendations ?? true,
+      notifyOnNotifications: user.notifyOnNotifications ?? true,
       notifyOnContributions: user.notifyOnContributions ?? true,
       notifyOnLeverageAlerts: user.notifyOnLeverageAlerts ?? true,
       notifyOnRebalance: user.notifyOnRebalance ?? true,
@@ -90,9 +90,9 @@ export class UsersService {
       data: {
         fullName: data.fullName !== undefined ? data.fullName : undefined,
         avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : undefined,
-        notifyOnRecommendations:
-          data.notifyOnRecommendations !== undefined
-            ? data.notifyOnRecommendations
+        notifyOnNotifications:
+          data.notifyOnNotifications !== undefined
+            ? data.notifyOnNotifications
             : undefined,
         notifyOnContributions:
           data.notifyOnContributions !== undefined
@@ -114,7 +114,7 @@ export class UsersService {
       email: updated.email,
       fullName: updated.fullName,
       avatarUrl: updated.avatarUrl,
-      notifyOnRecommendations: updated.notifyOnRecommendations ?? true,
+      notifyOnNotifications: updated.notifyOnNotifications ?? true,
       notifyOnContributions: updated.notifyOnContributions ?? true,
       notifyOnLeverageAlerts: updated.notifyOnLeverageAlerts ?? true,
       notifyOnRebalance: updated.notifyOnRebalance ?? true,

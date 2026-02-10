@@ -92,7 +92,7 @@ export class CronService {
 
   /**
    * Execute daily check job
-   * Generates recommendations and alerts
+   * Generates status notifications
    */
   async runDailyCheck(): Promise<{ success: boolean; message: string }> {
     this.logger.log("🔍 Starting daily check...");
@@ -106,11 +106,11 @@ export class CronService {
       const result = await dailyCheckModule.runDailyCheck();
 
       this.logger.log(
-        `✅ Daily check completed: ${result.portfoliosChecked} portfolios, ${result.alertsGenerated} alerts`
+        `✅ Daily check completed: ${result.portfoliosChecked} portfolios, ${result.notificationsGenerated} notifications`
       );
       return {
         success: true,
-        message: `Daily check completed: ${result.portfoliosChecked} portfolios checked, ${result.alertsGenerated} alerts generated`,
+        message: `Daily check completed: ${result.portfoliosChecked} portfolios checked, ${result.notificationsGenerated} notifications generated`,
       };
     } catch (error) {
       this.logger.error("❌ Daily check failed:", error);

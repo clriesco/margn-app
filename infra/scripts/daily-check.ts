@@ -2,7 +2,7 @@
 
 /**
  * Daily portfolio check job
- * Verifies leverage status, generates alerts, and checks contribution days
+ * Verifies leverage status, generates notifications, and checks contribution days
  *
  * Run manually: npx ts-node daily-check.ts
  * Or via cron: 0 8 * * * cd /path/to/scripts && npx ts-node daily-check.ts
@@ -36,17 +36,17 @@ interface PortfolioState {
   leverageStatus: "low" | "in_range" | "high";
   isContributionDay: boolean;
   pendingContributions: number;
-  alerts: Alert[];
+  notifications: StatusNotification[];
   borrowedAmount: number | null;
 }
 
-interface Alert {
+interface StatusNotification {
   type:
-    | "contribution_due"
-    | "leverage_low"
-    | "leverage_high"
-    | "margin_warning";
-  priority: "low" | "medium" | "high" | "urgent";
+    | "contribution_reminder"
+    | "leverage_below_range"
+    | "leverage_above_range"
+    | "margin_ratio_alert";
+  level: "info" | "warning" | "attention";
   message: string;
   actionRequired: boolean;
 }
@@ -54,7 +54,7 @@ interface Alert {
 interface DailyCheckResult {
   date: string;
   portfoliosChecked: number;
-  alertsGenerated: number;
+  notificationsGenerated: number;
   portfolioStates: PortfolioState[];
 }
 
@@ -111,11 +111,6 @@ async function calculatePortfolioState(
   }
 
   // Get equity from latest metrics or calculate estimate
-  // IMPORTANT: The equity in latestMetric already includes contributions up to that point
-  // We need to:
-  // 1. Start from the metric's equity (which includes contributions)
-  // 2. Adjust for price movements: new_equity_from_prices - old_equity_from_prices
-  // 3. Add new contributions made since the metric
   let equity = portfolio.initialCapital;
   let borrowedAmount: number | null = null;
 
@@ -126,7 +121,7 @@ async function calculatePortfolioState(
       equity: true,
       exposure: true,
       borrowedAmount: true,
-      updatedAt: true, // Get exact timestamp when metric was last updated
+      updatedAt: true,
     },
   });
 
@@ -138,7 +133,7 @@ async function calculatePortfolioState(
       where: {
         portfolioId: portfolio.id,
         contributedAt: {
-          gt: latestMetric.updatedAt, // Greater than metric updatedAt (full timestamp comparison)
+          gt: latestMetric.updatedAt,
         },
       },
     });
@@ -148,22 +143,15 @@ async function calculatePortfolioState(
       0
     );
 
-    // Equity from price movements at the time of the metric
     const oldEquityFromPrices = latestMetric.exposure - (borrowedAmount || 0);
-
-    // Equity from price movements now
     const newEquityFromPrices = exposure - (borrowedAmount || 0);
-
-    // Change in equity due to price movements
     const equityChangeFromPrices = newEquityFromPrices - oldEquityFromPrices;
 
-    // Final equity = metric equity + price changes + new contributions
     equity =
       latestMetric.equity +
       equityChangeFromPrices +
       contributionsSinceLastMetric;
   } else {
-    // No previous metrics, estimate using target leverage
     const targetLeverage =
       portfolio.leverageTarget ||
       (portfolio.leverageMin + portfolio.leverageMax) / 2;
@@ -204,8 +192,8 @@ async function calculatePortfolioState(
     _sum: { amount: true },
   });
 
-  // Generate alerts
-  const alerts = generateAlerts(
+  // Generate notifications
+  const notifications = generateNotifications(
     portfolio,
     leverage,
     marginRatio,
@@ -233,96 +221,96 @@ async function calculatePortfolioState(
     leverageStatus,
     isContributionDay,
     pendingContributions: pendingContributions._sum.amount || 0,
-    alerts,
+    notifications,
     borrowedAmount,
   };
 }
 
 /**
- * Generate alerts based on portfolio state
+ * Generate status notifications based on portfolio state
  */
-function generateAlerts(
+function generateNotifications(
   portfolio: any,
   leverage: number,
   marginRatio: number,
   leverageStatus: "low" | "in_range" | "high",
   isContributionDay: boolean,
   pendingContributions: number
-): Alert[] {
-  const alerts: Alert[] = [];
+): StatusNotification[] {
+  const notifications: StatusNotification[] = [];
 
-  // Alert: Contribution day
+  // Notification: Contribution day
   if (isContributionDay) {
-    alerts.push({
-      type: "contribution_due",
-      priority: "medium",
-      message: `Hoy es tu día de aportación mensual. Aportación configurada: $${
+    notifications.push({
+      type: "contribution_reminder",
+      level: "info",
+      message: `Hoy es tu día de aportación configurado. Monto definido: $${
         portfolio.monthlyContribution?.toLocaleString() || 0
       }`,
       actionRequired: true,
     });
   }
 
-  // Alert: Leverage too low (need reborrow)
+  // Notification: Leverage below configured range
   if (leverageStatus === "low") {
-    alerts.push({
-      type: "leverage_low",
-      priority: "high",
+    notifications.push({
+      type: "leverage_below_range",
+      level: "warning",
       message: `Leverage efectivo (${leverage.toFixed(
         2
-      )}x) por debajo del mínimo (${
+      )}x) por debajo del mínimo configurado (${
         portfolio.leverageMin
-      }x). Considera aumentar exposición mediante reborrow.`,
+      }x). Puedes evaluar si aumentar la exposición.`,
       actionRequired: true,
     });
   }
 
-  // Alert: Leverage too high (need extra contribution)
+  // Notification: Leverage above configured range
   if (leverageStatus === "high") {
     const targetEquity = portfolio.exposure / portfolio.leverageMax;
     const extraNeeded = targetEquity - portfolio.equity;
 
-    alerts.push({
-      type: "leverage_high",
-      priority: "urgent",
-      message: `⚠️ URGENTE: Leverage efectivo (${leverage.toFixed(
+    notifications.push({
+      type: "leverage_above_range",
+      level: "attention",
+      message: `Leverage efectivo (${leverage.toFixed(
         2
-      )}x) por encima del máximo (${
+      )}x) por encima del máximo configurado (${
         portfolio.leverageMax
-      }x). Se requiere aporte extra de ~$${Math.ceil(
+      }x). El cálculo indica que un aporte de ~$${Math.ceil(
         extraNeeded
-      ).toLocaleString()} para reducir el riesgo.`,
+      ).toLocaleString()} reduciría el leverage al rango configurado.`,
       actionRequired: true,
     });
   }
 
-  // Alert: Margin warning (close to maintenance margin)
+  // Notification: Margin ratio alert
   const criticalMargin = portfolio.criticalMarginRatio || 0.1;
   const safeMargin = portfolio.safeMarginRatio || 0.15;
 
   if (marginRatio <= criticalMargin) {
-    alerts.push({
-      type: "margin_warning",
-      priority: "urgent",
-      message: `⚠️ CRÍTICO: Ratio de margen (${(marginRatio * 100).toFixed(
+    notifications.push({
+      type: "margin_ratio_alert",
+      level: "attention",
+      message: `Ratio de margen (${(marginRatio * 100).toFixed(
         1
-      )}%) cerca del nivel de mantenimiento. Riesgo de margin call inminente.`,
+      )}%) cerca del nivel de mantenimiento. Riesgo elevado de liquidación.`,
       actionRequired: true,
     });
   } else if (marginRatio <= safeMargin) {
-    alerts.push({
-      type: "margin_warning",
-      priority: "high",
+    notifications.push({
+      type: "margin_ratio_alert",
+      level: "warning",
       message: `Ratio de margen (${(marginRatio * 100).toFixed(
         1
       )}%) por debajo del nivel seguro (${(safeMargin * 100).toFixed(
         0
-      )}%). Considera reducir exposición o aumentar colateral.`,
+      )}%). Puedes evaluar reducir la exposición o aumentar el colateral.`,
       actionRequired: true,
     });
   }
 
-  return alerts;
+  return notifications;
 }
 
 /**
@@ -385,7 +373,7 @@ async function runDailyCheck(): Promise<DailyCheckResult> {
   console.log(`📅 Date: ${new Date().toISOString().split("T")[0]}\n`);
 
   const portfolioStates: PortfolioState[] = [];
-  let totalAlerts = 0;
+  let totalNotifications = 0;
 
   try {
     // Get all portfolios with their configuration
@@ -400,7 +388,7 @@ async function runDailyCheck(): Promise<DailyCheckResult> {
       return {
         date: new Date().toISOString(),
         portfoliosChecked: 0,
-        alertsGenerated: 0,
+        notificationsGenerated: 0,
         portfolioStates: [],
       };
     }
@@ -413,8 +401,8 @@ async function runDailyCheck(): Promise<DailyCheckResult> {
         continue;
       }
 
-      // Count alerts
-      totalAlerts += state.alerts.length;
+      // Count notifications
+      totalNotifications += state.notifications.length;
 
       // Store daily metric
       await storeDailyMetric(state);
@@ -433,15 +421,15 @@ async function runDailyCheck(): Promise<DailyCheckResult> {
     const totalExposure = portfolioStates.reduce((sum, s) => sum + s.exposure, 0);
 
     console.log(`📋 Summary: ${portfolioStates.length} portfolios | Equity: $${totalEquity.toLocaleString(undefined, { maximumFractionDigits: 0 })} | Exposure: $${totalExposure.toLocaleString(undefined, { maximumFractionDigits: 0 })}`);
-    console.log(`   Status: ${statusCounts.in_range} in range, ${statusCounts.low} low, ${statusCounts.high} high | Alerts: ${totalAlerts}${contributionDays > 0 ? ` | 📅 ${contributionDays} contribution day(s)` : ""}`);
+    console.log(`   Status: ${statusCounts.in_range} in range, ${statusCounts.low} low, ${statusCounts.high} high | Notifications: ${totalNotifications}${contributionDays > 0 ? ` | 📅 ${contributionDays} contribution day(s)` : ""}`);
 
-    // Only log alerts if there are any
-    if (totalAlerts > 0) {
-      console.log(`\n🔔 Alerts:`);
+    // Only log notifications if there are any
+    if (totalNotifications > 0) {
+      console.log(`\n🔔 Notifications:`);
       for (const state of portfolioStates) {
-        for (const alert of state.alerts) {
-          const icon = alert.priority === "urgent" ? "🚨" : alert.priority === "high" ? "⚠️" : "📢";
-          console.log(`   ${icon} ${state.portfolioName}: ${alert.message}`);
+        for (const notification of state.notifications) {
+          const icon = notification.level === "attention" ? "🚨" : notification.level === "warning" ? "⚠️" : "📢";
+          console.log(`   ${icon} ${state.portfolioName}: ${notification.message}`);
         }
       }
     }
@@ -449,7 +437,7 @@ async function runDailyCheck(): Promise<DailyCheckResult> {
     return {
       date: new Date().toISOString(),
       portfoliosChecked: portfolioStates.length,
-      alertsGenerated: totalAlerts,
+      notificationsGenerated: totalNotifications,
       portfolioStates,
     };
   } catch (error) {
@@ -465,44 +453,35 @@ async function runDailyCheck(): Promise<DailyCheckResult> {
 // ============================================
 
 /**
- * Send notifications for urgent alerts
+ * Send email notifications for urgent items
  * TODO: Implement email notifications via SendGrid, Resend, or similar
  */
 async function sendNotifications(result: DailyCheckResult): Promise<void> {
-  const urgentAlerts = result.portfolioStates.flatMap((state) =>
-    state.alerts
-      .filter((a) => a.priority === "urgent" || a.priority === "high")
-      .map((alert) => ({
+  const urgentNotifications = result.portfolioStates.flatMap((state) =>
+    state.notifications
+      .filter((n) => n.level === "attention" || n.level === "warning")
+      .map((notification) => ({
         email: state.userEmail,
         portfolioName: state.portfolioName,
-        alert,
+        notification,
       }))
   );
 
-  if (urgentAlerts.length === 0) {
+  if (urgentNotifications.length === 0) {
     console.log("\n📧 No urgent notifications to send.");
     return;
   }
 
-  console.log(`\n📧 Notifications to send: ${urgentAlerts.length}`);
+  console.log(`\n📧 Notifications to send: ${urgentNotifications.length}`);
 
-  for (const notification of urgentAlerts) {
+  for (const item of urgentNotifications) {
     console.log(
       `   → ${
-        notification.email
-      }: [${notification.alert.priority.toUpperCase()}] ${
-        notification.alert.type
+        item.email
+      }: [${item.notification.level.toUpperCase()}] ${
+        item.notification.type
       }`
     );
-
-    // TODO: Implement actual email sending
-    // Example with Resend:
-    // await resend.emails.send({
-    //   from: 'alerts@margn.app',
-    //   to: notification.email,
-    //   subject: `[${notification.alert.priority.toUpperCase()}] Portfolio Alert: ${notification.portfolioName}`,
-    //   html: `<p>${notification.alert.message}</p>`,
-    // });
   }
 
   console.log("   (Email sending not implemented - logging only)");
@@ -526,4 +505,4 @@ if (typeof require !== "undefined" && require.main === module) {
     });
 }
 
-export { runDailyCheck, DailyCheckResult, PortfolioState, Alert };
+export { runDailyCheck, DailyCheckResult, PortfolioState, StatusNotification };

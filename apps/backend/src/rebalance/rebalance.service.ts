@@ -147,8 +147,8 @@ export interface RebalanceProposal {
 }
 
 /**
- * Service for calculating optimal portfolio rebalancing
- * Implements the full algorithm from BacktestHistorical.ipynb
+ * Service for portfolio rebalancing simulation
+ * Implements mathematical optimization from BacktestHistorical.ipynb
  */
 @Injectable()
 export class RebalanceService {
@@ -1260,7 +1260,7 @@ export class RebalanceService {
 
     return {
       success: true,
-      message: "Rebalance accepted and portfolio updated",
+      message: "Simulation applied and portfolio updated",
     };
   }
 

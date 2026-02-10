@@ -102,6 +102,7 @@ export default function Onboarding() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [creationProgress, setCreationProgress] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // Dynamic step calculation
   const getSteps = useCallback(() => {
@@ -582,7 +583,7 @@ export default function Onboarding() {
               Configura tu Portfolio
             </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-              Vamos a configurar tu portfolio de inversión apalancada
+              Vamos a configurar los parámetros de cálculo de tu portfolio
             </p>
           </div>
 
@@ -643,8 +644,8 @@ export default function Onboarding() {
                     fontSize: "0.9rem",
                   }}
                 >
-                  Selecciona un perfil que se adapte a tu tolerancia al riesgo y
-                  horizonte de inversión.
+                  Selecciona un perfil que define los rangos de apalancamiento
+                  para los cálculos.
                 </p>
 
                 {isLoadingProfiles ? (
@@ -778,7 +779,7 @@ export default function Onboarding() {
                     fontSize: "0.9rem",
                   }}
                 >
-                  Selecciona una estrategia de la plataforma o crea una
+                  Selecciona una estrategia de la plataforma o crea una configuración
                   personalizada.
                 </p>
 
@@ -883,7 +884,7 @@ export default function Onboarding() {
                     fontSize: "0.9rem",
                   }}
                 >
-                  Busca y añade los activos que quieres incluir en tu portfolio.
+                  Busca y añade los activos que quieres monitorizar.
                 </p>
 
                 {/* Search Input */}
@@ -1089,7 +1090,7 @@ export default function Onboarding() {
                     fontSize: "0.9rem",
                   }}
                 >
-                  Elige cómo quieres distribuir tu inversión entre los activos.
+                  Elige cómo asignar los pesos de cálculo entre los activos.
                 </p>
 
                 {/* Weight Method Selector */}
@@ -1107,7 +1108,7 @@ export default function Onboarding() {
                         key: "sharpe" as const,
                         icon: <TrendingUp size={16} />,
                         title: "Optimización Sharpe",
-                        desc: "Los pesos se calculan automáticamente para maximizar el retorno ajustado al riesgo",
+                        desc: "Los pesos se calculan automáticamente usando optimización Sharpe sobre datos históricos",
                       },
                       {
                         key: "equal" as const,
@@ -1333,8 +1334,8 @@ export default function Onboarding() {
                     style={inputStyle}
                   />
                   <p style={helpStyle}>
-                    El capital inicial representa tu equity disponible para
-                    invertir.
+                    El capital inicial es el valor de referencia para los
+                    cálculos de métricas.
                   </p>
                 </div>
               </div>
@@ -1646,6 +1647,50 @@ export default function Onboarding() {
                     unos segundos.
                   </p>
                 </div>
+
+                {/* Legal consent checkbox */}
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "0.75rem",
+                    marginTop: "1.25rem",
+                    padding: "1rem",
+                    background: "rgba(148, 163, 184, 0.06)",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(148, 163, 184, 0.12)",
+                    cursor: "pointer",
+                    fontSize: "0.85rem",
+                    color: "var(--text-muted)",
+                    lineHeight: "1.5",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    style={{
+                      marginTop: "0.2rem",
+                      accentColor: "var(--accent-blue)",
+                      width: "16px",
+                      height: "16px",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span>
+                    Entiendo que Margn es una herramienta de cálculo y
+                    visualización, no un asesor financiero. Las simulaciones y
+                    métricas son informativas. Acepto los{" "}
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "var(--accent-blue)", textDecoration: "underline" }}
+                    >
+                      Términos y Condiciones
+                    </a>.
+                  </span>
+                </label>
               </div>
             )}
           </div>
@@ -1737,7 +1782,15 @@ export default function Onboarding() {
                 </button>
               )}
               {currentStep === totalSteps && !isSubmitting && (
-                <button onClick={handleSubmit} style={submitButtonStyle}>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!acceptedTerms}
+                  style={{
+                    ...submitButtonStyle,
+                    opacity: acceptedTerms ? 1 : 0.5,
+                    cursor: acceptedTerms ? "pointer" : "not-allowed",
+                  }}
+                >
                   <div
                     style={{
                       display: "flex",

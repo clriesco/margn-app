@@ -19,6 +19,7 @@ import {
   deletePortfolio,
 } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
+import { LegalDisclaimer } from "../../components/LegalDisclaimer";
 import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
 import {
   DollarSign,
@@ -448,6 +449,10 @@ export default function Configuration() {
               <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                 Personaliza los parámetros de la estrategia DCA apalancada
               </p>
+            </div>
+
+            <div style={{ marginBottom: "1.5rem" }}>
+              <LegalDisclaimer text="Estos parámetros definen cómo la herramienta realiza sus cálculos. Tú eres responsable de los valores configurados y de las decisiones de inversión que tomes." />
             </div>
 
             <form onSubmit={handleSubmit}>

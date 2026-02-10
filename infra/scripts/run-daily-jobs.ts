@@ -6,7 +6,7 @@
  * 0. Cleanup Duplicates - Removes duplicate metrics entries
  * 1. Price Ingestion - Fetches daily asset prices
  * 2. Metrics Refresh - Recalculates portfolio metrics
- * 3. Daily Check - Verifies portfolios and generates alerts
+ * 3. Daily Check - Verifies portfolios and generates status notifications
  *
  * Usage:
  *   npm run daily:all

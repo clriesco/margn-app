@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usePortfolio } from '../../contexts/PortfolioContext';
 import { getBacktestPrices, getPortfolioSummary, getPortfolioConfiguration } from '../../lib/api';
 import DashboardSidebar from '../../components/DashboardSidebar';
+import { LegalDisclaimer } from '../../components/LegalDisclaimer';
 import BacktestConfigForm from '../../components/backtest/BacktestConfig';
 import BacktestExplanation, { BacktestExplanationHandle } from '../../components/backtest/BacktestExplanation';
 import BacktestProgress from '../../components/backtest/BacktestProgress';
@@ -255,6 +256,10 @@ export default function BacktestPage() {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                 Simula la estrategia DCA apalancada con datos historicos reales
               </p>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <LegalDisclaimer text="El backtest es una simulación histórica con fines educativos. Los resultados pasados no garantizan rendimientos futuros. No constituye asesoramiento financiero." />
             </div>
 
             {/* Date warning */}

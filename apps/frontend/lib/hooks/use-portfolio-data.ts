@@ -5,9 +5,9 @@ import {
   getPortfolioSummary,
   getPortfolioMetrics,
   getContributionHistory,
-  getPortfolioRecommendations,
+  getPortfolioNotifications,
   PortfolioSummary,
-  PortfolioRecommendationsResponse,
+  PortfolioNotificationsResponse,
 } from "../api";
 import { swrConfig } from "../swr-config";
 
@@ -126,24 +126,24 @@ export function useContributionHistory(portfolioId: string | null) {
 }
 
 /**
- * Hook to get portfolio recommendations (cached)
- * Recommendations change more frequently, so shorter cache
+ * Hook to get portfolio notifications (cached)
+ * Notifications change more frequently, so shorter cache
  */
-export function usePortfolioRecommendations(portfolioId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<PortfolioRecommendationsResponse>(
-    portfolioId ? `portfolio-recommendations-${portfolioId}` : null,
-    () => getPortfolioRecommendations(portfolioId!),
+export function usePortfolioNotifications(portfolioId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR<PortfolioNotificationsResponse>(
+    portfolioId ? `portfolio-notifications-${portfolioId}` : null,
+    () => getPortfolioNotifications(portfolioId!),
     {
       ...swrConfig,
-      // Recommendations can change, but cache for 1 minute
+      // Notifications can change, but cache for 1 minute
       revalidateIfStale: true,
-      // Don't fail if recommendations fail
+      // Don't fail if notifications fail
       shouldRetryOnError: false,
     }
   );
 
   return {
-    recommendations: data || null,
+    notifications: data || null,
     isLoading,
     error,
     mutate, // Allow manual refresh
@@ -153,7 +153,7 @@ export function usePortfolioRecommendations(portfolioId: string | null) {
 /**
  * Invalidate all portfolio-related cache for a specific portfolio
  * Use this after operations that modify portfolio data (rebalance, position updates, etc.)
- * 
+ *
  * @param portfolioId - Portfolio ID to invalidate cache for
  * @param userEmail - User email (optional, for portfolios list)
  */
@@ -162,9 +162,9 @@ export function invalidatePortfolioCache(portfolioId: string | null, userEmail?:
     // Invalidate all cache keys for this portfolio
     mutate(`portfolio-summary-${portfolioId}`, undefined, { revalidate: true });
     mutate(`portfolio-metrics-${portfolioId}`, undefined, { revalidate: true });
-    mutate(`portfolio-recommendations-${portfolioId}`, undefined, { revalidate: true });
+    mutate(`portfolio-notifications-${portfolioId}`, undefined, { revalidate: true });
   }
-  
+
   if (userEmail) {
     // Invalidate portfolios list
     mutate(`portfolios-${userEmail}`, undefined, { revalidate: true });
@@ -178,7 +178,7 @@ export function invalidateAllPortfolioCache(userEmail?: string) {
   if (userEmail) {
     mutate(`portfolios-${userEmail}`, undefined, { revalidate: true });
   }
-  
+
   // Invalidate all portfolio-related keys (SWR will match keys starting with these prefixes)
   mutate(
     (key) => typeof key === 'string' && key.startsWith('portfolio-'),

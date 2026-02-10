@@ -21,7 +21,7 @@ model User {
   avatarUrl String? @map("avatar_url")
 
   // Notification preferences
-  notifyOnRecommendations Boolean @default(true) @map("notify_on_recommendations")
+  notifyOnNotifications Boolean @default(true) @map("notify_on_notifications")
   notifyOnContributions   Boolean @default(true) @map("notify_on_contributions")
   notifyOnLeverageAlerts  Boolean @default(true) @map("notify_on_leverage_alerts")
   notifyOnRebalance       Boolean @default(true) @map("notify_on_rebalance")

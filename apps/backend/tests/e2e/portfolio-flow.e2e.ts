@@ -394,14 +394,14 @@ describe("E2E: Portfolio Flow", () => {
     it("should preserve metrics consistency after rebalance", async () => {
       // Get proposal
       const proposal = await apiRequest(
-        `/portfolios/${testPortfolioId}/rebalance/proposal`
+        `/portfolios/${testPortfolioId}/rebalance/simulation`
       );
       expect(proposal.positions).toBeDefined();
 
       const summaryBefore = await getPortfolioSummary();
 
       // Accept proposal
-      await apiRequest(`/portfolios/${testPortfolioId}/rebalance/accept`, {
+      await apiRequest(`/portfolios/${testPortfolioId}/rebalance/apply`, {
         method: "POST",
         body: proposal,
       });

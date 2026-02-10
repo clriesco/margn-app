@@ -3,14 +3,14 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
 import {
-  PortfolioRecommendationsResponse,
+  PortfolioNotificationsResponse,
   PortfolioCurrentState,
-  DeploySignals,
-  Recommendation,
-  PurchaseRecommendation,
-  ExtraContributionRecommendation,
-  RecommendationPriority,
-} from "./dto/portfolio-recommendations.dto";
+  DeployConditions,
+  Notification,
+  PurchaseCalculation,
+  ExtraContributionCalculation,
+  NotificationLevel,
+} from "./dto/portfolio-notifications.dto";
 import { PortfolioConfigurationService } from "./portfolio-configuration.service";
 
 /**
@@ -35,23 +35,23 @@ const SYMBOL_UNITS: Record<string, string> = {
 };
 
 /**
- * Service for generating portfolio recommendations
- * Implements the strategy from leveraged-dca-simulator README
+ * Service for generating portfolio status notifications
+ * based on user-defined parameters and market data
  */
 @Injectable()
-export class PortfolioRecommendationsService {
+export class PortfolioNotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: PortfolioConfigurationService
   ) {}
 
   /**
-   * Get recommendations for a portfolio
+   * Get notifications for a portfolio
    * Main entry point that orchestrates all calculations
    */
-  async getRecommendations(
+  async getNotifications(
     portfolioId: string
-  ): Promise<PortfolioRecommendationsResponse> {
+  ): Promise<PortfolioNotificationsResponse> {
     // 1. Get portfolio with all related data
     const portfolio = await this.prisma.portfolio.findUnique({
       where: { id: portfolioId },
@@ -90,8 +90,8 @@ export class PortfolioRecommendationsService {
     // 4. Calculate current state
     const currentState = this.calculateCurrentState(portfolio, latestPrices);
 
-    // 5. Evaluate deploy signals
-    const signals = this.evaluateDeploySignals(
+    // 5. Evaluate deploy conditions
+    const conditions = this.evaluateDeployConditions(
       portfolio,
       currentState,
       targetWeights
@@ -104,8 +104,8 @@ export class PortfolioRecommendationsService {
     const nextContributionDate =
       await this.configService.getNextContributionDate(portfolioId);
 
-    // 7. Generate recommendations based on state
-    const recommendations = await this.generateRecommendations(
+    // 7. Generate notifications based on state
+    const notifications = await this.generateNotifications(
       portfolio,
       currentState,
       config,
@@ -138,28 +138,26 @@ export class PortfolioRecommendationsService {
         targetWeights,
       },
 
-      signals,
+      conditions,
 
-      recommendations,
+      notifications,
 
       isContributionDay,
       nextContributionDate: nextContributionDate?.toISOString() ?? null,
 
       summary: {
         leverageStatus,
-        actionRequired: recommendations.some(
-          (r) => r.priority === "high" || r.priority === "urgent"
+        attentionRequired: notifications.some(
+          (r) => r.level === "warning" || r.level === "attention"
         ),
-        primaryRecommendation:
-          recommendations.length > 0 ? recommendations[0].title : null,
+        primaryNotification:
+          notifications.length > 0 ? notifications[0].title : null,
       },
     };
   }
 
   /**
    * Calculate current portfolio state
-   * NOTE: Contributions go directly to equity when registered,
-   * so pendingContributions should be 0 in normal operation
    */
   private calculateCurrentState(
     portfolio: any,
@@ -195,14 +193,11 @@ export class PortfolioRecommendationsService {
     }
 
     // Calculate pending contributions (not yet deployed) - for display only
-    // NOTE: Contributions are now marked as deployed immediately when registered,
-    // so pending contributions should be 0 in normal operation
     const pendingContributions = portfolio.contributions
       .filter((c: any) => !c.deployed)
       .reduce((sum: number, c: any) => sum + c.amount, 0);
 
     // Equity should already include all contributions (they're marked as deployed immediately)
-    // We do NOT add pendingContributions here to avoid double-counting
     const effectiveEquity = baseEquity;
 
     // Calculate leverage using effective equity
@@ -210,25 +205,25 @@ export class PortfolioRecommendationsService {
     const marginRatio = exposure > 0 ? effectiveEquity / exposure : 1;
 
     return {
-      equity: effectiveEquity, // Includes all contributions (they go directly to equity)
+      equity: effectiveEquity,
       exposure,
       leverage,
       marginRatio,
       peakEquity: Math.max(peakEquity, effectiveEquity),
-      pendingContributions, // Should be 0 in normal operation
+      pendingContributions,
       positionValues,
       positionQuantities,
     };
   }
 
   /**
-   * Evaluate deploy signals (drawdown, weight deviation, volatility)
+   * Evaluate deploy conditions (drawdown, weight deviation, volatility)
    */
-  private evaluateDeploySignals(
+  private evaluateDeployConditions(
     portfolio: any,
     currentState: PortfolioCurrentState,
     targetWeights: Record<string, number>
-  ): DeploySignals {
+  ): DeployConditions {
     const { equity, peakEquity, positionValues, exposure } = currentState;
 
     // 1. Calculate drawdown
@@ -283,10 +278,10 @@ export class PortfolioRecommendationsService {
 
     // 4. Determine deploy fraction
     let deployFraction = 0;
-    const anySignalTriggered =
+    const anyConditionTriggered =
       drawdownTriggered || weightDeviationTriggered || volatilityTriggered;
 
-    if (anySignalTriggered) {
+    if (anyConditionTriggered) {
       deployFraction = portfolio.gradualDeployFactor;
     }
 
@@ -297,24 +292,23 @@ export class PortfolioRecommendationsService {
       weightDeviationTriggered,
       volatility,
       volatilityTriggered,
-      anySignalTriggered,
+      anyConditionTriggered,
       deployFraction,
     };
   }
 
   /**
-   * Generate recommendations based on current state and signals
-   * Implements the 3 cases from the strategy
+   * Generate notifications based on current state and user-configured parameters
    */
-  private async generateRecommendations(
+  private async generateNotifications(
     portfolio: any,
     currentState: PortfolioCurrentState,
     config: any,
     targetWeights: Record<string, number>,
     latestPrices: Record<string, number>,
     isContributionDay: boolean
-  ): Promise<Recommendation[]> {
-    const recommendations: Recommendation[] = [];
+  ): Promise<Notification[]> {
+    const notifications: Notification[] = [];
     const { leverage } = currentState;
     const { leverageMin, leverageMax } = config;
 
@@ -341,11 +335,11 @@ export class PortfolioRecommendationsService {
       });
 
       if (!todayContribution) {
-        recommendations.push({
-          type: "contribution_due",
-          priority: "medium",
-          title: "Recordatorio: Aportación Mensual",
-          description: `Hoy es tu día de aportación mensual. Registra tu aportación de $${
+        notifications.push({
+          type: "contribution_reminder",
+          level: "info",
+          title: "Recordatorio: Día de Aportación Configurado",
+          description: `Hoy es tu día de aportación configurado. El monto definido es de $${
             config.monthlyContribution?.toLocaleString("es-ES") || 0
           }.`,
           actions: {
@@ -359,21 +353,20 @@ export class PortfolioRecommendationsService {
       }
     }
 
-    // Case 2: Leverage LOW - Need to increase exposure (reborrow)
+    // Case 2: Leverage below configured range
     if (leverageStatus === "low") {
       // Special case: brand new portfolio with no positions bought yet
       if (currentState.exposure < 1) {
-        recommendations.push({
-          type: "leverage_low",
-          priority: "high",
-          title: "Configura tu primera compra",
+        notifications.push({
+          type: "leverage_below_range",
+          level: "warning",
+          title: "Resultado de la simulación disponible",
           description:
-            "Ya tienes los activos y pesos de tu portfolio configurados. Ve a Rebalanceo para ver las compras exactas que necesitas hacer.",
+            "Ya tienes los activos y pesos de tu portfolio configurados. Ve al Simulador para ver los ajustes calculados según tus parámetros.",
           actionUrl: "/dashboard/rebalance",
         });
       } else {
-        // Use leverage target instead of minimum to bring it to a healthy level
-        // This ensures we recommend meaningful purchases, not just to reach the bare minimum
+        // Use leverage target instead of minimum
         const targetLeverageForReborrow =
           config.leverageTarget || leverageMin;
 
@@ -390,18 +383,18 @@ export class PortfolioRecommendationsService {
           0
         );
 
-        // Only show recommendation if there are meaningful purchases to make
+        // Only show notification if there are meaningful purchases
         if (purchases.length > 0 && totalPurchaseValue > 1) {
-          recommendations.push({
-            type: "leverage_low",
-            priority: "high",
-            title: `Leverage Bajo (${leverage.toFixed(2).replace(".", ",")}x)`,
-            description: `Tu leverage efectivo está por debajo del mínimo (${leverageMin
+          notifications.push({
+            type: "leverage_below_range",
+            level: "warning",
+            title: `Leverage por debajo del rango (${leverage.toFixed(2).replace(".", ",")}x)`,
+            description: `Tu leverage efectivo está por debajo del mínimo configurado (${leverageMin
               .toFixed(1)
               .replace(
                 ".",
                 ","
-              )}x). Se recomienda aumentar exposición mediante reborrow hasta el leverage objetivo (${targetLeverageForReborrow
+              )}x). Según tus parámetros, la exposición podría aumentarse hasta el objetivo (${targetLeverageForReborrow
               .toFixed(1)
               .replace(".", ",")}x).`,
             actions: {
@@ -411,44 +404,43 @@ export class PortfolioRecommendationsService {
             actionUrl: "/dashboard/rebalance",
           });
         } else {
-          // If leverage is very close to minimum, just show a reminder
-          recommendations.push({
-            type: "leverage_low",
-            priority: "medium",
-            title: `Leverage en el Límite Inferior (${leverage
+          notifications.push({
+            type: "leverage_below_range",
+            level: "info",
+            title: `Leverage en el límite inferior (${leverage
               .toFixed(2)
               .replace(".", ",")}x)`,
-            description: `Tu leverage está justo en el límite inferior (${leverageMin
+            description: `Tu leverage está justo en el límite inferior configurado (${leverageMin
               .toFixed(1)
               .replace(
                 ".",
                 ","
-              )}x). Considera aumentar exposición si el mercado lo permite.`,
+              )}x). Puedes evaluar si ajustar la exposición según las condiciones del mercado.`,
             actionUrl: "/dashboard/rebalance",
           });
         }
       }
     }
 
-    // Case 3: Leverage HIGH - Need extra contribution as collateral
+    // Case 3: Leverage above configured range
     if (leverageStatus === "high") {
       const extraContribution = this.calculateExtraContribution(
         currentState,
         leverageMax
       );
 
-      recommendations.push({
-        type: "leverage_high",
-        priority: "urgent",
-        title: `Leverage Alto (${leverage
+      notifications.push({
+        type: "leverage_above_range",
+        level: "attention",
+        title: `Leverage por encima del rango (${leverage
           .toFixed(2)
-          .replace(".", ",")}x) - URGENTE`,
-        description: `Tu leverage efectivo está por encima del máximo (${leverageMax
+          .replace(".", ",")}x)`,
+        description: `Tu leverage efectivo está por encima del máximo configurado (${leverageMax
           .toFixed(1)
           .replace(
             ".",
             ","
-          )}x). Se recomienda realizar un aporte extra para reducir el leverage.`,
+          )}x). El cálculo indica que un aporte adicional podría reducir el leverage al rango definido.`,
         actions: {
           extraContribution,
         },
@@ -458,23 +450,21 @@ export class PortfolioRecommendationsService {
       });
     }
 
-    // Sort by priority
-    const priorityOrder: Record<RecommendationPriority, number> = {
-      urgent: 0,
-      high: 1,
-      medium: 2,
-      low: 3,
+    // Sort by level
+    const levelOrder: Record<NotificationLevel, number> = {
+      attention: 0,
+      warning: 1,
+      info: 2,
     };
-    recommendations.sort(
-      (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
+    notifications.sort(
+      (a, b) => levelOrder[a.level] - levelOrder[b.level]
     );
 
-    return recommendations;
+    return notifications;
   }
 
   /**
-   * Calculate specific purchases for leverage_low case
-   * Increases exposure to reach target leverage (usually leverageTarget, not just minimum)
+   * Calculate specific purchases for leverage_below_range case
    */
   private async calculateSpecificPurchases(
     portfolio: any,
@@ -482,46 +472,15 @@ export class PortfolioRecommendationsService {
     targetWeights: Record<string, number>,
     latestPrices: Record<string, number>,
     targetLeverage: number
-  ): Promise<PurchaseRecommendation[]> {
+  ): Promise<PurchaseCalculation[]> {
     const { equity, exposure } = currentState;
 
     // Target exposure to reach target leverage
     const targetExposure = equity * targetLeverage;
     const exposureIncrease = targetExposure - exposure;
 
-    // Only recommend purchases if increase is meaningful (at least $10)
+    // Only calculate if increase is meaningful (at least $10)
     if (exposureIncrease <= 10) {
-      return [];
-    }
-
-    return this.distributePurchasesByWeight(
-      portfolio,
-      targetWeights,
-      latestPrices,
-      exposureIncrease
-    );
-  }
-
-  /**
-   * Calculate purchases for rebalancing with pending contributions
-   */
-  private async calculateRebalancePurchases(
-    portfolio: any,
-    currentState: PortfolioCurrentState,
-    targetWeights: Record<string, number>,
-    latestPrices: Record<string, number>,
-    deployFraction: number
-  ): Promise<PurchaseRecommendation[]> {
-    const { pendingContributions } = currentState;
-
-    // Amount to deploy based on fraction
-    const amountToDeploy = pendingContributions * deployFraction;
-
-    // With leverage, exposure increase is larger
-    const leverageMultiplier = portfolio.leverageTarget || 3.0;
-    const exposureIncrease = amountToDeploy * leverageMultiplier;
-
-    if (exposureIncrease <= 0) {
       return [];
     }
 
@@ -541,8 +500,8 @@ export class PortfolioRecommendationsService {
     targetWeights: Record<string, number>,
     latestPrices: Record<string, number>,
     totalAmount: number
-  ): Promise<PurchaseRecommendation[]> {
-    const purchases: PurchaseRecommendation[] = [];
+  ): Promise<PurchaseCalculation[]> {
+    const purchases: PurchaseCalculation[] = [];
 
     // Get all assets
     const assets = await this.prisma.asset.findMany({
@@ -583,18 +542,14 @@ export class PortfolioRecommendationsService {
   }
 
   /**
-   * Calculate extra contribution needed for leverage_high case
+   * Calculate extra contribution needed for leverage_above_range case
    */
   private calculateExtraContribution(
     currentState: PortfolioCurrentState,
     maxLeverage: number
-  ): ExtraContributionRecommendation {
+  ): ExtraContributionCalculation {
     const { equity, exposure, leverage } = currentState;
 
-    // Target equity to achieve max leverage
-    // leverage = exposure / equity
-    // maxLeverage = exposure / targetEquity
-    // targetEquity = exposure / maxLeverage
     const targetEquity = exposure / maxLeverage;
     const extraNeeded = targetEquity - equity;
 
@@ -611,14 +566,13 @@ export class PortfolioRecommendationsService {
 
   /**
    * Get leverage status (low, in_range, high)
-   * Uses small tolerance to handle floating point precision issues
    */
   private getLeverageStatus(
     leverage: number,
     leverageMin: number,
     leverageMax: number
   ): "low" | "in_range" | "high" {
-    const tolerance = 0.01; // 1% tolerance for floating point precision
+    const tolerance = 0.01;
     if (leverage < leverageMin - tolerance) return "low";
     if (leverage > leverageMax + tolerance) return "high";
     return "in_range";
@@ -628,12 +582,9 @@ export class PortfolioRecommendationsService {
    * Get unit for an asset
    */
   private getUnitForAsset(symbol: string, assetType: string): string {
-    // Check symbol-specific override first
     if (SYMBOL_UNITS[symbol]) {
       return SYMBOL_UNITS[symbol];
     }
-
-    // Fall back to asset type
     return ASSET_UNITS[assetType] || "units";
   }
 
