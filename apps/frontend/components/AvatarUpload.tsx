@@ -1,8 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import Cropper, { Area } from "react-easy-crop";
 import { Camera, Loader2, X, ZoomIn, ZoomOut, Check } from "lucide-react";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
+import { useUser } from "@clerk/nextjs";
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -74,8 +73,7 @@ export default function AvatarUpload({
   onUploadComplete,
   size = 96,
 }: AvatarUploadProps) {
-  const { user } = useAuth();
-  const userId = user?.id || "";
+  const { user } = useUser();
 
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +95,7 @@ export default function AvatarUpload({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!userId) {
+    if (!user) {
       setError("Debes iniciar sesión para subir una imagen");
       return;
     }
@@ -130,7 +128,7 @@ export default function AvatarUpload({
   };
 
   const handleCropConfirm = async () => {
-    if (!imageToCrop || !croppedAreaPixels) return;
+    if (!imageToCrop || !croppedAreaPixels || !user) return;
 
     setUploading(true);
     setError(null);
@@ -144,38 +142,15 @@ export default function AvatarUpload({
       setPreviewUrl(croppedUrl);
       setShowCropper(false);
 
-      // Upload to Supabase Storage
-      const filePath = `${userId}/avatar.jpg`;
+      // Convert blob to File for Clerk API
+      const file = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
 
-      // Delete existing avatars first
-      await supabase.storage.from("avatars").remove([
-        `${userId}/avatar.jpg`,
-        `${userId}/avatar.png`,
-        `${userId}/avatar.webp`,
-      ]);
+      // Upload to Clerk
+      const imageResource = await user.setProfileImage({ file });
+      const avatarUrl = imageResource?.publicUrl || user.imageUrl;
 
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, croppedBlob, {
-          cacheControl: "3600",
-          upsert: true,
-          contentType: "image/jpeg",
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      // Add cache buster
-      const urlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
-
-      onUploadComplete(urlWithCacheBuster);
-      setPreviewUrl(urlWithCacheBuster);
+      onUploadComplete(avatarUrl);
+      setPreviewUrl(avatarUrl);
 
       // Cleanup
       URL.revokeObjectURL(imageToCrop);
@@ -197,18 +172,13 @@ export default function AvatarUpload({
   };
 
   const handleRemoveAvatar = async () => {
+    if (!user) return;
+
     setUploading(true);
     setError(null);
 
     try {
-      await supabase.storage
-        .from("avatars")
-        .remove([
-          `${userId}/avatar.jpg`,
-          `${userId}/avatar.png`,
-          `${userId}/avatar.webp`,
-        ]);
-
+      await user.setProfileImage({ file: null });
       setPreviewUrl(null);
       onUploadComplete(null);
     } catch (err) {

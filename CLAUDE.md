@@ -6,9 +6,9 @@ Herramienta de cálculo, optimización matemática y visualización de datos fin
 
 ## Tech stack
 
-- **Backend:** NestJS 10 + TypeScript + Prisma 5 + PostgreSQL (Supabase)
+- **Backend:** NestJS 10 + TypeScript + Prisma 5 + PostgreSQL
 - **Frontend:** Next.js 14 + React 19 + SWR + lucide-react
-- **Auth:** Supabase Auth (magic link passwordless)
+- **Auth:** Clerk (magic link + Google OAuth)
 - **Infra:** Docker (Node 20 Alpine), Vercel (frontend), Render (backend)
 - **Monorepo:** npm workspaces
 
@@ -19,7 +19,7 @@ margn/
 ├── apps/
 │   ├── backend/                # NestJS API (puerto 3003)
 │   │   ├── src/
-│   │   │   ├── auth/           # Supabase JWT auth, guards, decorators
+│   │   │   ├── auth/           # Clerk auth, guards, decorators, webhook
 │   │   │   ├── users/          # Perfiles y preferencias de notificación
 │   │   │   ├── portfolios/     # CRUD portfolios, notificaciones, onboarding
 │   │   │   ├── contributions/  # Tracking de contribuciones DCA
@@ -33,7 +33,7 @@ margn/
 │   │   └── tests/
 │   └── frontend/               # Next.js Dashboard (puerto 3002)
 │       ├── pages/
-│       │   ├── index.tsx                # Login (magic link)
+│       │   ├── index.tsx                # Login (Clerk: magic link + Google OAuth)
 │       │   └── dashboard/
 │       │       ├── index.tsx            # Dashboard principal
 │       │       ├── onboarding.tsx       # Wizard de creación (SSE progress)
@@ -48,13 +48,17 @@ margn/
 │       │   ├── DashboardMenu.tsx        # Menú superior
 │       │   └── NumberInput.tsx          # Input numérico
 │       ├── lib/
-│       │   ├── api.ts                   # Cliente API con auth, retry automático de 401, y refresh de token
+│       │   ├── api.ts                   # Cliente API con auth (token via Clerk)
+│       │   ├── auth.ts                  # Compatibility hook wrapping Clerk
 │       │   ├── hooks/use-portfolio-data.ts  # Hooks SWR
 │       │   ├── number-format.ts         # Formato numérico (locale ES)
-│       │   ├── supabase.ts              # Cliente Supabase
 │       │   └── swr-config.ts            # Config SWR
+│       ├── components/
+│       │   └── ClerkTokenProvider.tsx    # Bridge Clerk token → api.ts
+│       ├── middleware.ts                 # Clerk route protection
 │       └── contexts/
-│           └── AuthContext.tsx           # Provider de autenticación (session management, token refresh cada 5 min)
+│           ├── PortfolioContext.tsx      # Provider de portfolio activo
+│           └── ThemeContext.tsx          # Provider de tema
 ├── packages/
 │   └── shared/                 # Tipos compartidos (planned)
 └── infra/
@@ -64,7 +68,8 @@ margn/
         ├── daily-check.ts      # Generación de notificaciones de estado (~590 líneas)
         ├── run-daily-jobs.ts   # Orquestador de jobs (secuencial, fail-fast en step 1)
         ├── reset-database.ts   # Reset de BD para desarrollo
-        └── seed-demo-portfolio.ts  # Seed de datos demo
+        ├── seed-demo-portfolio.ts  # Seed de datos demo
+        └── migrate-users-to-clerk.ts  # Migración de usuarios existentes a Clerk
 ```
 
 ---
@@ -74,6 +79,7 @@ margn/
 ### User
 ```
 id            String    @id @default(uuid())
+clerkId       String?   @unique @map("clerk_id")
 email         String    @unique
 fullName      String?
 notifyOnNotifications     Boolean @default(true)
@@ -323,23 +329,24 @@ Ejecutados por `run-daily-jobs.ts` en orden secuencial estricto. Si el paso 1 fa
 ### Auth (`auth/`)
 
 **AuthService:**
-- `sendMagicLink(email)`: Envía OTP vía `supabase.auth.signInWithOtp`. Crea usuario en BD local si no existe.
-- `verifySession(token)`: Decodifica JWT (sin verificar firma — confía en frontend), extrae email y exp, busca/crea usuario en BD.
+- `verifySession(token)`: Verifies Clerk JWT via `@clerk/backend` `verifyToken()`. Resolves user by: 1) clerkId lookup, 2) email fallback + link, 3) create new. Returns `{ id, email }`.
 
 **AuthGuard:**
 - Extrae token de header `Authorization: Bearer {token}`
 - Llama a `verifySession`. Si válido, adjunta user a `request.user`.
 
-**Frontend (AuthContext):**
-- Al montar: `supabase.auth.getSession()` → guarda `access_token` en localStorage
-- Escucha `onAuthStateChange` para TOKEN_REFRESHED
-- Refresh periódico cada 5 minutos
-- Token storage: `localStorage.getItem/setItem('supabase_token')`
+**ClerkWebhookController:**
+- `POST /webhooks/clerk`: Handles `user.created` and `user.updated` events from Clerk. Svix signature verification.
+
+**Frontend (Clerk):**
+- `ClerkProvider` en `_app.tsx` gestiona sesiones
+- `middleware.ts` protege rutas (Clerk `clerkMiddleware`)
+- `ClerkTokenProvider` inyecta `getToken()` en `api.ts` via `setTokenGetter()`
+- `lib/auth.ts`: compatibility hook wrapping Clerk's `useUser`/`useClerk`
 
 **API Client (`lib/api.ts`):**
-- `fetchAPI(endpoint, options)`: añade Bearer token, hace fetch
-- Si 401: obtiene sesión fresca de Supabase, actualiza token, reintenta 1 vez
-- Si sigue fallando: lanza error
+- `fetchAPI(endpoint, options)`: añade Bearer token via `tokenGetter()` (inyectado por ClerkTokenProvider)
+- Si 401: redirect a `/` (Clerk gestiona refresh automáticamente)
 
 ### Onboarding (`portfolios/onboarding.service.ts`, ~566 líneas)
 
@@ -431,7 +438,7 @@ Niveles: info, warning, attention.
 
 ### Páginas
 
-- **`/`** — Login (magic link). Redirige a dashboard si ya autenticado.
+- **`/`** — Login (Clerk: magic link + Google OAuth). Redirige a dashboard si ya autenticado.
 - **`/dashboard`** — Dashboard principal: métricas (equity, exposure, leverage, returns), panel de notificaciones, gráfica SVG de equity interactiva con tooltip, grid de analytics (CAGR, Sharpe, drawdown…), historial mensual paginado (24/página), tabla de posiciones actuales. Skeleton loading en todas las secciones. Disclaimers contextuales en secciones de notificaciones y métricas.
 - **`/dashboard/onboarding`** — Wizard de creación de portfolio con SSE progress.
 - **`/dashboard/contribution`** — Formulario de contribución (monto, nota). Soporta contribución extra vía query params `?extra=true&amount=X`.
@@ -470,8 +477,8 @@ Idioma actual: español (códigos preparados para múltiples idiomas).
 ## API endpoints
 
 ```
-POST   /api/auth/login                          # Magic link
 GET    /api/auth/me                              # Usuario actual
+POST   /api/webhooks/clerk                       # Clerk webhook (user.created, user.updated)
 
 POST   /api/portfolios                           # Crear portfolio (SSE progress)
 GET    /api/portfolios                           # Listar portfolios
@@ -505,18 +512,17 @@ POST   /api/cron/daily-check                     # Trigger notificaciones de est
 ```bash
 DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
 DIRECT_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=<anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+CLERK_SECRET_KEY=sk_...
+CLERK_WEBHOOK_SECRET=whsec_...
 FRONTEND_URL=http://localhost:3002
 PORT=3003
+CRON_SECRET_TOKEN=<cron-secret>
 ```
 
 ### Frontend (.env.local)
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
 NEXT_PUBLIC_API_URL=http://localhost:3003/api
 ```
 
@@ -569,7 +575,7 @@ Al crear un release, seguir este orden estricto:
 - **Backend:** camelCase variables, PascalCase clases. NestJS modules con Controller, Service, DTOs.
 - **Frontend:** camelCase variables, PascalCase componentes. Pages en `pages/`, components en `components/`, utils en `lib/`.
 - **Database:** snake_case columnas (mapeado desde camelCase en Prisma).
-- **Migraciones:** NUNCA usar el MCP tool de Supabase (`apply_migration`) para DDL. Siempre crear el archivo `migration.sql` en `apps/backend/prisma/migrations/<timestamp>_<name>/` y ejecutarlo con `prisma migrate deploy` o `prisma db push`. Si se aplica solo vía MCP, la migración no existe en el repo y producción (Render) falla al desplegar.
+- **Migraciones:** Siempre crear el archivo `migration.sql` en `apps/backend/prisma/migrations/<timestamp>_<name>/` y ejecutarlo con `prisma migrate deploy` o `prisma db push`. NUNCA aplicar DDL directamente en la BD (dashboard, MCP tools, etc.) sin crear la migración en el repo — producción (Render) falla al desplegar.
 - **API Endpoints:** kebab-case (e.g., `/portfolios/:id/daily-metrics`).
 - **Errores backend:** NestJS exceptions (`UnauthorizedException`, `NotFoundException`, etc.). Responses: `{ statusCode, message, error }`.
 - **Errores frontend:** try/catch con mensajes user-friendly.
@@ -611,5 +617,5 @@ Al crear un release, seguir este orden estricto:
 
 - `avgPrice` en posiciones viene de Yahoo Finance, no del precio real de compra en el broker.
 - CAGR sobreestima rendimiento en portfolios con DCA; usar XIRR como referencia principal.
-- Backend no verifica firma JWT de Supabase (confía en frontend).
+- Avatar images stored in Clerk (via `user.setProfileImage()`).
 - Notificaciones por email no implementadas (solo logging).

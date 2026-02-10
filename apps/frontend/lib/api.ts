@@ -5,6 +5,16 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003/api";
 
+// Module-level token getter, injected by ClerkTokenProvider
+let _tokenGetter: (() => Promise<string | null>) | null = null;
+
+/**
+ * Set the token getter function (called by ClerkTokenProvider)
+ */
+export function setTokenGetter(getter: () => Promise<string | null>) {
+  _tokenGetter = getter;
+}
+
 /**
  * Type definitions
  */
@@ -67,9 +77,10 @@ export interface PortfolioSummary {
 
 /**
  * Fetch wrapper with auth headers
+ * Token is obtained from Clerk via the injected token getter.
  */
 export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("supabase_token");
+  const token = _tokenGetter ? await _tokenGetter() : null;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -86,30 +97,10 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   });
 
   if (!response.ok) {
-    // Handle 401 Unauthorized - try to refresh token
-    if (response.status === 401) {
-      // Try to get fresh token from Supabase
-      try {
-        const { supabase } = await import("./supabase");
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          localStorage.setItem("supabase_token", session.access_token);
-          // Retry the request with new token
-          const retryHeaders = {
-            ...headers,
-            Authorization: `Bearer ${session.access_token}`,
-          };
-          const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
-            ...options,
-            headers: retryHeaders,
-          });
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-        }
-      } catch (refreshError) {
-        console.error("Failed to refresh token:", refreshError);
-      }
+    // On 401, session is expired — Clerk middleware handles redirect
+    if (response.status === 401 && typeof window !== "undefined") {
+      window.location.href = "/";
+      throw new Error("Session expired");
     }
 
     const error = await response
@@ -126,16 +117,6 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
  */
 export async function getCurrentUser() {
   return fetchAPI("/auth/me");
-}
-
-/**
- * Send magic link for passwordless login
- */
-export async function sendMagicLink(email: string) {
-  return fetchAPI("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email }),
-  });
 }
 
 /**

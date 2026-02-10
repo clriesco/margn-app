@@ -2,7 +2,7 @@ import React, { useState, ReactNode, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useAuth } from "../contexts/AuthContext";
+import { useClerk } from "@clerk/nextjs";
 import {
   LayoutDashboard,
   DollarSign,
@@ -48,7 +48,7 @@ function useMediaQuery(query: string): boolean {
 
 /**
  * Dashboard Sidebar Component
- * Collapsible sidebar menu for dashboard navigation (Supabase-style)
+ * Collapsible sidebar menu for dashboard navigation
  * Responsive: drawer on mobile, sidebar on desktop
  */
 interface DashboardSidebarProps {
@@ -59,7 +59,7 @@ export default function DashboardSidebar({
   children,
 }: DashboardSidebarProps) {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut } = useClerk();
   const { activePortfolioId: portfolioId } = usePortfolio();
   const { theme, toggleTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(false);

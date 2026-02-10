@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { renderMarkdown } from '../lib/render-markdown';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function StrategyAIAnalysis({ strategyId, existingAnalysis, isOwner }: Props) {
+  const { getToken } = useAuth();
   const [state, setState] = useState<AnalysisState>(existingAnalysis ? 'complete' : 'idle');
   const [analysis, setAnalysis] = useState(existingAnalysis || '');
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,7 @@ export default function StrategyAIAnalysis({ strategyId, existingAnalysis, isOwn
     setAnalysis('');
     setError(null);
 
-    const token = localStorage.getItem('supabase_token');
+    const token = await getToken();
     if (!token) {
       setError('No autenticado. Por favor inicia sesión.');
       setState('error');
@@ -83,7 +85,7 @@ export default function StrategyAIAnalysis({ strategyId, existingAnalysis, isOwn
       setError(err instanceof Error ? err.message : 'Error desconocido');
       setState('error');
     }
-  }, [strategyId]);
+  }, [strategyId, getToken]);
 
   // Don't render anything if no existing analysis and not owner
   if (!existingAnalysis && !isOwner) {

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth, useUser, useClerk } from "@clerk/nextjs";
 import {
   searchSymbols,
   createPortfolio,
@@ -52,7 +52,11 @@ import {
  */
 export default function Onboarding() {
   const router = useRouter();
-  const { user, loading, signOut } = useAuth();
+  const { getToken, isLoaded } = useAuth();
+  const { user: clerkUser } = useUser();
+  const { signOut } = useClerk();
+  const user = useMemo(() => clerkUser ? { email: clerkUser.primaryEmailAddress?.emailAddress ?? "" } : null, [clerkUser]);
+  const loading = !isLoaded;
   const { setActivePortfolioId, refreshPortfolios } = usePortfolio();
 
   // Wizard state
@@ -122,13 +126,6 @@ export default function Onboarding() {
     },
     [steps]
   );
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
 
   // Load risk profiles on mount
   useEffect(() => {
@@ -220,13 +217,6 @@ export default function Onboarding() {
   // Debounced search
   useEffect(() => {
     if (!user || searchQuery.length < 2) {
-      setSearchResults([]);
-      setShowDropdown(false);
-      return;
-    }
-
-    const token = localStorage.getItem("supabase_token");
-    if (!token) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
@@ -371,7 +361,7 @@ export default function Onboarding() {
         contributionEnabled: true,
       };
 
-      const token = localStorage.getItem("supabase_token");
+      const token = await getToken();
       const API_BASE_URL =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003/api";
 
@@ -538,7 +528,7 @@ export default function Onboarding() {
       <div style={containerStyle}>
         {/* Logout button */}
         <button
-          onClick={signOut}
+          onClick={() => signOut()}
           style={{
             position: "absolute",
             top: "1rem",

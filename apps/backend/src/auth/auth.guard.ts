@@ -8,7 +8,7 @@ import {
 import { AuthService } from "./auth.service";
 
 /**
- * Authentication guard that verifies JWT tokens from Supabase
+ * Authentication guard that verifies Clerk session tokens
  * Extracts token from Authorization header and verifies it
  */
 @Injectable()

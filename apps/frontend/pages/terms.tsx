@@ -197,7 +197,7 @@ export default function Terms() {
             </ul>
             <p>
               Los datos se almacenan en servidores seguros proporcionados por
-              Supabase y Render. <strong>No compartimos tus datos personales ni
+              Clerk y Render. <strong>No compartimos tus datos personales ni
               financieros con terceros</strong>, salvo requerimiento legal.
             </p>
             <p>

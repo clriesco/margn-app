@@ -1,7 +1,6 @@
 import React, { useState, useEffect, FormEvent } from "react";
-import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import { getProfile, updateProfile, UserProfile } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
@@ -12,7 +11,6 @@ import { FileText, Bell } from "lucide-react";
  * Profile page - User profile management
  */
 export default function Profile() {
-  const router = useRouter();
   const { user, loading } = useAuth();
   const { activePortfolioId: portfolioId } = usePortfolio();
 
@@ -29,14 +27,6 @@ export default function Profile() {
     notifyOnLeverageAlerts: true,
     notifyOnRebalance: true,
   });
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading]);
 
   // Load profile data
   useEffect(() => {
@@ -130,10 +120,6 @@ export default function Profile() {
         </div>
       </>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (

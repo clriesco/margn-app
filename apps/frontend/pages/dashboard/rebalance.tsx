@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
   getRebalanceSimulation,
@@ -80,12 +80,10 @@ export default function Rebalance() {
       }
     }
 
-    if (!loading && !user) {
-      router.push("/");
-    } else if (user) {
+    if (user) {
       loadAndCalculate();
     }
-  }, [user, loading, router, portfolioId]);
+  }, [user, loading, portfolioId]);
 
   const handleAccept = async () => {
     if (!portfolioId || !proposal) return;
@@ -131,10 +129,6 @@ export default function Rebalance() {
         </div>
       </>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (

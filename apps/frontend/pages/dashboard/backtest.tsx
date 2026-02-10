@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../lib/auth';
 import { usePortfolio } from '../../contexts/PortfolioContext';
 import { getBacktestPrices, getPortfolioSummary, getPortfolioConfiguration } from '../../lib/api';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -24,7 +23,6 @@ import type {
 type Stage = 'config' | 'loading-prices' | 'running' | 'results';
 
 export default function BacktestPage() {
-  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { activePortfolioId: portfolioId } = usePortfolio();
   const [stage, setStage] = useState<Stage>('config');
@@ -50,34 +48,43 @@ export default function BacktestPage() {
   const [priceExcludedSymbols, setPriceExcludedSymbols] = useState<string[]>([]);
   const workerRef = useRef<Worker | null>(null);
   const explanationRef = useRef<BacktestExplanationHandle>(null);
+  const strategyLoadedRef = useRef(false);
 
   // Load portfolio ID and user defaults (or from strategy if redirected)
   useEffect(() => {
     async function load() {
       // Check if we have strategy config in localStorage (from strategy detail page)
-      const strategyConfigStr = localStorage.getItem('backtest_from_strategy');
-      if (strategyConfigStr) {
-        try {
-          const strategyConfig = JSON.parse(strategyConfigStr);
-          localStorage.removeItem('backtest_from_strategy'); // Clear after reading
+      // Only process once — prevents double-consumption in React StrictMode
+      // and prevents portfolio loading from overwriting strategy config
+      if (!strategyLoadedRef.current) {
+        const strategyConfigStr = localStorage.getItem('backtest_from_strategy');
+        if (strategyConfigStr) {
+          try {
+            const strategyConfig = JSON.parse(strategyConfigStr);
+            localStorage.removeItem('backtest_from_strategy');
 
-          setUserDefaults({
-            symbols: strategyConfig.symbols,
-            weights: strategyConfig.weights,
-            initialCapital: strategyConfig.initialCapital,
-            monthlyContribution: strategyConfig.monthlyContribution,
-            leverageMin: strategyConfig.leverageMin,
-            leverageMax: strategyConfig.leverageMax,
-            leverageTarget: strategyConfig.leverageTarget,
-            windowMonths: strategyConfig.windowMonths,
-            weightMode: strategyConfig.weightMode,
-            dynamicWeights: strategyConfig.dynamicWeights,
-            fromStrategy: strategyConfig.strategyName,
-          });
-          setDefaultsLoaded(true);
-          return; // Don't load portfolio defaults if we have strategy config
-        } catch { /* ignore parse errors */ }
+            setUserDefaults({
+              symbols: strategyConfig.symbols,
+              weights: strategyConfig.weights,
+              initialCapital: strategyConfig.initialCapital,
+              monthlyContribution: strategyConfig.monthlyContribution,
+              leverageMin: strategyConfig.leverageMin,
+              leverageMax: strategyConfig.leverageMax,
+              leverageTarget: strategyConfig.leverageTarget,
+              windowMonths: strategyConfig.windowMonths,
+              weightMode: strategyConfig.weightMode,
+              dynamicWeights: strategyConfig.dynamicWeights,
+              fromStrategy: strategyConfig.strategyName,
+            });
+            setDefaultsLoaded(true);
+            strategyLoadedRef.current = true;
+            return;
+          } catch { /* ignore parse errors */ }
+        }
       }
+
+      // Skip portfolio loading if we already loaded from strategy
+      if (strategyLoadedRef.current) return;
 
       // Normal flow: load from portfolio
       if (!portfolioId) return;
@@ -231,7 +238,6 @@ export default function BacktestPage() {
   }
 
   if (!user) {
-    router.push('/');
     return null;
   }
 
@@ -471,7 +477,26 @@ export default function BacktestPage() {
                   </button>
 
                   <button
-                    onClick={() => { setStage('config'); setResult(null); setProgress(null); }}
+                    onClick={() => {
+                      // Preserve last-run config in userDefaults so BacktestConfigForm
+                      // remounts with the correct symbols (not portfolio defaults)
+                      if (result) {
+                        setUserDefaults({
+                          symbols: result.config.symbols,
+                          weights: result.weightsUsed,
+                          initialCapital: result.config.initialCapital,
+                          monthlyContribution: result.config.monthlyContribution,
+                          leverageMin: result.config.leverageMin,
+                          leverageMax: result.config.leverageMax,
+                          leverageTarget: result.config.leverageTarget,
+                          windowMonths: result.config.windowMonths,
+                          weightMode: result.config.weightMode,
+                          dynamicWeights: result.config.dynamicWeights,
+                        });
+                        strategyLoadedRef.current = true;
+                      }
+                      setStage('config'); setResult(null); setProgress(null);
+                    }}
                     className="backtest-action-btn"
                     style={{
                       padding: '0.625rem 1rem',

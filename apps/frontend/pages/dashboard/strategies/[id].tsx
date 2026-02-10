@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { Pencil } from 'lucide-react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth, useUser } from '@clerk/nextjs';
 import DashboardSidebar from '../../../components/DashboardSidebar';
 import CreatePortfolioModal from '../../../components/strategies/CreatePortfolioModal';
 import StrategyAIAnalysis from '../../../components/StrategyAIAnalysis';
@@ -324,7 +324,8 @@ function TrajectoriesChart({ trajectories, config, height = 300 }: {
 export default function StrategyDetailPage() {
   const router = useRouter();
   const { id } = router.query;
-  const { user, loading: authLoading } = useAuth();
+  const { getToken, isLoaded: authLoaded } = useAuth();
+  const { user } = useUser();
   const { activePortfolioId: portfolioId } = usePortfolio();
   const [strategy, setStrategy] = useState<StrategyDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -343,16 +344,10 @@ export default function StrategyDetailPage() {
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/');
-    }
-  }, [authLoading, user, router]);
-
-  useEffect(() => {
     async function loadData() {
       if (!id || !user) return;
 
-      const token = localStorage.getItem('supabase_token');
+      const token = await getToken();
       if (!token) return;
 
       try {
@@ -376,14 +371,14 @@ export default function StrategyDetailPage() {
     }
 
     loadData();
-  }, [id, user]);
+  }, [id, user, getToken]);
 
   const handleDelete = useCallback(async () => {
     if (!strategy) return;
 
     setDeleting(true);
 
-    const token = localStorage.getItem('supabase_token');
+    const token = await getToken();
     if (!token) return;
 
     try {
@@ -400,7 +395,7 @@ export default function StrategyDetailPage() {
       setDeleting(false);
       setShowDeleteConfirm(false);
     }
-  }, [strategy, router]);
+  }, [strategy, router, getToken]);
 
   const startEditingName = useCallback(() => {
     if (!strategy) return;
@@ -417,7 +412,7 @@ export default function StrategyDetailPage() {
   const saveEditedName = useCallback(async () => {
     if (!strategy || !editedName.trim()) return;
 
-    const token = localStorage.getItem('supabase_token');
+    const token = await getToken();
     if (!token) return;
 
     setSavingName(true);
@@ -440,7 +435,7 @@ export default function StrategyDetailPage() {
     } finally {
       setSavingName(false);
     }
-  }, [strategy, editedName]);
+  }, [strategy, editedName, getToken]);
 
   const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -466,7 +461,7 @@ export default function StrategyDetailPage() {
   const saveEditedDescription = useCallback(async () => {
     if (!strategy) return;
 
-    const token = localStorage.getItem('supabase_token');
+    const token = await getToken();
     if (!token) return;
 
     setSavingDescription(true);
@@ -489,7 +484,7 @@ export default function StrategyDetailPage() {
     } finally {
       setSavingDescription(false);
     }
-  }, [strategy, editedDescription]);
+  }, [strategy, editedDescription, getToken]);
 
   const handleDescriptionKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -541,17 +536,12 @@ export default function StrategyDetailPage() {
   const fmtPct = (v: number) => (v * 100).toFixed(1) + '%';
   const fmtUsd = (v: number) => '$' + formatNumberES(v, { maximumFractionDigits: 0 });
 
-  if (authLoading) {
+  if (!authLoaded) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         <p style={{ color: 'var(--text-muted)' }}>Cargando...</p>
       </div>
     );
-  }
-
-  if (!user) {
-    router.push('/');
-    return null;
   }
 
   return (

@@ -1,15 +1,23 @@
 import { AppProps } from "next/app";
 import Head from "next/head";
-import { AuthProvider } from "../contexts/AuthContext";
+import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkTokenProvider } from "../components/ClerkTokenProvider";
 import { PortfolioProvider } from "../contexts/PortfolioContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 
+// Fallback key for CI build where NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not set.
+// Uses a structurally valid placeholder so ClerkProvider mounts and hooks don't throw during prerender.
+const clerkPubKey =
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  "pk_test_Y2xlcmsucGxhY2Vob2xkZXIuZGV2JA";
+
 /**
- * Custom App component with auth provider
+ * Custom App component with Clerk auth provider
  */
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <AuthProvider>
+    <ClerkProvider publishableKey={clerkPubKey} {...pageProps}>
+      <ClerkTokenProvider>
       <PortfolioProvider>
       <ThemeProvider>
         <Head>
@@ -163,6 +171,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <Component {...pageProps} />
       </ThemeProvider>
       </PortfolioProvider>
-    </AuthProvider>
+      </ClerkTokenProvider>
+    </ClerkProvider>
   );
 }

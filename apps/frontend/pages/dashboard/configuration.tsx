@@ -1,7 +1,7 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
   getPortfolioConfiguration,
@@ -154,9 +154,7 @@ export default function Configuration() {
     }
 
     if (loading) return;
-    if (!user) {
-      router.push("/");
-    } else {
+    if (user) {
       loadConfig();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -354,8 +352,6 @@ export default function Configuration() {
       </>
     );
   }
-
-  if (!user) return null;
 
   const totalWeight = targetWeights.reduce((sum, tw) => sum + tw.weight, 0);
   // Weights are always valid in Sharpe mode (read-only), only check in manual mode

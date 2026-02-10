@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { usePortfolio } from '../../../contexts/PortfolioContext';
 import DashboardSidebar from '../../../components/DashboardSidebar';
 import CreatePortfolioModal from '../../../components/strategies/CreatePortfolioModal';
@@ -49,7 +49,8 @@ function sortByRiskProfile(strategies: PublicStrategySummary[]): PublicStrategyS
 
 export default function StrategiesPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { getToken, isLoaded: authLoaded } = useAuth();
+  const { user } = useUser();
   const { activePortfolioId: portfolioId } = usePortfolio();
   const initialTab = (router.query.tab as string) || 'mine';
   const [activeTab, setActiveTab] = useState<TabId>(
@@ -81,16 +82,10 @@ export default function StrategiesPage() {
   const [togglingVisibility, setTogglingVisibility] = useState<string | null>(null);
   const [createFromStrategy, setCreateFromStrategy] = useState<{ id: string; name: string; monthlyContribution?: number } | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/');
-    }
-  }, [authLoading, user, router]);
-
   // Load my strategies
   useEffect(() => {
     async function loadStrategies() {
-      const token = localStorage.getItem('supabase_token');
+      const token = await getToken();
       if (!token) return;
 
       try {
@@ -107,7 +102,7 @@ export default function StrategiesPage() {
       }
     }
     if (user) loadStrategies();
-  }, [user]);
+  }, [user, getToken]);
 
   // Load public strategies when switching to platform/community tab
   useEffect(() => {
@@ -135,7 +130,7 @@ export default function StrategiesPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteConfirm) return;
     setDeletingId(deleteConfirm.id);
-    const token = localStorage.getItem('supabase_token');
+    const token = await getToken();
     if (!token) return;
 
     try {
@@ -149,7 +144,7 @@ export default function StrategiesPage() {
     } catch { /* ignore */ } finally {
       setDeletingId(null);
     }
-  }, [deleteConfirm]);
+  }, [deleteConfirm, getToken]);
 
   const handleToggleVisibility = useCallback(async (strategyId: string, currentPublic: boolean) => {
     setTogglingVisibility(strategyId);
@@ -171,17 +166,12 @@ export default function StrategiesPage() {
     });
   }, []);
 
-  if (authLoading) {
+  if (!authLoaded) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         <p style={{ color: 'var(--text-muted)' }}>Cargando...</p>
       </div>
     );
-  }
-
-  if (!user) {
-    router.push('/');
-    return null;
   }
 
   return (
