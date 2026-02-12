@@ -58,6 +58,7 @@ const DEFAULT_CONFIG: BacktestConfigType = {
   weightMode: 'sharpe',
   dynamicWeights: false,
   dynamicWeightsLookback: 12,
+  optimizationObjective: 'sharpe',
   meanReturnShrinkage: 0.85,
   riskFreeRate: 0.02,
   maintenanceMarginRatio: 0.05,
@@ -127,6 +128,12 @@ const TIPS = {
     + 'Valores típicos: 6-24 meses.\n\n'
     + '- Menos meses = más reactivo a cambios recientes\n'
     + '- Más meses = más estable pero menos adaptativo',
+  optimizationObjective:
+    'Métrica que el optimizador maximiza al calcular los pesos.\n\n'
+    + '- Sharpe: maximiza retorno ajustado por volatilidad total\n'
+    + '- Sortino: como Sharpe, pero solo penaliza volatilidad negativa\n'
+    + '- Calmar: maximiza CAGR / max drawdown (penaliza caídas grandes)\n'
+    + '- Ulcer (UPI): penaliza profundidad Y duración de las caídas',
 };
 
 // ---------------------------------------------------------------------------
@@ -336,18 +343,13 @@ const BacktestConfig = forwardRef<BacktestConfigHandle, Props>(function Backtest
       removeSymbol(config.symbols[config.symbols.length - 1]);
       return;
     }
-    if (e.key === 'Tab' && searchQuery.trim() !== '') {
-      e.preventDefault();
-      addSymbol(searchQuery.trim().toUpperCase());
-      return;
-    }
-    if (e.key === 'Enter') {
+    if (e.key === 'Tab' || e.key === 'Enter') {
+      if (e.key === 'Tab' && searchQuery.trim() === '') return; // Allow normal tab navigation
       e.preventDefault();
       if (showDropdown && searchResults.length > 0) {
         const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
         handleSelectResult(searchResults[idx]);
       } else if (searchQuery.trim() !== '') {
-        // If no dropdown results, add the raw text as symbol
         addSymbol(searchQuery.trim().toUpperCase());
       }
       return;
@@ -623,6 +625,33 @@ const BacktestConfig = forwardRef<BacktestConfigHandle, Props>(function Backtest
                   min={3} max={36} step={1} decimals={0} style={{ ...inputStyle, maxWidth: '200px' }} />
               </div>
             )}
+
+            {/* Optimization objective selector */}
+            <div style={{ marginBottom: '1rem' }}>
+              <Label text="Objetivo de optimización" tooltip={TIPS.optimizationObjective} />
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {([
+                  { value: 'sharpe' as const, label: 'Sharpe' },
+                  { value: 'sortino' as const, label: 'Sortino' },
+                  { value: 'calmar' as const, label: 'Calmar' },
+                  { value: 'ulcer' as const, label: 'Ulcer (UPI)' },
+                ] as const).map(({ value, label }) => (
+                  <label key={value} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                    padding: '0.5rem 0.875rem', cursor: 'pointer',
+                    background: config.optimizationObjective === value ? 'rgba(59,130,246,0.2)' : 'var(--input-bg)',
+                    border: config.optimizationObjective === value ? '1px solid #3b82f6' : '1px solid var(--input-border)',
+                    borderRadius: '6px', fontSize: '0.8125rem',
+                  }}>
+                    <input type="radio" name="optimizationObjective"
+                      checked={config.optimizationObjective === value}
+                      onChange={() => update('optimizationObjective', value)}
+                      style={{ accentColor: '#3b82f6' }} />
+                    <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
             {/* Advanced optimization params - only visible with custom profile */}
             {selectedRiskProfile === null && (

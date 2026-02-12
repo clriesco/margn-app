@@ -647,11 +647,18 @@ export class RebalanceService {
       }
     }
 
+    // Build aligned returns matrix for alternative objectives (Sortino, Calmar, UPI)
+    const returnsMatrix: number[][] = [];
+    for (const symbol of assetSymbols) {
+      returnsMatrix.push(assetReturns[symbol].slice(-minLength));
+    }
+
     // Optimize using Nelder-Mead-like approach (more accurate than grid search)
     const optimalWeights = this.optimizeSharpeNelderMead(
       assetSymbols,
       meanReturns,
       covMatrix,
+      returnsMatrix,
       config
     );
 
@@ -680,6 +687,7 @@ export class RebalanceService {
     symbols: string[],
     meanReturns: number[],
     covMatrix: number[][],
+    returnsMatrix: number[][],
     config: any
   ): number[] {
     const n = symbols.length;
@@ -688,12 +696,13 @@ export class RebalanceService {
     const leverage = config.leverageTarget || 2.5;
     const yearlyTradingDays = 252;
     const riskFreeRate = config.riskFreeRate || 0.02;
-    
-    console.log(`[Sharpe Optimization] Constraints: minWeight=${minWeight}, maxWeight=${maxWeight}, leverage=${leverage}`);
-    console.log(`[Sharpe Optimization] Mean returns:`, meanReturns.map((r, i) => `${symbols[i]}: ${(r * 252 * 100).toFixed(2)}%`).join(', '));
+    const objective: string = config.optimizationObjective || "sharpe";
 
-    // Objective function: negative Sharpe (to minimize)
-    const negSharpe = (weights: number[]): number => {
+    console.log(`[Optimization] Objective: ${objective}, Constraints: minWeight=${minWeight}, maxWeight=${maxWeight}, leverage=${leverage}`);
+    console.log(`[Optimization] Mean returns:`, meanReturns.map((r, i) => `${symbols[i]}: ${(r * 252 * 100).toFixed(2)}%`).join(', '));
+
+    // Objective function: negative metric (to minimize)
+    const negObjective = (weights: number[]): number => {
       // Normalize weights
       const sum = weights.reduce((a, b) => a + b, 0);
       if (sum <= 0) return Infinity;
@@ -706,19 +715,21 @@ export class RebalanceService {
         }
       }
 
-      return -this.calculateLeveragedSharpe(
-        w,
-        meanReturns,
-        covMatrix,
-        leverage,
-        yearlyTradingDays,
-        riskFreeRate
-      );
+      switch (objective) {
+        case "sortino":
+          return -this.calculateLeveragedSortino(w, returnsMatrix, leverage, yearlyTradingDays, riskFreeRate);
+        case "calmar":
+          return -this.calculateCalmarRatio(w, returnsMatrix, leverage, yearlyTradingDays, riskFreeRate);
+        case "ulcer":
+          return -this.calculateUlcerPerformanceIndex(w, returnsMatrix, leverage, yearlyTradingDays, riskFreeRate);
+        default:
+          return -this.calculateLeveragedSharpe(w, meanReturns, covMatrix, leverage, yearlyTradingDays, riskFreeRate);
+      }
     };
 
     // Initialize with equal weights
     let bestWeights = Array(n).fill(1 / n);
-    let bestValue = negSharpe(bestWeights);
+    let bestValue = negObjective(bestWeights);
 
     // Nelder-Mead parameters
     const alpha = 1.0; // Reflection
@@ -741,7 +752,7 @@ export class RebalanceService {
       // Normalize
       const sum = point.reduce((a, b) => a + b, 0);
       for (let j = 0; j < n; j++) point[j] /= sum;
-      simplex.push({ point, value: negSharpe(point) });
+      simplex.push({ point, value: negObjective(point) });
     }
 
     // Sort simplex
@@ -768,7 +779,7 @@ export class RebalanceService {
       for (let j = 0; j < n; j++) {
         reflected[j] = Math.max(0.01, Math.min(0.99, reflected[j]));
       }
-      const reflectedValue = negSharpe(reflected);
+      const reflectedValue = negObjective(reflected);
 
       if (reflectedValue < simplex[0].value) {
         // Expansion
@@ -776,7 +787,7 @@ export class RebalanceService {
         for (let j = 0; j < n; j++) {
           expanded[j] = Math.max(0.01, Math.min(0.99, expanded[j]));
         }
-        const expandedValue = negSharpe(expanded);
+        const expandedValue = negObjective(expanded);
 
         if (expandedValue < reflectedValue) {
           simplex[n] = { point: expanded, value: expandedValue };
@@ -790,7 +801,7 @@ export class RebalanceService {
         const contracted = centroid.map(
           (c, j) => c + rho * (simplex[n].point[j] - c)
         );
-        const contractedValue = negSharpe(contracted);
+        const contractedValue = negObjective(contracted);
 
         if (contractedValue < simplex[n].value) {
           simplex[n] = { point: contracted, value: contractedValue };
@@ -802,7 +813,7 @@ export class RebalanceService {
                 simplex[0].point[j] +
                 sigma * (simplex[i].point[j] - simplex[0].point[j]);
             }
-            simplex[i].value = negSharpe(simplex[i].point);
+            simplex[i].value = negObjective(simplex[i].point);
           }
         }
       }
@@ -815,12 +826,12 @@ export class RebalanceService {
     bestWeights = simplex[0].point;
     bestValue = simplex[0].value;
     
-    console.log(`[Sharpe Optimization] Best value found: ${bestValue.toFixed(6)} (negative Sharpe: ${-bestValue.toFixed(6)})`);
+    console.log(`[Optimization] Best value found: ${bestValue.toFixed(6)} (${objective}: ${(-bestValue).toFixed(6)})`);
 
     // Normalize and clamp to constraints
     let sum = bestWeights.reduce((a, b) => a + b, 0);
     if (sum <= 0) {
-      console.warn(`[Sharpe Optimization] Invalid weights sum: ${sum}, using equal weights`);
+      console.warn(`[Optimization] Invalid weights sum: ${sum}, using equal weights`);
       bestWeights = Array(n).fill(1 / n);
     } else {
       bestWeights = bestWeights.map((w) => w / sum);
@@ -869,7 +880,7 @@ export class RebalanceService {
     sum = bestWeights.reduce((a, b) => a + b, 0);
     const finalWeights = bestWeights.map((w) => w / sum);
     
-    console.log(`[Sharpe Optimization] Final weights:`, finalWeights.map((w, i) => `${symbols[i]}: ${(w * 100).toFixed(2)}%`).join(', '));
+    console.log(`[Optimization] Final weights (${objective}):`, finalWeights.map((w, i) => `${symbols[i]}: ${(w * 100).toFixed(2)}%`).join(', '));
     
     return finalWeights;
   }
@@ -913,6 +924,125 @@ export class RebalanceService {
     // Sharpe ratio
     if (volLeveraged <= 0) return 0;
     return (rLeveraged - riskFreeRate) / volLeveraged;
+  }
+
+  /**
+   * Calculate leveraged Sortino ratio
+   * Sortino = (R_leveraged - Rf) / DownsideDeviation_leveraged
+   * Only penalizes negative volatility (downside risk)
+   */
+  private calculateLeveragedSortino(
+    weights: number[],
+    returnsMatrix: number[][],
+    leverage: number,
+    yearlyTradingDays: number,
+    riskFreeRate: number
+  ): number {
+    const n = returnsMatrix[0].length; // number of days
+    // Compute portfolio daily returns
+    const portReturns: number[] = [];
+    for (let t = 0; t < n; t++) {
+      let r = 0;
+      for (let i = 0; i < weights.length; i++) {
+        r += weights[i] * returnsMatrix[i][t];
+      }
+      portReturns.push(r);
+    }
+
+    const meanReturn = portReturns.reduce((a, b) => a + b, 0) / n;
+    const annualReturn = meanReturn * yearlyTradingDays * leverage;
+
+    // Downside deviation: sqrt(mean(min(r, 0)^2)) * sqrt(252) * leverage
+    let sumSquaredDownside = 0;
+    for (const r of portReturns) {
+      if (r < 0) {
+        sumSquaredDownside += r * r;
+      }
+    }
+    const downsideDeviation =
+      Math.sqrt(sumSquaredDownside / n) * Math.sqrt(yearlyTradingDays) * leverage;
+
+    if (downsideDeviation <= 0) return 0;
+    return (annualReturn - riskFreeRate) / downsideDeviation;
+  }
+
+  /**
+   * Calculate leveraged Calmar ratio
+   * Calmar = CAGR_leveraged / |MaxDrawdown_leveraged|
+   * Directly penalizes max drawdown
+   */
+  private calculateCalmarRatio(
+    weights: number[],
+    returnsMatrix: number[][],
+    leverage: number,
+    yearlyTradingDays: number,
+    _riskFreeRate: number
+  ): number {
+    const n = returnsMatrix[0].length;
+    // Simulate leveraged equity curve
+    let equity = 1.0;
+    let peak = 1.0;
+    let maxDrawdown = 0;
+
+    for (let t = 0; t < n; t++) {
+      let r = 0;
+      for (let i = 0; i < weights.length; i++) {
+        r += weights[i] * returnsMatrix[i][t];
+      }
+      equity *= 1 + r * leverage;
+      if (equity <= 0) return -Infinity; // Wipeout
+      if (equity > peak) peak = equity;
+      const dd = (equity - peak) / peak;
+      if (dd < maxDrawdown) maxDrawdown = dd;
+    }
+
+    // CAGR: (finalEquity)^(252/n) - 1
+    if (equity <= 0) return -Infinity;
+    const cagr = Math.pow(equity, yearlyTradingDays / n) - 1;
+    const absMaxDD = Math.abs(maxDrawdown);
+
+    if (absMaxDD <= 0) return cagr > 0 ? Infinity : 0;
+    return cagr / absMaxDD;
+  }
+
+  /**
+   * Calculate Ulcer Performance Index (UPI)
+   * UPI = (R_leveraged - Rf) / UlcerIndex
+   * Penalizes both depth AND duration of drawdowns
+   */
+  private calculateUlcerPerformanceIndex(
+    weights: number[],
+    returnsMatrix: number[][],
+    leverage: number,
+    yearlyTradingDays: number,
+    riskFreeRate: number
+  ): number {
+    const n = returnsMatrix[0].length;
+    // Simulate leveraged equity curve
+    let equity = 1.0;
+    let peak = 1.0;
+    let sumSquaredDD = 0;
+    let meanReturn = 0;
+
+    for (let t = 0; t < n; t++) {
+      let r = 0;
+      for (let i = 0; i < weights.length; i++) {
+        r += weights[i] * returnsMatrix[i][t];
+      }
+      meanReturn += r;
+      equity *= 1 + r * leverage;
+      if (equity <= 0) return -Infinity;
+      if (equity > peak) peak = equity;
+      const ddPct = (equity - peak) / peak; // negative or zero
+      sumSquaredDD += ddPct * ddPct;
+    }
+
+    meanReturn /= n;
+    const annualReturn = meanReturn * yearlyTradingDays * leverage;
+    const ulcerIndex = Math.sqrt(sumSquaredDD / n);
+
+    if (ulcerIndex <= 0) return annualReturn > riskFreeRate ? Infinity : 0;
+    return (annualReturn - riskFreeRate) / ulcerIndex;
   }
 
   /**

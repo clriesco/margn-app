@@ -1,7 +1,9 @@
 /**
- * Nelder-Mead Sharpe optimization
- * Extracted from rebalance.service.ts as pure functions (no Prisma, no async)
+ * Nelder-Mead portfolio optimization
+ * Supports multiple objective functions: Sharpe, Sortino, Calmar, Ulcer (UPI)
  */
+
+export type OptimizationObjective = 'sharpe' | 'sortino' | 'calmar' | 'ulcer';
 
 export interface OptimizerConfig {
   leverage: number;
@@ -10,6 +12,7 @@ export interface OptimizerConfig {
   maxWeight: number;
   meanReturnShrinkage: number;
   yearlyTradingDays?: number;
+  objective?: OptimizationObjective;
 }
 
 /**
@@ -46,13 +49,122 @@ export function calculateLeveragedSharpe(
 }
 
 /**
- * Calculate mean returns with shrinkage and covariance matrix from price series
+ * Calculate leveraged Sortino ratio
+ * Only penalizes negative volatility (downside risk)
+ */
+function calculateLeveragedSortino(
+  weights: number[],
+  returnsMatrix: number[][],
+  leverage: number,
+  yearlyTradingDays: number,
+  riskFreeRate: number
+): number {
+  const n = returnsMatrix[0].length;
+  const portReturns: number[] = [];
+  for (let t = 0; t < n; t++) {
+    let r = 0;
+    for (let i = 0; i < weights.length; i++) {
+      r += weights[i] * returnsMatrix[i][t];
+    }
+    portReturns.push(r);
+  }
+
+  const meanReturn = portReturns.reduce((a, b) => a + b, 0) / n;
+  const annualReturn = meanReturn * yearlyTradingDays * leverage;
+
+  let sumSquaredDownside = 0;
+  for (const r of portReturns) {
+    if (r < 0) sumSquaredDownside += r * r;
+  }
+  const downsideDeviation =
+    Math.sqrt(sumSquaredDownside / n) * Math.sqrt(yearlyTradingDays) * leverage;
+
+  if (downsideDeviation <= 0) return 0;
+  return (annualReturn - riskFreeRate) / downsideDeviation;
+}
+
+/**
+ * Calculate leveraged Calmar ratio
+ * CAGR / |MaxDrawdown| — directly penalizes max drawdown
+ */
+function calculateCalmarRatio(
+  weights: number[],
+  returnsMatrix: number[][],
+  leverage: number,
+  yearlyTradingDays: number,
+): number {
+  const n = returnsMatrix[0].length;
+  let equity = 1.0;
+  let peak = 1.0;
+  let maxDrawdown = 0;
+
+  for (let t = 0; t < n; t++) {
+    let r = 0;
+    for (let i = 0; i < weights.length; i++) {
+      r += weights[i] * returnsMatrix[i][t];
+    }
+    equity *= 1 + r * leverage;
+    if (equity <= 0) return -Infinity;
+    if (equity > peak) peak = equity;
+    const dd = (equity - peak) / peak;
+    if (dd < maxDrawdown) maxDrawdown = dd;
+  }
+
+  if (equity <= 0) return -Infinity;
+  const cagr = Math.pow(equity, yearlyTradingDays / n) - 1;
+  const absMaxDD = Math.abs(maxDrawdown);
+
+  if (absMaxDD <= 0) return cagr > 0 ? Infinity : 0;
+  return cagr / absMaxDD;
+}
+
+/**
+ * Calculate Ulcer Performance Index (UPI)
+ * Penalizes both depth AND duration of drawdowns
+ */
+function calculateUlcerPerformanceIndex(
+  weights: number[],
+  returnsMatrix: number[][],
+  leverage: number,
+  yearlyTradingDays: number,
+  riskFreeRate: number
+): number {
+  const n = returnsMatrix[0].length;
+  let equity = 1.0;
+  let peak = 1.0;
+  let sumSquaredDD = 0;
+  let meanReturn = 0;
+
+  for (let t = 0; t < n; t++) {
+    let r = 0;
+    for (let i = 0; i < weights.length; i++) {
+      r += weights[i] * returnsMatrix[i][t];
+    }
+    meanReturn += r;
+    equity *= 1 + r * leverage;
+    if (equity <= 0) return -Infinity;
+    if (equity > peak) peak = equity;
+    const ddPct = (equity - peak) / peak;
+    sumSquaredDD += ddPct * ddPct;
+  }
+
+  meanReturn /= n;
+  const annualReturn = meanReturn * yearlyTradingDays * leverage;
+  const ulcerIndex = Math.sqrt(sumSquaredDD / n);
+
+  if (ulcerIndex <= 0) return annualReturn > riskFreeRate ? Infinity : 0;
+  return (annualReturn - riskFreeRate) / ulcerIndex;
+}
+
+/**
+ * Calculate mean returns with shrinkage and covariance matrix from price series.
+ * Also returns the aligned returns matrix for alternative objectives.
  */
 export function calculateReturnsAndCovariance(
   pricesBySymbol: Record<string, number[]>,
   symbols: string[],
   shrinkage: number
-): { meanReturns: number[]; covMatrix: number[][]; minLength: number } {
+): { meanReturns: number[]; covMatrix: number[][]; returnsMatrix: number[][]; minLength: number } {
   const returnsBySymbol: Record<string, number[]> = {};
 
   for (const symbol of symbols) {
@@ -78,6 +190,12 @@ export function calculateReturnsAndCovariance(
     meanReturns.push(rawMean * shrinkage);
   }
 
+  // Build aligned returns matrix
+  const returnsMatrix: number[][] = [];
+  for (const symbol of symbols) {
+    returnsMatrix.push(returnsBySymbol[symbol].slice(-minLength));
+  }
+
   // Covariance matrix (no shrinkage)
   const n = symbols.length;
   const covMatrix: number[][] = [];
@@ -98,22 +216,25 @@ export function calculateReturnsAndCovariance(
     }
   }
 
-  return { meanReturns, covMatrix, minLength };
+  return { meanReturns, covMatrix, returnsMatrix, minLength };
 }
 
 /**
- * Nelder-Mead optimization for Sharpe-maximizing weights
+ * Nelder-Mead optimization for portfolio weights.
+ * Maximizes the selected objective (Sharpe, Sortino, Calmar, or Ulcer).
  */
 export function optimizeSharpeNelderMead(
   meanReturns: number[],
   covMatrix: number[][],
-  config: OptimizerConfig
+  config: OptimizerConfig,
+  returnsMatrix?: number[][],
 ): number[] {
   const n = meanReturns.length;
   const { minWeight, maxWeight, leverage, riskFreeRate } = config;
   const yearlyTradingDays = config.yearlyTradingDays || 252;
+  const objective = config.objective || 'sharpe';
 
-  const negSharpe = (weights: number[]): number => {
+  const negObjective = (weights: number[]): number => {
     const sum = weights.reduce((a, b) => a + b, 0);
     if (sum <= 0) return Infinity;
     const w = weights.map((x) => x / sum);
@@ -121,6 +242,17 @@ export function optimizeSharpeNelderMead(
     for (const weight of w) {
       if (weight < minWeight - 0.001 || weight > maxWeight + 0.001) {
         return Infinity;
+      }
+    }
+
+    if (returnsMatrix && objective !== 'sharpe') {
+      switch (objective) {
+        case 'sortino':
+          return -calculateLeveragedSortino(w, returnsMatrix, leverage, yearlyTradingDays, riskFreeRate);
+        case 'calmar':
+          return -calculateCalmarRatio(w, returnsMatrix, leverage, yearlyTradingDays);
+        case 'ulcer':
+          return -calculateUlcerPerformanceIndex(w, returnsMatrix, leverage, yearlyTradingDays, riskFreeRate);
       }
     }
 
@@ -132,14 +264,14 @@ export function optimizeSharpeNelderMead(
   // Initialize simplex with equal weights
   let bestWeights = Array(n).fill(1 / n);
   const simplex: { point: number[]; value: number }[] = [];
-  simplex.push({ point: [...bestWeights], value: negSharpe(bestWeights) });
+  simplex.push({ point: [...bestWeights], value: negObjective(bestWeights) });
 
   for (let i = 0; i < n; i++) {
     const point = [...bestWeights];
     point[i] = Math.min(maxWeight, point[i] + 0.05);
     const sum = point.reduce((a, b) => a + b, 0);
     for (let j = 0; j < n; j++) point[j] /= sum;
-    simplex.push({ point, value: negSharpe(point) });
+    simplex.push({ point, value: negObjective(point) });
   }
 
   simplex.sort((a, b) => a.value - b.value);
@@ -163,12 +295,12 @@ export function optimizeSharpeNelderMead(
     const clampLo = Math.max(minWeight, 0);
     const reflected = centroid.map((c, j) => c + alpha * (c - simplex[n].point[j]));
     for (let j = 0; j < n; j++) reflected[j] = Math.max(clampLo, Math.min(0.99, reflected[j]));
-    const reflectedValue = negSharpe(reflected);
+    const reflectedValue = negObjective(reflected);
 
     if (reflectedValue < simplex[0].value) {
       const expanded = centroid.map((c, j) => c + gamma * (reflected[j] - c));
       for (let j = 0; j < n; j++) expanded[j] = Math.max(clampLo, Math.min(0.99, expanded[j]));
-      const expandedValue = negSharpe(expanded);
+      const expandedValue = negObjective(expanded);
       simplex[n] = expandedValue < reflectedValue
         ? { point: expanded, value: expandedValue }
         : { point: reflected, value: reflectedValue };
@@ -176,7 +308,7 @@ export function optimizeSharpeNelderMead(
       simplex[n] = { point: reflected, value: reflectedValue };
     } else {
       const contracted = centroid.map((c, j) => c + rho * (simplex[n].point[j] - c));
-      const contractedValue = negSharpe(contracted);
+      const contractedValue = negObjective(contracted);
       if (contractedValue < simplex[n].value) {
         simplex[n] = { point: contracted, value: contractedValue };
       } else {
@@ -184,7 +316,7 @@ export function optimizeSharpeNelderMead(
           for (let j = 0; j < n; j++) {
             simplex[i].point[j] = simplex[0].point[j] + sigma * (simplex[i].point[j] - simplex[0].point[j]);
           }
-          simplex[i].value = negSharpe(simplex[i].point);
+          simplex[i].value = negObjective(simplex[i].point);
         }
       }
     }

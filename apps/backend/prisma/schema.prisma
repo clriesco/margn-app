@@ -82,6 +82,7 @@ model Portfolio {
   sharpeWeightsLookbackMonths Int     @default(0) @map("sharpe_weights_lookback_months") // 0 = use all history
   meanReturnShrinkage         Float   @default(0.6) @map("mean_return_shrinkage")
   riskFreeRate                Float   @default(0.02) @map("risk_free_rate")
+  optimizationObjective       String  @default("sharpe") @map("optimization_objective") // 'sharpe', 'sortino', 'calmar', 'ulcer'
 
   user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   targetAssets      PortfolioTargetAsset[]

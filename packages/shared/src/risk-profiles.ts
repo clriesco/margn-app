@@ -24,6 +24,7 @@ export interface RiskProfileParams {
   meanReturnShrinkage: number;
   maxWeight: number;
   minWeight: number;
+  optimizationObjective: string; // 'sharpe', 'sortino', 'calmar', 'ulcer'
 
   // Backtest
   windowMonths: number;
@@ -60,6 +61,7 @@ export const RISK_PROFILES: Record<RiskProfileId, RiskProfile> = {
       meanReturnShrinkage: 0.4,
       maxWeight: 0.25,
       minWeight: 0.1,
+      optimizationObjective: "sharpe",
       windowMonths: 60,
     },
     suitableFor: [
@@ -90,6 +92,7 @@ export const RISK_PROFILES: Record<RiskProfileId, RiskProfile> = {
       meanReturnShrinkage: 0.6,
       maxWeight: 0.35,
       minWeight: 0.05,
+      optimizationObjective: "sharpe",
       windowMonths: 60,
     },
     suitableFor: [
@@ -120,6 +123,7 @@ export const RISK_PROFILES: Record<RiskProfileId, RiskProfile> = {
       meanReturnShrinkage: 0.7,
       maxWeight: 0.4,
       minWeight: 0.05,
+      optimizationObjective: "sharpe",
       windowMonths: 48,
     },
     suitableFor: [
@@ -150,6 +154,7 @@ export const RISK_PROFILES: Record<RiskProfileId, RiskProfile> = {
       meanReturnShrinkage: 0.85,
       maxWeight: 0.5,
       minWeight: 0.0,
+      optimizationObjective: "sharpe",
       windowMonths: 36,
     },
     suitableFor: [

@@ -260,7 +260,7 @@ export function runBacktest(
     const pricesBySymbol: Record<string, number[]> = {};
     for (const s of symbols) pricesBySymbol[s] = prices[s];
 
-    const { meanReturns, covMatrix } = calculateReturnsAndCovariance(
+    const { meanReturns, covMatrix, returnsMatrix } = calculateReturnsAndCovariance(
       pricesBySymbol, symbols, config.meanReturnShrinkage
     );
 
@@ -270,7 +270,8 @@ export function runBacktest(
       minWeight: config.minWeight,
       maxWeight: config.maxWeight,
       meanReturnShrinkage: config.meanReturnShrinkage,
-    });
+      objective: config.optimizationObjective || 'sharpe',
+    }, returnsMatrix);
 
     weightsUsed = {};
     for (let i = 0; i < symbols.length; i++) {
@@ -365,7 +366,7 @@ export function runBacktest(
           // Only re-optimize if we have enough data (at least 63 days)
           if (lookbackPrices[symbols[0]].length >= 63) {
             try {
-              const { meanReturns, covMatrix } = calculateReturnsAndCovariance(
+              const { meanReturns, covMatrix, returnsMatrix: lbReturnsMatrix } = calculateReturnsAndCovariance(
                 lookbackPrices, symbols, config.meanReturnShrinkage
               );
 
@@ -375,7 +376,8 @@ export function runBacktest(
                 minWeight: config.minWeight,
                 maxWeight: config.maxWeight,
                 meanReturnShrinkage: config.meanReturnShrinkage,
-              });
+                objective: config.optimizationObjective || 'sharpe',
+              }, lbReturnsMatrix);
 
               currentWeights = {};
               for (let i = 0; i < symbols.length; i++) {
