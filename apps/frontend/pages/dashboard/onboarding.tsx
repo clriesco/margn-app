@@ -314,7 +314,8 @@ export default function Onboarding() {
   }, [searchResults]);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === "Tab" || e.key === "Enter") {
+      if (e.key === "Tab" && !(showDropdown && searchResults.length > 0)) return;
       e.preventDefault();
       if (showDropdown && searchResults.length > 0) {
         const idx = highlightedIndex >= 0 ? highlightedIndex : 0;

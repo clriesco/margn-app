@@ -160,6 +160,11 @@ export class UpdatePortfolioConfigurationDto {
   @Min(0)
   @Max(0.2)
   riskFreeRate?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(["sharpe", "sortino", "calmar", "ulcer"])
+  optimizationObjective?: string;
 }
 
 /**
@@ -211,6 +216,7 @@ export interface PortfolioConfigurationResponse {
   sharpeWeightsLookbackMonths: number;
   meanReturnShrinkage: number;
   riskFreeRate: number;
+  optimizationObjective: string;
 
   // Metadata
   updatedAt: string;

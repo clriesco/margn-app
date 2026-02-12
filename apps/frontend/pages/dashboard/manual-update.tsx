@@ -266,7 +266,8 @@ export default function ManualUpdate() {
   const handleSymbolKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     const results = searchResults[index] || [];
     const isOpen = showDropdown[index] && results.length > 0;
-    if (e.key === 'Enter') {
+    if (e.key === 'Tab' || e.key === 'Enter') {
+      if (e.key === 'Tab' && !isOpen) return;
       e.preventDefault();
       if (isOpen) {
         const idx = (highlightedIndex[index] ?? -1) >= 0 ? highlightedIndex[index] : 0;

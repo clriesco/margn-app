@@ -21,7 +21,8 @@ export interface BacktestConfig {
   dynamicWeights?: boolean;
   /** Lookback months for dynamic weight optimization */
   dynamicWeightsLookback?: number;
-  // Sharpe optimization params
+  // Optimization params
+  optimizationObjective: 'sharpe' | 'sortino' | 'calmar' | 'ulcer';
   meanReturnShrinkage: number;
   riskFreeRate: number;
   maxWeight: number;

@@ -156,6 +156,7 @@ export class PortfolioConfigurationService {
       sharpeWeightsLookbackMonths: portfolio.sharpeWeightsLookbackMonths,
       meanReturnShrinkage: portfolio.meanReturnShrinkage,
       riskFreeRate: portfolio.riskFreeRate,
+      optimizationObjective: portfolio.optimizationObjective,
 
       // Metadata
       updatedAt: portfolio.updatedAt.toISOString(),
@@ -215,6 +216,7 @@ export class PortfolioConfigurationService {
         updateData.meanReturnShrinkage = profileParams.meanReturnShrinkage;
         updateData.maxWeight = profileParams.maxWeight;
         updateData.minWeight = profileParams.minWeight;
+        updateData.optimizationObjective = profileParams.optimizationObjective;
       }
     }
 
@@ -310,6 +312,9 @@ export class PortfolioConfigurationService {
     }
     if (dto.riskFreeRate !== undefined) {
       updateData.riskFreeRate = dto.riskFreeRate;
+    }
+    if (dto.optimizationObjective !== undefined) {
+      updateData.optimizationObjective = dto.optimizationObjective;
     }
 
     // Update portfolio
