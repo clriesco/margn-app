@@ -84,13 +84,13 @@ export default function DashboardSidebar({
       color: "#60a5fa",
     },
     {
-      label: "Movimientos",
+      label: "Aportaciones",
       icon: DollarSign,
       path: "/dashboard/contribution",
       color: "#34d399",
     },
     {
-      label: "Simulador",
+      label: "Reajustar Portfolio",
       icon: Scale,
       path: "/dashboard/rebalance",
       color: "#a5b4fc",

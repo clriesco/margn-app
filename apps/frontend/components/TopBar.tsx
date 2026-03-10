@@ -407,7 +407,7 @@ function TopBarLeverageIndicator({
       }}
     >
       <span style={{ color: "var(--text-dim)", fontSize: "0.8125rem" }}>
-        Leverage
+        Apal.
       </span>
       <span
         style={{

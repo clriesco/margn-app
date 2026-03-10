@@ -1963,7 +1963,7 @@ function EquityChart({ data }: { data: MetricsPoint[] }) {
         </div>
         <div style={{ width: "1px", height: "28px", background: "var(--border)" }} />
         <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-          <span style={panelLabelStyle}>Leverage</span>
+          <span style={panelLabelStyle}>Apalancamiento</span>
           <span style={panelValueStyle}>{dp.leverage.toFixed(2)}x</span>
         </div>
         {dp.drawdown != null && (
@@ -2287,7 +2287,7 @@ function LeverageCard({
           letterSpacing: "0.05em",
         }}
       >
-        Leverage
+        Apalancamiento
       </p>
       <p
         style={{

@@ -97,7 +97,7 @@ export default function Rebalance() {
       } catch (err) {
         console.error("Error calculating proposal:", err);
         setError(
-          err instanceof Error ? err.message : "Error al calcular la simulación"
+          err instanceof Error ? err.message : "Error al calcular el reajuste"
         );
       } finally {
         setIsCalculating(false);
@@ -122,14 +122,14 @@ export default function Rebalance() {
       invalidatePortfolioCache(portfolioId, user?.email);
       clearPageState();
 
-      setMessage("✅ Simulación aplicada. Nueva composición guardada.");
+      setMessage("✅ Ajustes confirmados. Nueva composición guardada.");
 
       setTimeout(() => {
         router.push("/dashboard");
       }, 2000);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error al aplicar la simulación"
+        err instanceof Error ? err.message : "Error al aplicar los ajustes"
       );
     } finally {
       setIsSubmitting(false);
@@ -159,7 +159,7 @@ export default function Rebalance() {
   return (
     <>
       <Head>
-        <title>Simulador de Rebalanceo - Margn</title>
+        <title>Reajuste de Portfolio - Margn</title>
       </Head>
       <DashboardSidebar>
         <div style={{ padding: "2rem", paddingTop: "4rem" }}>
@@ -181,11 +181,11 @@ export default function Rebalance() {
                   letterSpacing: "-0.025em",
                 }}
               >
-                Simulador de Rebalanceo
+                Reajuste de Portfolio
               </h1>
               <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                Cálculo de asignación basado en tus parámetros configurados
-                y datos de mercado
+                Calcula qué comprar y qué vender para reequilibrar tu
+                cartera
               </p>
             </div>
 
@@ -210,11 +210,11 @@ export default function Rebalance() {
                     marginBottom: "1rem",
                   }}
                 >
-                  Calculando simulación...
+                  Calculando reajuste...
                 </p>
                 <p style={{ color: "var(--text-on-glass-muted)" }}>
-                  Procesando condiciones de drawdown, desviación de pesos y
-                  volatilidad
+                  Analizando tu portfolio y calculando los ajustes
+                  necesarios
                 </p>
               </div>
             ) : proposal ? (
@@ -247,7 +247,7 @@ export default function Rebalance() {
                           margin: 0,
                         }}
                       >
-                        ✅ Sin ajustes necesarios
+                        ✅ Tu portfolio está equilibrado
                       </p>
                       <p
                         style={{
@@ -257,8 +257,8 @@ export default function Rebalance() {
                           margin: 0,
                         }}
                       >
-                        Según el cálculo, todos los activos están en su posición
-                        configurada y no se requieren ajustes de exposición.
+                        Todos los activos están en sus pesos objetivo. No
+                        necesitas hacer nada.
                       </p>
                     </div>
                   ) : null;
@@ -287,7 +287,7 @@ export default function Rebalance() {
                         marginBottom: "1rem",
                       }}
                     >
-                      ESTADO ACTUAL
+                      AHORA
                     </h3>
                     <div style={{ marginBottom: "0.5rem" }}>
                       <span style={{ color: "var(--text-on-glass-muted)" }}>
@@ -299,7 +299,7 @@ export default function Rebalance() {
                     </div>
                     <div style={{ marginBottom: "0.5rem" }}>
                       <span style={{ color: "var(--text-on-glass-muted)" }}>
-                        Exposure:{" "}
+                        Exposición:{" "}
                       </span>
                       <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                         {formatCurrencyES(proposal.currentExposure)}
@@ -307,7 +307,7 @@ export default function Rebalance() {
                     </div>
                     <div>
                       <span style={{ color: "var(--text-on-glass-muted)" }}>
-                        Leverage:{" "}
+                        Apalancamiento:{" "}
                       </span>
                       <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                         {formatNumberES(proposal.currentLeverage, {
@@ -334,7 +334,7 @@ export default function Rebalance() {
                         marginBottom: "1rem",
                       }}
                     >
-                      RESULTADO DE LA SIMULACIÓN
+                      DESPUÉS DEL REAJUSTE
                     </h3>
                     <div style={{ marginBottom: "0.5rem" }}>
                       <span style={{ color: "var(--text-on-glass-muted)" }}>
@@ -354,7 +354,7 @@ export default function Rebalance() {
                     </div>
                     <div>
                       <span style={{ color: "var(--text-on-glass-muted)" }}>
-                        Leverage:{" "}
+                        Apalancamiento:{" "}
                       </span>
                       <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
                         {formatNumberES(proposal.summary.newLeverage, {
@@ -683,8 +683,8 @@ export default function Rebalance() {
                   >
                     <Lightbulb size={16} style={{ flexShrink: 0 }} />
                     <span>
-                      Si decides operar en tu broker, haz clic en
-                      &quot;Aplicar Simulación&quot; para registrar la nueva
+                      Cuando hayas ejecutado estos ajustes en tu broker,
+                      pulsa &quot;Confirmar Ajustes&quot; para actualizar
                       composición en Margn.
                     </span>
                   </p>
@@ -730,7 +730,7 @@ export default function Rebalance() {
                           cursor: isDisabled ? "not-allowed" : "pointer",
                         }}
                       >
-                        {isSubmitting ? "Aplicando..." : "✓ Aplicar Simulación"}
+                        {isSubmitting ? "Aplicando..." : "✓ Confirmar Ajustes"}
                       </button>
                     </div>
                   );

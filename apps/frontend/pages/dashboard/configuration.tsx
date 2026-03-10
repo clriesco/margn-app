@@ -504,7 +504,7 @@ export default function Configuration() {
                           color: "var(--text-secondary)",
                         }}
                       >
-                        Los parámetros de leverage y optimización se han ajustado según el perfil seleccionado.
+                        Los parámetros de apalancamiento y optimización se han ajustado según el perfil seleccionado.
                         Puedes modificarlos manualmente si lo deseas.
                       </div>
                     )}
@@ -934,14 +934,14 @@ export default function Configuration() {
                       }}
                     >
                       <BarChart size={18} />
-                      Rango de Leverage
-                      <Tooltip text="El sistema recomendará reborrow cuando el leverage baje del mínimo, y aporte extra cuando suba del máximo." />
+                      Rango de Apalancamiento
+                      <Tooltip text="El sistema recomendará reborrow cuando el apalancamiento baje del mínimo, y aporte extra cuando suba del máximo." />
                     </div>
                   }
                 >
                   <div style={gridStyle}>
                     <InputField
-                      label="Leverage Mínimo"
+                      label="Apalancamiento Mínimo"
                       value={formData.leverageMin}
                       onChange={(v) => handleInputChange("leverageMin", v)}
                       type="number"
@@ -951,7 +951,7 @@ export default function Configuration() {
                       suffix="x"
                     />
                     <InputField
-                      label="Leverage Máximo"
+                      label="Apalancamiento Máximo"
                       value={formData.leverageMax}
                       onChange={(v) => handleInputChange("leverageMax", v)}
                       type="number"
@@ -961,7 +961,7 @@ export default function Configuration() {
                       suffix="x"
                     />
                     <InputField
-                      label="Leverage Objetivo"
+                      label="Apalancamiento Objetivo"
                       value={formData.leverageTarget}
                       onChange={(v) => handleInputChange("leverageTarget", v)}
                       type="number"

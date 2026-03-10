@@ -91,7 +91,7 @@ export default function Onboarding() {
   const [manualWeights, setManualWeights] = useState<Record<string, number>>({});
 
   // Step 5: Basic Info
-  const [portfolioName, setPortfolioName] = useState("Mi Portfolio Apalancado");
+  const [portfolioName, setPortfolioName] = useState("Mi Portfolio");
   const [initialCapital, setInitialCapital] = useState<number>(10000);
 
   // Step 6: Contributions
@@ -707,7 +707,7 @@ export default function Onboarding() {
                       }}
                     >
                       <BarChart size={18} />
-                      Configuración de Leverage Personalizada
+                      Apalancamiento Personalizado
                     </h3>
                     <div
                       style={{
@@ -1342,7 +1342,7 @@ export default function Onboarding() {
                     value={portfolioName}
                     onChange={(e) => setPortfolioName(e.target.value)}
                     style={inputStyle}
-                    placeholder="Mi Portfolio Apalancado"
+                    placeholder="Mi Portfolio"
                   />
                 </div>
 

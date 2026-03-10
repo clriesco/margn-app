@@ -127,7 +127,7 @@ export default function Contribution() {
   return (
     <>
       <Head>
-        <title>Movimientos - Margn</title>
+        <title>Aportaciones y Retiros - Margn</title>
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -183,11 +183,11 @@ export default function Contribution() {
               >
                 {isExtraContribution
                   ? "Aportación Extra"
-                  : "Movimientos"}
+                  : "Aportaciones y Retiros"}
               </h1>
               <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
                 {isExtraContribution
-                  ? "Registra una aportación extra para reducir tu leverage y llevarlo de vuelta al rango."
+                  ? "Registra una aportación extra para reducir tu apalancamiento y llevarlo de vuelta al rango."
                   : "Registra aportaciones o retiros de tu portfolio."}
               </p>
             </div>
@@ -331,7 +331,7 @@ export default function Contribution() {
                       fontSize: "0.875rem",
                     }}
                   >
-                    Un retiro reduce tu equity y aumenta tu leverage. Asegúrate de que el monto no exceda tu equity actual.
+                    Un retiro reduce tu equity y aumenta tu apalancamiento. Asegúrate de que el monto no exceda tu equity actual.
                   </div>
                 )}
 
