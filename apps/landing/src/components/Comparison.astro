@@ -1,7 +1,7 @@
 ---
 // P50 trajectories from real backtest data (sampled monthly)
-// Sin Margn: 1x leverage, DCA $1K/month, 7 assets (SPY, IEF, BTC-USD, GLD, STOXX50E, TLT, QQQ)
-// Con Margn: 2.5x leverage, DCA condicional $1K/month, same assets
+// Sin Margn: 1x apalancamiento, DCA $1K/month, 7 assets (SPY, IEF, BTC-USD, GLD, STOXX50E, TLT, QQQ)
+// Con Margn: 2.5x apalancamiento, DCA condicional $1K/month, same assets
 const sinMargn = [10000,10094,11496,12193,13113,14639,16210,16833,18971,20410,20502,20832,21858,22524,23755,22043,21770,22560,25560,24351,23883,25297,25991,26992,30366,30520,34773,36140,37575,39185,40442,41043,40657,43453,47558,50866,52306,56529,60353,60858,63566,65126,67079,68469,71752,73510,78394,79525,83270,83665,83992,87963,93883,96528,100455,102137,108150,112670,110753,113754,122023,118818]
 const conMargn = [10000,9914,11665,14277,14676,17086,20446,25938,27273,27817,28019,29359,30000,30144,32676,32107,33178,33930,32398,30854,33819,38117,39439,43254,48298,56474,60825,65741,66659,64672,67587,67817,78547,86973,57505,84311,98123,104798,114502,126587,126530,129612,151041,154461,197964,194606,178523,203940,210997,205036,210254,224455,243408,218678,253067,259053,260207,222865,219767,237317,214123,191223]
 
@@ -112,7 +112,7 @@ const pathInvested = buildPath(invested)
       <div class="flex flex-wrap items-center justify-center gap-6 mt-4 text-sm">
         <div class="flex items-center gap-2">
           <div class="w-5 h-0.5 bg-brand-500 rounded"></div>
-          <span class="text-surface-200/60">Con Margn <span class="text-surface-200/30">(2.5x leverage, DCA condicional)</span></span>
+          <span class="text-surface-200/60">Con Margn <span class="text-surface-200/30">(2.5x apalancamiento, DCA condicional)</span></span>
         </div>
         <div class="flex items-center gap-2">
           <div class="w-5 h-0.5 bg-[#868e96] rounded"></div>
