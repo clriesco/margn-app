@@ -1,0 +1,88 @@
+---
+import '../styles/global.css'
+
+interface Props {
+  title?: string
+  description?: string
+}
+
+const {
+  title = 'Margn — Inteligencia cuantitativa para portfolios apalancados',
+  description = 'Herramientas cuantitativas para estrategias DCA condicional con apalancamiento dinámico. Rebalanceo Sharpe-optimizado, monitorización de leverage en tiempo real y backtesting.'
+} = Astro.props
+---
+
+<!doctype html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0b0d1a" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content="https://margn.es" />
+    <meta property="og:site_name" content="Margn" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <title>{title}</title>
+  </head>
+  <body class="bg-surface-950 text-surface-100 font-sans antialiased">
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  /* Fade-in animation for sections */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  }
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Gradient text utility */
+  .text-gradient {
+    background: linear-gradient(135deg, var(--color-brand-400), var(--color-brand-200));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glow effect */
+  .glow {
+    box-shadow: 0 0 40px rgba(92, 124, 250, 0.15), 0 0 80px rgba(92, 124, 250, 0.05);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 20px rgba(92, 124, 250, 0.1);
+  }
+</style>
+
+<script>
+  // Intersection Observer for fade-in animations
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible')
+          observer.unobserve(entry.target)
+        }
+      })
+    },
+    { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+  )
+
+  document.querySelectorAll('.fade-in').forEach((el) => observer.observe(el))
+</script>

@@ -1,0 +1,59 @@
+---
+const steps = [
+  {
+    number: '01',
+    title: 'Configura tu portfolio',
+    description: 'Añade tus activos, define los límites de leverage, calendario de contribuciones y parámetros de riesgo. Margn descarga los datos históricos de precios automáticamente.',
+  },
+  {
+    number: '02',
+    title: 'Monitoriza a diario',
+    description: 'Los precios se actualizan automáticamente. Margn recalcula equity, exposición, leverage y margin ratio cada día de mercado. Las notificaciones aparecen cuando tu portfolio necesita atención.',
+  },
+  {
+    number: '03',
+    title: 'Simula antes de actuar',
+    description: 'Ejecuta el simulador de rebalanceo para ver los pesos Sharpe-optimizados y los ajustes exactos por posición. Revisa los números y decide si ejecutar.',
+  },
+  {
+    number: '04',
+    title: 'Registra e itera',
+    description: 'Registra contribuciones, aplica simulaciones, actualiza posiciones. Cada acción alimenta tus analíticas, construyendo un historial completo del rendimiento real de tu estrategia.',
+  },
+]
+---
+
+<section id="como-funciona" class="py-24 sm:py-32 relative">
+  <!-- Subtle divider -->
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-brand-600/30 to-transparent"></div>
+
+  <div class="mx-auto max-w-6xl px-6">
+    <div class="fade-in text-center max-w-2xl mx-auto mb-16">
+      <p class="text-sm font-medium text-brand-400 mb-3 tracking-wide uppercase">Cómo funciona</p>
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+        De la configuración a la señal en minutos
+      </h2>
+      <p class="text-surface-200/50 text-lg">
+        Sin configuraciones complejas. Define tu estrategia y deja que las matemáticas hagan el resto.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 lg:gap-12">
+      {steps.map((step) => (
+        <div class="fade-in relative flex gap-5">
+          <!-- Step number -->
+          <div class="shrink-0">
+            <div class="w-12 h-12 rounded-xl bg-brand-600/10 border border-brand-700/20 flex items-center justify-center">
+              <span class="text-sm font-bold text-brand-400">{step.number}</span>
+            </div>
+          </div>
+          <!-- Content -->
+          <div class="pt-1">
+            <h3 class="text-lg font-semibold text-white mb-2">{step.title}</h3>
+            <p class="text-sm text-surface-200/50 leading-relaxed">{step.description}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

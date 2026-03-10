@@ -1,0 +1,77 @@
+---
+import Layout from './Layout.astro'
+import Navbar from '../components/Navbar.astro'
+import Footer from '../components/Footer.astro'
+
+interface Props {
+  title: string
+  description?: string
+  lastUpdated?: string
+}
+
+const { title, description, lastUpdated } = Astro.props
+---
+
+<Layout title={`${title} — Margn`} description={description}>
+  <Navbar />
+  <main class="pt-32 pb-24">
+    <div class="mx-auto max-w-3xl px-6">
+      <header class="mb-12">
+        <h1 class="text-3xl sm:text-4xl font-bold text-white mb-3">{title}</h1>
+        {lastUpdated && (
+          <p class="text-sm text-surface-200/40">Última actualización: {lastUpdated}</p>
+        )}
+      </header>
+      <article class="prose-legal">
+        <slot />
+      </article>
+    </div>
+  </main>
+  <Footer />
+</Layout>
+
+<style is:global>
+  .prose-legal h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-surface-100);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .prose-legal h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-surface-100);
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  .prose-legal p {
+    font-size: 0.875rem;
+    line-height: 1.75;
+    color: rgba(226, 231, 240, 0.55);
+    margin-bottom: 1rem;
+  }
+  .prose-legal ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .prose-legal li {
+    font-size: 0.875rem;
+    line-height: 1.75;
+    color: rgba(226, 231, 240, 0.55);
+    margin-bottom: 0.35rem;
+  }
+  .prose-legal a {
+    color: var(--color-brand-400);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .prose-legal a:hover {
+    color: var(--color-brand-300);
+  }
+  .prose-legal strong {
+    color: var(--color-surface-100);
+    font-weight: 600;
+  }
+</style>

@@ -1,0 +1,101 @@
+---
+const links = [
+  { label: 'Funcionalidades', href: '#funcionalidades' },
+  { label: 'Cómo funciona', href: '#como-funciona' },
+  { label: 'Precios', href: '#precios' },
+  { label: 'FAQ', href: '#faq' },
+]
+---
+
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+  <div class="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-2 group">
+      <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center font-bold text-white text-sm group-hover:bg-brand-500 transition-colors">
+        M
+      </div>
+      <span class="text-lg font-semibold text-white">Margn</span>
+    </a>
+
+    <!-- Desktop links -->
+    <div class="hidden md:flex items-center gap-8">
+      {links.map((link) => (
+        <a
+          href={link.href}
+          class="text-sm text-surface-200/70 hover:text-white transition-colors"
+        >
+          {link.label}
+        </a>
+      ))}
+    </div>
+
+    <!-- CTA -->
+    <div class="flex items-center gap-3">
+      <a
+        href="https://app.margn.es"
+        class="hidden sm:inline-flex text-sm text-surface-200/70 hover:text-white transition-colors"
+      >
+        Iniciar sesión
+      </a>
+      <a
+        href="https://app.margn.es"
+        class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors"
+      >
+        Empezar gratis
+      </a>
+
+      <!-- Mobile menu button -->
+      <button
+        id="mobile-menu-btn"
+        class="md:hidden p-2 text-surface-200/70 hover:text-white"
+        aria-label="Abrir menú"
+      >
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path id="menu-icon" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="hidden md:hidden border-t border-surface-800/50 bg-surface-950/95 backdrop-blur-xl">
+    <div class="px-6 py-4 flex flex-col gap-3">
+      {links.map((link) => (
+        <a
+          href={link.href}
+          class="text-sm text-surface-200/70 hover:text-white transition-colors py-2"
+        >
+          {link.label}
+        </a>
+      ))}
+      <a
+        href="https://app.margn.es"
+        class="text-sm text-surface-200/70 hover:text-white transition-colors py-2"
+      >
+        Iniciar sesión
+      </a>
+    </div>
+  </div>
+</nav>
+
+<script>
+  const navbar = document.getElementById('navbar')!
+
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 40) {
+      navbar.classList.add('bg-surface-950/80', 'backdrop-blur-xl', 'border-b', 'border-surface-800/50')
+    } else {
+      navbar.classList.remove('bg-surface-950/80', 'backdrop-blur-xl', 'border-b', 'border-surface-800/50')
+    }
+  })
+
+  const btn = document.getElementById('mobile-menu-btn')!
+  const menu = document.getElementById('mobile-menu')!
+  btn.addEventListener('click', () => {
+    menu.classList.toggle('hidden')
+  })
+
+  menu.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => menu.classList.add('hidden'))
+  })
+</script>

@@ -9,6 +9,7 @@
   "scripts": {
     "dev:backend": "npm --workspace apps/backend run dev",
     "dev:frontend": "npm --workspace apps/frontend run dev",
+    "dev:landing": "npm --workspace apps/landing run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces",

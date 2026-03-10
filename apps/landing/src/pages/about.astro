@@ -1,0 +1,50 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+---
+
+<LegalLayout title="Sobre Margn" description="Quiénes somos y por qué creamos Margn.">
+
+<h2>Qué es Margn</h2>
+
+<p>
+  Margn es una herramienta de cálculo, optimización y visualización diseñada para inversores que operan con apalancamiento en plataformas de margen. Nació de una investigación cuantitativa sobre estrategias de DCA (Dollar Cost Averaging) condicional con gestión dinámica de leverage.
+</p>
+
+<p>
+  La pregunta que nos llevó a crear Margn fue simple: <strong>¿es posible usar apalancamiento de forma disciplinada y sistemática, reduciendo el riesgo en lugar de amplificarlo?</strong> Los backtests mostraron que sí — con las herramientas adecuadas. Margn es esa herramienta.
+</p>
+
+<h2>Nuestra filosofía</h2>
+
+<h3>Tú decides, nosotros calculamos</h3>
+<p>
+  Margn no es un asesor financiero ni un robo-advisor. No emitimos recomendaciones de inversión, no gestionamos activos y no ejecutamos operaciones. Proporcionamos cálculos precisos, simulaciones transparentes y métricas rigurosas para que tomes decisiones informadas. Cada acción sobre tu portfolio es exclusivamente tuya.
+</p>
+
+<h3>Matemáticas, no intuición</h3>
+<p>
+  Cada funcionalidad de Margn está respaldada por un algoritmo. La optimización de pesos usa Nelder-Mead con shrinkage para evitar sobreajuste. Las señales de despliegue evalúan drawdown, volatilidad y desviación de pesos. El rebalanceo calcula cantidades exactas por posición. Nada es arbitrario.
+</p>
+
+<h3>Transparencia total</h3>
+<p>
+  Todos los parámetros del sistema son configurables y visibles. No hay cajas negras. Los resultados de backtest se presentan con intervalos de confianza y limitaciones explícitas. Reconocemos abiertamente lo que el modelo no captura: costes de financiación, sesgo de supervivencia y que el período de backtest (2015-2020) fue predominantemente alcista.
+</p>
+
+<h2>El origen</h2>
+
+<p>
+  Margn surgió de un proyecto de investigación cuantitativa que analizó estrategias de DCA apalancado mediante simulaciones Monte Carlo sobre datos históricos. Los resultados — un ratio Sharpe ~80% superior, cero margin calls a 3.5-4.4x de leverage, y recuperación 10-14x más rápida tras drawdowns — motivaron la creación de una herramienta que hiciera operacional esa investigación.
+</p>
+
+<p>
+  Lo que empezó como notebooks de Jupyter y scripts de simulación evolucionó en una aplicación completa: dashboard, rebalanceo Sharpe-optimizado, DCA condicional, backtesting y monitorización de leverage en tiempo real.
+</p>
+
+<h2>Contacto</h2>
+
+<p>
+  Para cualquier consulta, escríbenos a <a href="mailto:hello@margn.es">hello@margn.es</a>.
+</p>
+
+</LegalLayout>

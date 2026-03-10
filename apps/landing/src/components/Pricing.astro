@@ -1,0 +1,188 @@
+---
+const tiers = [
+  {
+    name: 'Starter',
+    monthly: 'Gratis',
+    annual: 'Gratis',
+    period: '',
+    description: 'Explora la estrategia con un solo portfolio.',
+    cta: 'Empezar gratis',
+    ctaHref: 'https://app.margn.es',
+    ctaStyle: 'border border-surface-800 text-surface-200/80 hover:border-surface-200/30 hover:text-white',
+    features: [
+      '1 portfolio, hasta 5 activos',
+      'Seguimiento de equity y leverage',
+      'Registro de contribuciones mensuales',
+      'Actualización manual de posiciones',
+      'Dashboard básico',
+      'Soporte comunidad',
+    ],
+    highlighted: false,
+  },
+  {
+    name: 'Pro',
+    monthly: '19',
+    annual: '15',
+    period: '/mes',
+    description: 'Toolkit cuantitativo completo para inversores serios.',
+    cta: 'Prueba 14 días gratis',
+    ctaHref: 'https://app.margn.es',
+    ctaStyle: 'bg-brand-600 text-white hover:bg-brand-500 shadow-[0_0_30px_rgba(92,124,250,0.2)]',
+    features: [
+      'Hasta 3 portfolios',
+      'Activos ilimitados',
+      'Rebalanceo Sharpe-optimizado (Nelder-Mead)',
+      'Señales de DCA condicional',
+      'Simulador de backtesting (Monte Carlo)',
+      'Analíticas completas (XIRR, Sharpe, drawdown)',
+      'Ingestión diaria automatizada de precios',
+      'Alertas inteligentes (email + dashboard)',
+      'Soporte prioritario',
+    ],
+    highlighted: true,
+  },
+  {
+    name: 'Institucional',
+    monthly: '49',
+    annual: '39',
+    period: '/mes',
+    description: 'Múltiples portfolios y capacidades avanzadas.',
+    cta: 'Contactar',
+    ctaHref: 'mailto:hello@margn.es',
+    ctaStyle: 'border border-surface-800 text-surface-200/80 hover:border-surface-200/30 hover:text-white',
+    features: [
+      'Portfolios ilimitados',
+      'Activos ilimitados',
+      'Todo lo incluido en Pro',
+      'Acceso API',
+      'Parámetros de riesgo personalizados',
+      'Backtesting avanzado (rangos de fecha custom)',
+      'Exportación de datos CSV/Excel',
+      'Sesión de onboarding dedicada',
+      'Soporte prioritario con SLA',
+    ],
+    highlighted: false,
+  },
+]
+---
+
+<section id="precios" class="py-24 sm:py-32 relative">
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-brand-600/30 to-transparent"></div>
+
+  <div class="mx-auto max-w-6xl px-6">
+    <div class="fade-in text-center max-w-2xl mx-auto mb-12">
+      <p class="text-sm font-medium text-brand-400 mb-3 tracking-wide uppercase">Precios</p>
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+        Elige tu plan
+      </h2>
+      <p class="text-surface-200/50 text-lg">
+        Empieza gratis. Escala cuando las matemáticas demuestren su valor.
+      </p>
+    </div>
+
+    <!-- Billing toggle -->
+    <div class="fade-in flex items-center justify-center gap-3 mb-12">
+      <span class="text-sm text-surface-200/50" id="label-monthly">Mensual</span>
+      <button
+        id="billing-toggle"
+        class="relative w-12 h-6 rounded-full bg-surface-800 transition-colors cursor-pointer"
+        aria-label="Alternar facturación anual"
+      >
+        <div id="toggle-dot" class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-brand-500 transition-transform"></div>
+      </button>
+      <span class="text-sm text-surface-200/50" id="label-annual">
+        Anual <span class="text-accent-green text-xs font-medium ml-1">Ahorra ~20%</span>
+      </span>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
+      {tiers.map((tier) => (
+        <div class:list={[
+          'fade-in relative rounded-2xl p-6 lg:p-8 flex flex-col transition-all duration-300',
+          tier.highlighted
+            ? 'border-2 border-brand-600/50 bg-surface-900/60 glow'
+            : 'border border-surface-800/50 bg-surface-900/30 hover:border-surface-800',
+        ]}>
+          {tier.highlighted && (
+            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+              <span class="inline-flex items-center rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white">
+                Más popular
+              </span>
+            </div>
+          )}
+
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-white mb-1">{tier.name}</h3>
+            <p class="text-sm text-surface-200/40 mb-4">{tier.description}</p>
+            <div class="flex items-baseline gap-1">
+              {tier.monthly === 'Gratis' ? (
+                <span class="text-4xl font-bold text-white">Gratis</span>
+              ) : (
+                <>
+                  <span class="text-surface-200/40 text-lg">&euro;</span>
+                  <span class="text-4xl font-bold text-white price-value" data-monthly={tier.monthly} data-annual={tier.annual}>
+                    {tier.monthly}
+                  </span>
+                  <span class="text-sm text-surface-200/40">{tier.period}</span>
+                </>
+              )}
+            </div>
+            {tier.monthly !== 'Gratis' && (
+              <p class="text-xs text-surface-200/30 mt-1 annual-note hidden">
+                Facturado anualmente
+              </p>
+            )}
+          </div>
+
+          <ul class="space-y-3 mb-8 flex-1">
+            {tier.features.map((feature) => (
+              <li class="flex items-start gap-2.5 text-sm">
+                <svg class="w-4 h-4 text-accent-green shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                <span class="text-surface-200/60">{feature}</span>
+              </li>
+            ))}
+          </ul>
+
+          <a
+            href={tier.ctaHref}
+            class:list={[
+              'inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition-all',
+              tier.ctaStyle,
+            ]}
+          >
+            {tier.cta}
+          </a>
+        </div>
+      ))}
+    </div>
+
+    <p class="fade-in text-center text-xs text-surface-200/30 mt-8">
+      Sin tarjeta de crédito para el plan gratuito. 14 días de prueba en Pro. Cancela cuando quieras.
+    </p>
+  </div>
+</section>
+
+<script>
+  const toggle = document.getElementById('billing-toggle')!
+  const dot = document.getElementById('toggle-dot')!
+  const prices = document.querySelectorAll('.price-value')
+  const annualNotes = document.querySelectorAll('.annual-note')
+  let isAnnual = false
+
+  toggle.addEventListener('click', () => {
+    isAnnual = !isAnnual
+    dot.style.transform = isAnnual ? 'translateX(24px)' : 'translateX(0)'
+    toggle.style.backgroundColor = isAnnual ? 'var(--color-brand-600)' : ''
+
+    prices.forEach((el) => {
+      const price = isAnnual ? el.getAttribute('data-annual') : el.getAttribute('data-monthly')
+      el.textContent = price
+    })
+
+    annualNotes.forEach((el) => {
+      el.classList.toggle('hidden', !isAnnual)
+    })
+  })
+</script>
