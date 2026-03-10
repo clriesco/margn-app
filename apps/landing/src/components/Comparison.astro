@@ -1,0 +1,157 @@
+---
+// P50 trajectories from real backtest data (sampled monthly)
+// Sin Margn: 1x leverage, DCA $1K/month, 7 assets (SPY, IEF, BTC-USD, GLD, STOXX50E, TLT, QQQ)
+// Con Margn: 2.5x leverage, DCA condicional $1K/month, same assets
+const sinMargn = [10000,10094,11496,12193,13113,14639,16210,16833,18971,20410,20502,20832,21858,22524,23755,22043,21770,22560,25560,24351,23883,25297,25991,26992,30366,30520,34773,36140,37575,39185,40442,41043,40657,43453,47558,50866,52306,56529,60353,60858,63566,65126,67079,68469,71752,73510,78394,79525,83270,83665,83992,87963,93883,96528,100455,102137,108150,112670,110753,113754,122023,118818]
+const conMargn = [10000,9914,11665,14277,14676,17086,20446,25938,27273,27817,28019,29359,30000,30144,32676,32107,33178,33930,32398,30854,33819,38117,39439,43254,48298,56474,60825,65741,66659,64672,67587,67817,78547,86973,57505,84311,98123,104798,114502,126587,126530,129612,151041,154461,197964,194606,178523,203940,210997,205036,210254,224455,243408,218678,253067,259053,260207,222865,219767,237317,214123,191223]
+
+const totalMonths = Math.max(sinMargn.length, conMargn.length)
+const maxEquity = Math.max(...sinMargn, ...conMargn)
+
+// SVG dimensions
+const W = 800
+const H = 380
+const PAD = { top: 20, right: 20, bottom: 40, left: 65 }
+const chartW = W - PAD.left - PAD.right
+const chartH = H - PAD.top - PAD.bottom
+
+// Scale functions
+const x = (i: number) => PAD.left + (i / (totalMonths - 1)) * chartW
+const y = (val: number) => PAD.top + chartH - (val / maxEquity) * chartH
+
+// Build SVG paths
+const buildPath = (data: number[]) => data.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+const buildArea = (data: number[]) => buildPath(data) + ` L${x(data.length - 1).toFixed(1)},${y(0).toFixed(1)} L${x(0).toFixed(1)},${y(0).toFixed(1)} Z`
+
+const pathSin = buildPath(sinMargn)
+const pathCon = buildPath(conMargn)
+const areaCon = buildArea(conMargn)
+const areaSin = buildArea(sinMargn)
+
+// Y-axis labels
+const yTicks = [0, 50000, 100000, 150000, 200000, 250000]
+const formatK = (v: number) => v === 0 ? '$0' : `$${v / 1000}K`
+
+// X-axis labels (every 12 months)
+const xTicks = Array.from({ length: Math.floor(totalMonths / 12) + 1 }, (_, i) => i * 12).filter(i => i < totalMonths)
+
+// Total invested line (initial $10K + $1K/month)
+const invested = Array.from({ length: totalMonths }, (_, i) => 10000 + i * 1000)
+const pathInvested = buildPath(invested)
+---
+
+<section class="py-20 sm:py-28 relative overflow-hidden">
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-brand-600/30 to-transparent"></div>
+
+  <div class="mx-auto max-w-6xl px-6">
+    <div class="fade-in text-center max-w-2xl mx-auto mb-12">
+      <p class="text-sm font-medium text-brand-400 mb-3 tracking-wide uppercase">Comparativa</p>
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+        El mismo portfolio. Distinta gestión.
+      </h2>
+      <p class="text-surface-200/50 text-lg">
+        Mismos 7 activos, misma aportación mensual de $1.000, mismo capital inicial.
+        La diferencia: apalancamiento dinámico y DCA condicional.
+      </p>
+    </div>
+
+    <!-- Chart -->
+    <div class="fade-in rounded-2xl border border-surface-800/50 bg-surface-900/30 p-4 sm:p-8">
+      <svg viewBox={`0 0 ${W} ${H}`} class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="grad-con" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4c6ef5" stop-opacity="0.15" />
+            <stop offset="100%" stop-color="#4c6ef5" stop-opacity="0" />
+          </linearGradient>
+          <linearGradient id="grad-sin" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#868e96" stop-opacity="0.08" />
+            <stop offset="100%" stop-color="#868e96" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+
+        <!-- Grid lines -->
+        {yTicks.map((tick) => (
+          <line x1={PAD.left} y1={y(tick)} x2={W - PAD.right} y2={y(tick)} stroke="rgba(255,255,255,0.04)" stroke-width="1" />
+        ))}
+
+        <!-- Y-axis labels -->
+        {yTicks.map((tick) => (
+          <text x={PAD.left - 8} y={y(tick) + 4} text-anchor="end" fill="rgba(255,255,255,0.25)" font-size="11" font-family="Inter, sans-serif">
+            {formatK(tick)}
+          </text>
+        ))}
+
+        <!-- X-axis labels -->
+        {xTicks.map((monthIdx) => (
+          <text x={x(monthIdx)} y={H - 8} text-anchor="middle" fill="rgba(255,255,255,0.25)" font-size="11" font-family="Inter, sans-serif">
+            {monthIdx === 0 ? 'Inicio' : `${monthIdx}m`}
+          </text>
+        ))}
+
+        <!-- Invested capital line (dashed) -->
+        <path d={pathInvested} fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="4 4" />
+
+        <!-- Sin Margn area + line -->
+        <path d={areaSin} fill="url(#grad-sin)" />
+        <path d={pathSin} fill="none" stroke="#868e96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+
+        <!-- Con Margn area + line -->
+        <path d={areaCon} fill="url(#grad-con)" />
+        <path d={pathCon} fill="none" stroke="#4c6ef5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+        <!-- End labels -->
+        <text x={x(sinMargn.length - 1) + 5} y={y(sinMargn[sinMargn.length - 1]) + 4} fill="#868e96" font-size="12" font-weight="600" font-family="Inter, sans-serif">
+          $119K
+        </text>
+        <text x={x(conMargn.length - 1) + 5} y={y(conMargn[conMargn.length - 1]) - 8} fill="#4c6ef5" font-size="12" font-weight="600" font-family="Inter, sans-serif">
+          $191K
+        </text>
+      </svg>
+
+      <!-- Legend -->
+      <div class="flex flex-wrap items-center justify-center gap-6 mt-4 text-sm">
+        <div class="flex items-center gap-2">
+          <div class="w-5 h-0.5 bg-brand-500 rounded"></div>
+          <span class="text-surface-200/60">Con Margn <span class="text-surface-200/30">(2.5x leverage, DCA condicional)</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-5 h-0.5 bg-[#868e96] rounded"></div>
+          <span class="text-surface-200/60">Sin apalancamiento <span class="text-surface-200/30">(1x, DCA estándar)</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-5 h-0.5 border-t border-dashed border-surface-200/20"></div>
+          <span class="text-surface-200/30">Capital invertido</span>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+        <div class="rounded-xl bg-surface-900/50 border border-surface-800/30 p-4 text-center">
+          <div class="text-xs text-surface-200/30 mb-1">Capital invertido</div>
+          <div class="text-lg font-bold text-white">$70K</div>
+          <div class="text-[10px] text-surface-200/25">$10K + 60 × $1K</div>
+        </div>
+        <div class="rounded-xl bg-surface-900/50 border border-surface-800/30 p-4 text-center">
+          <div class="text-xs text-surface-200/30 mb-1">Sin apalancamiento</div>
+          <div class="text-lg font-bold text-[#868e96]">$119K</div>
+          <div class="text-[10px] text-surface-200/25">+70% sobre invertido</div>
+        </div>
+        <div class="rounded-xl bg-surface-900/50 border border-brand-700/20 p-4 text-center">
+          <div class="text-xs text-brand-400 mb-1">Con Margn</div>
+          <div class="text-lg font-bold text-brand-400">$191K</div>
+          <div class="text-[10px] text-surface-200/25">+173% sobre invertido</div>
+        </div>
+        <div class="rounded-xl bg-surface-900/50 border border-accent-green/20 p-4 text-center">
+          <div class="text-xs text-accent-green mb-1">Diferencia</div>
+          <div class="text-lg font-bold text-accent-green">+$72K</div>
+          <div class="text-[10px] text-surface-200/25">+60% más de capital</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="fade-in text-center text-[10px] text-surface-200/20 mt-4">
+      Trayectorias medianas (P50) de backtests sobre datos reales. Mismos activos: SPY, IEF, BTC-USD, GLD, STOXX50E, TLT, QQQ.
+      Los períodos difieren por disponibilidad de datos en las ventanas de simulación. Rentabilidades pasadas no garantizan resultados futuros.
+    </p>
+  </div>
+</section>
