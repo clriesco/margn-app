@@ -2,47 +2,43 @@
 const faqs = [
   {
     question: '¿Qué es Margn exactamente?',
-    answer: 'Margn es una herramienta de cálculo y visualización para inversores que operan con apalancamiento (dinero prestado del broker). Te ayuda a entender cuánto riesgo estás asumiendo, cómo distribuir tu capital y cuándo aportar más dinero. No es un asesor financiero ni gestiona tu dinero: tú mantienes el control total.',
+    answer: 'Margn es una herramienta de cálculo y visualización para inversores que operan con apalancamiento. Calcula la distribución óptima de tu portfolio, monitoriza tu leverage, evalúa condiciones de mercado para tus contribuciones y simula escenarios de rebalanceo. Realiza análisis cuantitativo — no ejecuta operaciones ni gestiona tu dinero.',
   },
   {
-    question: '¿Necesito ser un experto en finanzas para usar Margn?',
-    answer: 'No. Margn está diseñado para que cualquier persona que ya invierta — o quiera empezar — pueda tomar decisiones más informadas. Los cálculos complejos los hace la herramienta; tú solo ves los resultados y decides qué hacer.',
+    question: '¿Necesito ser experto en finanzas?',
+    answer: 'No necesitas dominar todos los conceptos. Si ya inviertes con margen o estás pensando en hacerlo, Margn te ayuda a tomar decisiones más informadas. Los cálculos complejos los hace la herramienta; tú ves los resultados y decides.',
   },
   {
-    question: '¿Margn invierte por mí o mueve mi dinero?',
-    answer: 'No. Margn no tiene acceso a tu cuenta de broker ni ejecuta operaciones. Es una calculadora avanzada: te muestra qué podrías hacer, pero la decisión y la ejecución son siempre tuyas.',
+    question: '¿Margn invierte por mí o gestiona mi dinero?',
+    answer: 'No. Margn no tiene acceso a tu broker ni ejecuta operaciones. Es una herramienta de cálculo: te muestra qué podrías hacer, pero la decisión y la ejecución son siempre tuyas.',
   },
   {
-    question: '¿Qué es el apalancamiento y por qué necesito controlarlo?',
-    answer: 'El apalancamiento significa invertir con dinero prestado del broker. Por ejemplo, si tienes 10.000\u00A0€ y operas con 30.000\u00A0€, tu apalancamiento es 3x. Es una herramienta potente, pero si el mercado cae lo suficiente, el broker puede cerrar tus posiciones automáticamente (liquidación forzada). Margn te ayuda a vigilar estos niveles para que nunca te pille por sorpresa.',
+    question: '¿Es Margn un asesor financiero?',
+    answer: 'No. Margn es una herramienta matemática, no un servicio de asesoramiento. No emite recomendaciones de inversión ni gestiona activos. Todos los cálculos, simulaciones y métricas son estrictamente informativos. Cada decisión de inversión es tu responsabilidad exclusiva.',
   },
   {
-    question: '¿Qué significa que las inversiones sean "condicionales"?',
-    answer: 'Normalmente, al invertir periódicamente, aportas la misma cantidad cada mes sin importar qué pasa en el mercado. Con las inversiones condicionales, Margn analiza si el mercado presenta condiciones favorables — como una caída significativa o baja volatilidad — y te sugiere cuándo es mejor momento para desplegar tu capital y cuándo conviene esperar.',
+    question: '¿Qué es el DCA condicional?',
+    answer: 'El DCA tradicional invierte una cantidad fija a intervalos regulares sin importar las condiciones. El DCA condicional evalúa señales del mercado — severidad de la caída, desequilibrio de pesos, volatilidad y salud del margen — antes de calcular cuánto de tu contribución desplegar. En vez de invertir a ciegas cada mes, elige cuándo es mejor momento.',
   },
   {
-    question: '¿Con qué brokers funciona Margn?',
-    answer: 'Margn es independiente de broker. Tú ejecutas las operaciones en tu plataforma; Margn se encarga de los cálculos y el seguimiento. Funciona con cualquier plataforma de margen: Quantfury, Interactive Brokers, eToro u otros.',
+    question: '¿Con qué brokers funciona?',
+    answer: 'Margn es agnóstico de broker. Tú ejecutas las operaciones en tu plataforma; Margn se encarga de los cálculos. Fue diseñado pensando en plataformas de margen como Quantfury, pero las matemáticas aplican a Interactive Brokers, eToro u otros.',
   },
   {
     question: '¿Qué activos puedo seguir?',
-    answer: 'Cualquier activo con ticker en Yahoo Finance: acciones, ETFs, índices, criptomonedas, materias primas, bonos. Margn descarga los precios históricos automáticamente al añadir un activo y los actualiza diariamente.',
+    answer: 'Cualquier activo con ticker en Yahoo Finance: acciones, ETFs, índices, crypto, materias primas, bonos. Margn descarga los precios históricos automáticamente al añadir un activo y los actualiza diariamente.',
   },
   {
-    question: '¿Los resultados de las simulaciones están garantizados?',
-    answer: 'No. Las simulaciones reflejan cálculos sobre datos históricos del período 2015-2020. Son una herramienta para entender el comportamiento de tu estrategia, no una predicción. Los resultados pasados no garantizan resultados futuros.',
+    question: '¿Los resultados del backtest están garantizados?',
+    answer: 'No. Los backtests reflejan cálculos sobre datos históricos de un período específico (2015-2020) y están sujetos a sesgo de supervivencia y a la naturaleza predominantemente alcista de ese período. Los resultados pasados no predicen resultados futuros.',
   },
   {
     question: '¿Es gratis?',
-    answer: 'Sí, puedes empezar a usar Margn de forma gratuita. No necesitas tarjeta de crédito. El plan Pro incluye 14 días de prueba gratis y puedes cancelar en cualquier momento.',
-  },
-  {
-    question: '¿Margn da consejos de inversión?',
-    answer: 'No. Margn es una herramienta de cálculo, no un asesor financiero. Muestra datos, simulaciones y métricas para que estés mejor informado, pero no emite recomendaciones. Toda decisión de inversión es responsabilidad exclusiva del usuario.',
+    answer: 'Sí, puedes empezar gratis sin tarjeta de crédito. El plan Pro incluye 14 días de prueba gratis y puedes cancelar en cualquier momento sin permanencia.',
   },
   {
     question: '¿Mis datos están seguros?',
-    answer: 'Sí. Tu información se transmite de forma cifrada y no compartimos tus datos con terceros. Margn no tiene acceso a tu broker ni a tus cuentas bancarias.',
+    answer: 'La autenticación está gestionada por Clerk (proveedor estándar de la industria). Los datos se almacenan cifrados. Margn nunca tiene acceso a tus credenciales de broker ni a tus cuentas.',
   },
 ]
 ---
