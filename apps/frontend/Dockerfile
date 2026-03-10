@@ -3,12 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /workspace
 
-# Copy package files (all workspaces needed for npm ci lockfile resolution)
+# Copy package files
 COPY package.json package-lock.json* ./
-COPY apps/backend/package.json apps/backend/
 COPY apps/frontend/package.json apps/frontend/
-COPY apps/landing/package.json apps/landing/
-COPY packages/shared/package.json packages/shared/
 
 # Install dependencies
 RUN npm ci

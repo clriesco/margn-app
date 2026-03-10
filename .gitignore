@@ -12,6 +12,7 @@ dist/
 **/out/
 **/build/
 **/tsconfig.tsbuildinfo
+**/.astro/
 
 # Exploration results
 infra/scripts/exploration-*.json

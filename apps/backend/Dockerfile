@@ -3,10 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /workspace
 
-# Copy package files (all workspaces needed for npm ci lockfile resolution)
+# Copy package files
 COPY package.json package-lock.json* ./
 COPY apps/backend/package.json apps/backend/
-COPY apps/landing/package.json apps/landing/
 COPY packages/shared/package.json packages/shared/
 
 # Install dependencies
@@ -30,10 +29,9 @@ RUN apk add --no-cache wget
 
 WORKDIR /app
 
-# Copy package files (all workspaces needed for npm ci lockfile resolution)
+# Copy package files
 COPY package.json package-lock.json* ./
 COPY apps/backend/package.json apps/backend/
-COPY apps/landing/package.json apps/landing/
 COPY packages/shared/package.json packages/shared/
 
 # Install only production dependencies
