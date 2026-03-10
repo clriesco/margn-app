@@ -6,6 +6,7 @@ import { usePageState } from '../../lib/hooks/use-page-state';
 import { getBacktestPrices } from '../../lib/api';
 import { usePortfolioSummary, usePortfolioConfiguration } from '../../lib/hooks/use-portfolio-data';
 import DashboardSidebar from '../../components/DashboardSidebar';
+import FeatureGate from '../../components/FeatureGate';
 import { LegalDisclaimer } from '../../components/LegalDisclaimer';
 import BacktestConfigForm, { type BacktestConfigHandle } from '../../components/backtest/BacktestConfig';
 import BacktestExplanation, { BacktestExplanationHandle } from '../../components/backtest/BacktestExplanation';
@@ -289,6 +290,7 @@ export default function BacktestPage() {
         `}} />
       </Head>
       <DashboardSidebar>
+        <FeatureGate requiredTier="pro" featureName="Backtest Monte Carlo">
         <div style={{ padding: '2rem', paddingTop: '4rem' }} className="backtest-wrapper">
           <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             {/* Header */}
@@ -584,6 +586,7 @@ export default function BacktestPage() {
             )}
           </div>
         </div>
+        </FeatureGate>
       </DashboardSidebar>
     </>
   );

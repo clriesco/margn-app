@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth/auth.module';
+import { BillingModule } from '../billing/billing.module';
 import { PortfoliosModule } from '../portfolios/portfolios.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -9,7 +10,7 @@ import { StrategiesService } from './strategies.service';
 import { StrategyAnalysisService } from './strategy-analysis.service';
 
 @Module({
-  imports: [PrismaModule, AuthModule, PortfoliosModule],
+  imports: [PrismaModule, AuthModule, PortfoliosModule, BillingModule],
   controllers: [StrategiesController],
   providers: [StrategiesService, StrategyAnalysisService],
 })

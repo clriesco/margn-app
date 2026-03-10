@@ -19,6 +19,13 @@ export class PortfoliosService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Count portfolios owned by a user
+   */
+  async countByUser(userId: string): Promise<number> {
+    return this.prisma.portfolio.count({ where: { userId } });
+  }
+
+  /**
    * Find portfolios by user email
    */
   async findByUserEmail(email: string) {

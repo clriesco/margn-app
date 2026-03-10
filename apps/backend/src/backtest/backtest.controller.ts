@@ -12,13 +12,16 @@ import {
 import { Response } from 'express';
 
 import { AuthGuard } from '../auth/auth.guard';
+import { RequireTier } from '../billing/decorators/require-tier.decorator';
+import { SubscriptionTierGuard } from '../billing/guards/subscription-tier.guard';
 
 import { BacktestExplanationService } from './backtest-explanation.service';
 import { BacktestService } from './backtest.service';
 import { ExplainBacktestDto } from './dto/explain-backtest.dto';
 
 @Controller('backtest')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, SubscriptionTierGuard)
+@RequireTier('pro')
 export class BacktestController {
   constructor(
     private readonly backtestService: BacktestService,

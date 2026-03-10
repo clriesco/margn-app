@@ -21,6 +21,7 @@ import {
   Sun,
   Moon,
   Bookmark,
+  CreditCard,
 } from "lucide-react";
 import { usePortfolio } from "../contexts/PortfolioContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -118,6 +119,12 @@ export default function DashboardSidebar({
       icon: Settings,
       path: "/dashboard/configuration",
       color: "#94a3b8",
+    },
+    {
+      label: "Facturación",
+      icon: CreditCard,
+      path: "/dashboard/billing",
+      color: "#10b981",
     },
     {
       label: "Mi Perfil",

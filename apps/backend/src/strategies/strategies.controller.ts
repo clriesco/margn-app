@@ -15,6 +15,8 @@ import { IsOptional, IsString, MinLength } from 'class-validator';
 import { Response } from 'express';
 
 import { AuthGuard } from '../auth/auth.guard';
+import { RequireTier } from '../billing/decorators/require-tier.decorator';
+import { SubscriptionTierGuard } from '../billing/guards/subscription-tier.guard';
 
 import { CreatePortfolioFromStrategyDto } from './dto/create-portfolio-from-strategy.dto';
 import { CreateStrategyDto, UpdateVisibilityDto } from './dto/create-strategy.dto';
@@ -33,7 +35,8 @@ class UpdateStrategyDto {
 }
 
 @Controller('strategies')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, SubscriptionTierGuard)
+@RequireTier('pro')
 export class StrategiesController {
   constructor(
     private readonly strategiesService: StrategiesService,

@@ -27,8 +27,16 @@ model User {
   notifyOnLeverageAlerts  Boolean @default(true) @map("notify_on_leverage_alerts")
   notifyOnRebalance       Boolean @default(true) @map("notify_on_rebalance")
 
+  // Admin
+  role     String @default("user") // 'user' | 'admin'
+  bannedAt DateTime? @map("banned_at")
+  banReason String? @map("ban_reason")
+
   portfolios      Portfolio[]
   savedStrategies SavedStrategy[]
+  subscription    Subscription?
+  voucherRedemptions VoucherRedemption[]
+  adminAuditLogs     AdminAuditLog[] @relation("auditAdmin")
 
   @@map("users")
 }
@@ -303,4 +311,126 @@ model SavedStrategy {
   @@index([isPublic, isPlatform])
   @@index([riskProfileId])
   @@map("saved_strategies")
+}
+
+// ─── Billing ────────────────────────────────────────────────────────────────
+
+// Subscription (1:1 with User)
+model Subscription {
+  id                   String    @id @default(uuid())
+  userId               String    @unique @map("user_id")
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Stripe identifiers
+  stripeCustomerId     String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
+  stripePriceId        String?   @map("stripe_price_id")
+
+  // Plan state
+  tier                 String    @default("starter") // 'starter' | 'pro' | 'institutional'
+  billingInterval      String?   @map("billing_interval") // 'month' | 'year'
+  status               String    @default("active") // mirrors Stripe: active, past_due, canceled, unpaid, trialing, incomplete
+
+  // Period tracking
+  currentPeriodStart   DateTime? @map("current_period_start")
+  currentPeriodEnd     DateTime? @map("current_period_end")
+  cancelAtPeriodEnd    Boolean   @default(false) @map("cancel_at_period_end")
+  canceledAt           DateTime? @map("canceled_at")
+  trialEnd             DateTime? @map("trial_end")
+
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  voucherRedemptions   VoucherRedemption[]
+
+  @@map("subscriptions")
+}
+
+// Voucher / coupon codes
+model Voucher {
+  id                 String    @id @default(uuid())
+  code               String    @unique
+  stripeCouponId     String?   @map("stripe_coupon_id")
+
+  // What the voucher grants
+  type               String    // 'tier_upgrade' | 'discount_percent' | 'discount_fixed' | 'trial_extension'
+  tier               String?   // for tier_upgrade: which tier to grant
+  discountPercent    Float?    @map("discount_percent")
+  discountAmountCents Int?     @map("discount_amount_cents") // in EUR cents
+  trialDays          Int?      @map("trial_days")
+  durationMonths     Int?      @map("duration_months") // how long the benefit lasts, null = forever
+
+  // Limits
+  maxRedemptions     Int?      @map("max_redemptions")
+  currentRedemptions Int       @default(0) @map("current_redemptions")
+  expiresAt          DateTime? @map("expires_at")
+  isActive           Boolean   @default(true) @map("is_active")
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  redemptions        VoucherRedemption[]
+
+  @@map("vouchers")
+}
+
+// Voucher redemption tracking
+model VoucherRedemption {
+  id             String   @id @default(uuid())
+  voucherId      String   @map("voucher_id")
+  voucher        Voucher  @relation(fields: [voucherId], references: [id])
+  subscriptionId String   @map("subscription_id")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id])
+  redeemedAt     DateTime @default(now()) @map("redeemed_at")
+
+  @@unique([voucherId, subscriptionId])
+  @@map("voucher_redemptions")
+}
+
+// Stripe webhook idempotency
+model StripeEvent {
+  id            String   @id @default(uuid())
+  stripeEventId String   @unique @map("stripe_event_id")
+  type          String
+  processedAt   DateTime @default(now()) @map("processed_at")
+
+  @@index([stripeEventId])
+  @@map("stripe_events")
+}
+
+// ─── Admin ──────────────────────────────────────────────────────────────────
+
+// Audit log for admin actions
+model AdminAuditLog {
+  id         String   @id @default(uuid())
+  adminId    String   @map("admin_id")
+  admin      User     @relation("auditAdmin", fields: [adminId], references: [id])
+  action     String   // e.g. 'user.ban', 'subscription.upgrade', 'voucher.create'
+  targetType String   @map("target_type") // 'user' | 'subscription' | 'voucher' | 'cron'
+  targetId   String?  @map("target_id")
+  details    String?  @db.Text // JSON with before/after state
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}
+
+// Cron job execution log
+model CronJobLog {
+  id          String    @id @default(uuid())
+  jobName     String    @map("job_name")
+  status      String    // 'running' | 'success' | 'failed'
+  triggeredBy String    @map("triggered_by") // 'cron' | 'admin:{userId}'
+  startedAt   DateTime  @default(now()) @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
+  durationMs  Int?      @map("duration_ms")
+  summary     String?   @db.Text // JSON: { assetsProcessed, errors, etc. }
+  error       String?   @db.Text
+
+  @@index([jobName, startedAt])
+  @@map("cron_job_logs")
 }

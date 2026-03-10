@@ -10,6 +10,7 @@ import {
   RebalanceProposal,
 } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
+import FeatureGate from "../../components/FeatureGate";
 import { LegalDisclaimer } from "../../components/LegalDisclaimer";
 import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
 import { DollarSign, Lightbulb, Brain, ClipboardList } from "lucide-react";
@@ -162,6 +163,7 @@ export default function Rebalance() {
         <title>Reajuste de Portfolio - Margn</title>
       </Head>
       <DashboardSidebar>
+        <FeatureGate requiredTier="pro" featureName="Rebalanceo con optimización Sharpe">
         <div style={{ padding: "2rem", paddingTop: "4rem" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
             {/* Header */}
@@ -769,6 +771,7 @@ export default function Rebalance() {
             )}
           </div>
         </div>
+        </FeatureGate>
       </DashboardSidebar>
     </>
   );

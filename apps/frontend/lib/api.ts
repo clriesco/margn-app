@@ -908,3 +908,74 @@ export async function deletePortfolio(
     method: "DELETE",
   });
 }
+
+// ============================================
+// BILLING / SUBSCRIPTION
+// ============================================
+
+import type { TierLimits } from "./subscription";
+
+/**
+ * Subscription response from the backend
+ */
+export interface SubscriptionResponse {
+  tier: string;
+  status: string;
+  stripePriceId: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  trialStart: string | null;
+  trialEnd: string | null;
+  limits: TierLimits;
+}
+
+/**
+ * Get current user's subscription
+ */
+export async function getSubscription(): Promise<SubscriptionResponse> {
+  return fetchAPI("/billing/subscription");
+}
+
+/**
+ * Create a Stripe Checkout session
+ */
+export async function createCheckoutSession(
+  priceKey: string,
+  voucherCode?: string
+): Promise<{ url: string; sessionId: string }> {
+  return fetchAPI("/billing/checkout", {
+    method: "POST",
+    body: JSON.stringify({ priceKey, voucherCode }),
+  });
+}
+
+/**
+ * Create a Stripe Billing Portal session
+ */
+export async function createBillingPortal(): Promise<{ url: string }> {
+  return fetchAPI("/billing/portal", {
+    method: "POST",
+  });
+}
+
+/**
+ * Validate a voucher code (without redeeming)
+ */
+export async function validateVoucher(
+  code: string
+): Promise<{
+  valid: boolean;
+  voucher?: {
+    code: string;
+    discountType: string;
+    discountValue: number;
+    applicableTiers: string[];
+  };
+  message?: string;
+}> {
+  return fetchAPI("/billing/voucher/validate", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}

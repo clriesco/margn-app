@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AuthModule } from "../auth/auth.module";
+import { BillingModule } from "../billing/billing.module";
 
 import { OnboardingService } from "./onboarding.service";
 import { PortfolioConfigurationController } from "./portfolio-configuration.controller";
@@ -14,7 +15,7 @@ import { TargetAssetsService } from "./target-assets.service";
 
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, BillingModule],
   controllers: [
     PortfoliosController,
     PortfolioConfigurationController,
