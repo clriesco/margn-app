@@ -1175,27 +1175,20 @@ export class RebalanceService {
   private calculateEquityBorrowBreakdown(
     currentExposure: number,
     targetExposure: number,
-    _currentEquity: number,
+    currentEquity: number,
     _config: any
   ): { equityUsed: number; borrowIncrease: number } {
     const netExposureChange = targetExposure - currentExposure;
 
-    // When rebalancing to increase exposure, equity doesn't change.
-    // All exposure increase comes from additional borrowing.
-    // 
     // Formula: exposure = equity + borrowed_amount
-    // If equity stays constant and exposure increases by X, then borrowed_amount increases by X
-    let equityUsed = 0;
-    let borrowIncrease = 0;
+    // Equity stays constant during rebalance, so:
+    //   borrowed_amount = max(0, exposure - equity)
+    // When equity > exposure, there's no borrowing (equity is partially undeployed).
+    const currentBorrowed = Math.max(0, currentExposure - currentEquity);
+    const newBorrowed = Math.max(0, targetExposure - currentEquity);
 
-    if (netExposureChange > 0) {
-      // Increasing exposure: all comes from borrowing
-      // The increase in exposure IS the increase in borrowed amount
-      borrowIncrease = netExposureChange;
-    } else if (netExposureChange < 0) {
-      // Decreasing exposure: reduce borrowing
-      borrowIncrease = netExposureChange; // Negative value
-    }
+    const borrowIncrease = newBorrowed - currentBorrowed;
+    const equityUsed = netExposureChange - borrowIncrease;
 
     return { equityUsed, borrowIncrease };
   }
