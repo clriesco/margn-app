@@ -173,10 +173,10 @@ export default function Help() {
                 <strong>Selecciona tu perfil de riesgo:</strong> El asistente
                 te presenta cuatro perfiles predefinidos:
                 <ul style={{ marginTop: "0.75rem", paddingLeft: "1.5rem" }}>
-                  <li><strong>Conservador:</strong> Leverage 1.5x-2.5x, menor volatilidad</li>
-                  <li><strong>Moderado:</strong> Leverage 2x-3x, balance riesgo/retorno</li>
-                  <li><strong>Crecimiento:</strong> Leverage 2.5x-3.5x, mayor exposición</li>
-                  <li><strong>Agresivo:</strong> Leverage 3x-4.5x, máximo potencial</li>
+                  <li><strong>Conservador:</strong> Apalancamiento 1.5x-2.5x, menor volatilidad</li>
+                  <li><strong>Moderado:</strong> Apalancamiento 2x-3x, balance riesgo/retorno</li>
+                  <li><strong>Crecimiento:</strong> Apalancamiento 2.5x-3.5x, mayor exposición</li>
+                  <li><strong>Agresivo:</strong> Apalancamiento 3x-4.5x, máximo potencial</li>
                 </ul>
               </Step>
               <Step number={3}>
@@ -263,7 +263,7 @@ export default function Help() {
                   </p>
                   <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
                     Las contribuciones se añaden directamente al equity. La
-                    herramienta calcula el <strong>leverage actual</strong> y
+                    herramienta calcula el <strong>apalancamiento actual</strong> y
                     muestra si está fuera del rango configurado (por debajo del
                     mínimo o por encima del máximo).
                   </p>
@@ -322,7 +322,7 @@ export default function Help() {
               ¿Cómo se gestionan las contribuciones?
             </h3>
             <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
-              La gestión de contribuciones se basa en el leverage actual:
+              La gestión de contribuciones se basa en el apalancamiento actual:
             </p>
             <div
               style={{
@@ -333,21 +333,21 @@ export default function Help() {
             >
               {[
                 {
-                  title: "Leverage < Mínimo",
+                  title: "Apalancamiento < Mínimo",
                   description:
-                    "El leverage está por debajo del mínimo configurado. La herramienta calcula cuánta exposición adicional sería necesaria para alcanzar el leverage objetivo.",
+                    "El apalancamiento está por debajo del mínimo configurado. La herramienta calcula cuánta exposición adicional sería necesaria para alcanzar el apalancamiento objetivo.",
                   color: "#eab308",
                 },
                 {
-                  title: "Leverage en Rango",
+                  title: "Apalancamiento en Rango",
                   description:
-                    "El leverage está entre el mínimo y máximo. La exposición se mantiene constante, el equity aumenta con la contribución.",
+                    "El apalancamiento está entre el mínimo y máximo. La exposición se mantiene constante, el equity aumenta con la contribución.",
                   color: "#22c55e",
                 },
                 {
-                  title: "Leverage > Máximo",
+                  title: "Apalancamiento > Máximo",
                   description:
-                    "El leverage está por encima del máximo. La contribución se usa como colateral adicional sin aumentar exposición, reduciendo el leverage.",
+                    "El apalancamiento está por encima del máximo. La contribución se usa como colateral adicional sin aumentar exposición, reduciendo el apalancamiento.",
                   color: "#ef4444",
                 },
               ].map((signal, idx) => (
@@ -418,10 +418,10 @@ export default function Help() {
                     Aportación Extra
                   </p>
                   <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
-                    Si el leverage está por encima del máximo (4.0x), la
+                    Si el apalancamiento está por encima del máximo (4.0x), la
                     herramienta calcula una aportación extra necesaria como
                     colateral adicional sin aumentar la exposición, lo que
-                    reduciría el leverage.
+                    reduciría el apalancamiento.
                   </p>
                 </div>
               </div>
@@ -552,12 +552,12 @@ export default function Help() {
           {/* Section 5: Rebalancing */}
           <Section
             id="rebalancing"
-            title="5. Simulador de Rebalanceo"
+            title="5. Reajuste de Portfolio"
             icon={Scale}
           >
             <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
-              El simulador calcula los ajustes teóricos necesarios para
-              alinear los pesos y el leverage con tu configuración.
+              La herramienta calcula los ajustes necesarios para
+              alinear los pesos y el apalancamiento con tu configuración.
             </p>
 
             <h3
@@ -569,23 +569,23 @@ export default function Help() {
                 marginBottom: "0.75rem",
               }}
             >
-              Cómo funciona el simulador
+              Cómo funciona el reajuste
             </h3>
             <StepList>
               <Step number={1}>
-                Ve a <strong>Simulador</strong> en el menú
+                Ve a <strong>Reajustar Portfolio</strong> en el menú
               </Step>
               <Step number={2}>
                 La herramienta calcula automáticamente:
                 <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
                   <li>Estado actual vs. estado objetivo</li>
-                  <li>Leverage actual y si está fuera del rango configurado</li>
-                  <li>Exposición objetivo según el leverage</li>
+                  <li>Apalancamiento actual y si está fuera del rango configurado</li>
+                  <li>Exposición objetivo según el apalancamiento</li>
                   <li>Optimización de pesos (Sharpe Ratio si está habilitado)</li>
                 </ul>
               </Step>
               <Step number={3}>
-                Revisa el resultado de la simulación:
+                Revisa el resultado del reajuste:
                 <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
                   <li>
                     <strong>Ajustes calculados:</strong> Cantidades por activo
@@ -611,8 +611,8 @@ export default function Help() {
                 posiciones con los valores reales
               </Step>
               <Step number={6}>
-                Regresa a <strong>Simulador</strong> y haz clic en{" "}
-                <strong>Aplicar Simulación</strong> para registrar la composición
+                Regresa a <strong>Reajustar Portfolio</strong> y haz clic en{" "}
+                <strong>Confirmar Ajustes</strong> para registrar la composición
               </Step>
             </StepList>
 
@@ -823,18 +823,18 @@ export default function Help() {
             <div style={{ display: "grid", gap: "1rem", marginBottom: "1.5rem" }}>
               {[
                 {
-                  type: "Leverage Bajo",
+                  type: "Apalancamiento Bajo",
                   priority: "warning",
                   description:
-                    "El leverage está por debajo del mínimo configurado. La herramienta calcula cuánta exposición adicional sería necesaria.",
-                  action: "Ir a Simulador",
+                    "El apalancamiento está por debajo del mínimo configurado. La herramienta calcula cuánta exposición adicional sería necesaria.",
+                  action: "Ir a Reajustar Portfolio",
                   color: "#eab308",
                 },
                 {
-                  type: "Leverage Alto",
+                  type: "Apalancamiento Alto",
                   priority: "attention",
                   description:
-                    "El leverage está por encima del máximo configurado. La herramienta calcula la aportación extra necesaria como colateral.",
+                    "El apalancamiento está por encima del máximo configurado. La herramienta calcula la aportación extra necesaria como colateral.",
                   action: "Ir a Añadir Aportación (extra)",
                   color: "#ef4444",
                 },
@@ -843,7 +843,7 @@ export default function Help() {
                   priority: "info",
                   description:
                     "Los pesos actuales se desvían de los configurados como objetivo.",
-                  action: "Ir a Simulador",
+                  action: "Ir a Reajustar Portfolio",
                   color: "#3b82f6",
                 },
                 {
@@ -965,7 +965,7 @@ export default function Help() {
                     <strong>Aportación mensual:</strong> Contribución periódica
                   </li>
                   <li>
-                    <strong>Leverage:</strong> Rango mínimo, máximo y objetivo
+                    <strong>Apalancamiento:</strong> Rango mínimo, máximo y objetivo
                   </li>
                   <li>
                     <strong>Período:</strong> Fecha de inicio y fin de la simulación
@@ -1289,7 +1289,7 @@ export default function Help() {
             >
               <li>
                 <strong>Configuración completa:</strong> Capital, contribución,
-                leverage, pesos y modo de optimización
+                apalancamiento, pesos y modo de optimización
               </li>
               <li>
                 <strong>Trayectorias P10/P50/P90:</strong> Gráfica visual de
@@ -1464,7 +1464,7 @@ export default function Help() {
                   icon: DollarSign,
                 },
                 {
-                  label: "Simulador",
+                  label: "Reajustar",
                   path: `/dashboard/rebalance?portfolioId=${portfolioId}`,
                   icon: Scale,
                 },
@@ -1655,7 +1655,7 @@ function WorkflowDiagram() {
       id: "check-signals",
       x: width / 2,
       y: 320,
-      label: "¿Leverage\n< Mínimo?",
+      label: "¿Apalancamiento\n< Mínimo?",
       type: "decision",
     },
     {
@@ -1891,9 +1891,9 @@ function WorkflowDiagram() {
           Lógica de Rebalanceo:
         </text>
         {[
-          "• Leverage < Min → Aumentar exposición",
-          "• Leverage en rango → Mantener",
-          "• Leverage > Max → Solo colateral",
+          "• Apalancamiento < Min → Aumentar exposición",
+          "• Apalancamiento en rango → Mantener",
+          "• Apalancamiento > Max → Solo colateral",
         ].map((text, idx) => (
           <text
             key={idx}

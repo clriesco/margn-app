@@ -150,7 +150,7 @@ export default function DashboardMenu({ portfolioId }: { portfolioId: string | n
               }}
             >
               <Scale size={18} />
-              <span>Rebalancear Portfolio</span>
+              <span>Reajustar Portfolio</span>
             </button>
             <button
               onClick={() => {
