@@ -9,7 +9,7 @@ Herramienta de cálculo, optimización matemática y visualización de datos fin
 - **Backend:** NestJS 10 + TypeScript + Prisma 5 + PostgreSQL
 - **Frontend:** Next.js 14 + React 19 + SWR + lucide-react
 - **Auth:** Clerk (magic link + Google OAuth)
-- **Infra:** Docker (Node 20 Alpine), Vercel (frontend), Render (backend)
+- **Infra:** Docker (Node 20 Alpine), Vercel (frontend), Railway (backend)
 - **Monorepo:** npm workspaces
 
 ## Estructura
@@ -575,7 +575,7 @@ Al crear un release, seguir este orden estricto:
 - **Backend:** camelCase variables, PascalCase clases. NestJS modules con Controller, Service, DTOs.
 - **Frontend:** camelCase variables, PascalCase componentes. Pages en `pages/`, components en `components/`, utils en `lib/`.
 - **Database:** snake_case columnas (mapeado desde camelCase en Prisma).
-- **Migraciones:** Siempre crear el archivo `migration.sql` en `apps/backend/prisma/migrations/<timestamp>_<name>/` y ejecutarlo con `prisma migrate deploy` o `prisma db push`. NUNCA aplicar DDL directamente en la BD (dashboard, MCP tools, etc.) sin crear la migración en el repo — producción (Render) falla al desplegar.
+- **Migraciones:** Siempre crear el archivo `migration.sql` en `apps/backend/prisma/migrations/<timestamp>_<name>/` y ejecutarlo con `prisma migrate deploy` o `prisma db push`. NUNCA aplicar DDL directamente en la BD (dashboard, MCP tools, etc.) sin crear la migración en el repo — producción (Railway) falla al desplegar.
 - **API Endpoints:** kebab-case (e.g., `/portfolios/:id/daily-metrics`).
 - **Errores backend:** NestJS exceptions (`UnauthorizedException`, `NotFoundException`, etc.). Responses: `{ statusCode, message, error }`.
 - **Errores frontend:** try/catch con mensajes user-friendly.
