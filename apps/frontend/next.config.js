@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    typedRoutes: true
-  },
+  typedRoutes: true,
   webpack: (config, { isServer }) => {
     // Enable Web Workers with new Worker(new URL(..., import.meta.url))
     if (!isServer) {
