@@ -1,5 +1,5 @@
 [build]
-buildCommand = "npm ci && cd infra/scripts && npm ci && cd ../.. && npm --workspace apps/backend run prisma:generate && npm --workspace apps/backend run prisma:migrate:deploy && npm --workspace packages/shared run build && npm --workspace apps/backend run build"
+buildCommand = "npm ci && cd infra/scripts && npm install && cd ../.. && npm --workspace apps/backend run prisma:generate && npm --workspace apps/backend run prisma:migrate:deploy && npm --workspace packages/shared run build && npm --workspace apps/backend run build"
 
 [deploy]
 startCommand = "node apps/backend/dist/main.js"
