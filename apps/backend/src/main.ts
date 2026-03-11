@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
 import { config as dotenvConfig } from "dotenv";
 
 import { AppModule } from "./app.module";
@@ -15,7 +16,7 @@ async function bootstrap() {
   // Disable default body parser so we can configure it with rawBody + custom limit.
   // Using rawBody: true with a separate app.use(json()) clobbers the raw buffer
   // that Stripe webhook signature verification depends on.
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
     bodyParser: false,
   });
