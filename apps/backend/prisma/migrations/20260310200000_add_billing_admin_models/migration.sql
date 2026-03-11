@@ -1,10 +1,10 @@
--- Add admin/ban fields to users
-ALTER TABLE "users" ADD COLUMN "role" TEXT NOT NULL DEFAULT 'user';
-ALTER TABLE "users" ADD COLUMN "banned_at" TIMESTAMP(3);
-ALTER TABLE "users" ADD COLUMN "ban_reason" TEXT;
+-- Add admin/ban fields to users (idempotent)
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "role" TEXT NOT NULL DEFAULT 'user';
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "banned_at" TIMESTAMP(3);
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "ban_reason" TEXT;
 
 -- Subscriptions (1:1 with User)
-CREATE TABLE "subscriptions" (
+CREATE TABLE IF NOT EXISTS "subscriptions" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "stripe_customer_id" TEXT,
@@ -24,15 +24,18 @@ CREATE TABLE "subscriptions" (
     CONSTRAINT "subscriptions_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "subscriptions_user_id_key" ON "subscriptions"("user_id");
-CREATE UNIQUE INDEX "subscriptions_stripe_customer_id_key" ON "subscriptions"("stripe_customer_id");
-CREATE UNIQUE INDEX "subscriptions_stripe_subscription_id_key" ON "subscriptions"("stripe_subscription_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "subscriptions_user_id_key" ON "subscriptions"("user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "subscriptions_stripe_customer_id_key" ON "subscriptions"("stripe_customer_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "subscriptions_stripe_subscription_id_key" ON "subscriptions"("stripe_subscription_id");
 
-ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_user_id_fkey"
-    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Vouchers
-CREATE TABLE "vouchers" (
+CREATE TABLE IF NOT EXISTS "vouchers" (
     "id" TEXT NOT NULL,
     "code" TEXT NOT NULL,
     "stripe_coupon_id" TEXT,
@@ -51,10 +54,10 @@ CREATE TABLE "vouchers" (
     CONSTRAINT "vouchers_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "vouchers_code_key" ON "vouchers"("code");
+CREATE UNIQUE INDEX IF NOT EXISTS "vouchers_code_key" ON "vouchers"("code");
 
 -- Voucher redemptions
-CREATE TABLE "voucher_redemptions" (
+CREATE TABLE IF NOT EXISTS "voucher_redemptions" (
     "id" TEXT NOT NULL,
     "voucher_id" TEXT NOT NULL,
     "subscription_id" TEXT NOT NULL,
@@ -64,18 +67,27 @@ CREATE TABLE "voucher_redemptions" (
     CONSTRAINT "voucher_redemptions_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "voucher_redemptions_voucher_id_subscription_id_key"
+CREATE UNIQUE INDEX IF NOT EXISTS "voucher_redemptions_voucher_id_subscription_id_key"
     ON "voucher_redemptions"("voucher_id", "subscription_id");
 
-ALTER TABLE "voucher_redemptions" ADD CONSTRAINT "voucher_redemptions_voucher_id_fkey"
-    FOREIGN KEY ("voucher_id") REFERENCES "vouchers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "voucher_redemptions" ADD CONSTRAINT "voucher_redemptions_subscription_id_fkey"
-    FOREIGN KEY ("subscription_id") REFERENCES "subscriptions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "voucher_redemptions" ADD CONSTRAINT "voucher_redemptions_user_id_fkey"
-    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "voucher_redemptions" ADD CONSTRAINT "voucher_redemptions_voucher_id_fkey"
+        FOREIGN KEY ("voucher_id") REFERENCES "vouchers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+    ALTER TABLE "voucher_redemptions" ADD CONSTRAINT "voucher_redemptions_subscription_id_fkey"
+        FOREIGN KEY ("subscription_id") REFERENCES "subscriptions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+    ALTER TABLE "voucher_redemptions" ADD CONSTRAINT "voucher_redemptions_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Stripe event idempotency
-CREATE TABLE "stripe_events" (
+CREATE TABLE IF NOT EXISTS "stripe_events" (
     "id" TEXT NOT NULL,
     "stripe_event_id" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -84,11 +96,11 @@ CREATE TABLE "stripe_events" (
     CONSTRAINT "stripe_events_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "stripe_events_stripe_event_id_key" ON "stripe_events"("stripe_event_id");
-CREATE INDEX "stripe_events_stripe_event_id_idx" ON "stripe_events"("stripe_event_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "stripe_events_stripe_event_id_key" ON "stripe_events"("stripe_event_id");
+CREATE INDEX IF NOT EXISTS "stripe_events_stripe_event_id_idx" ON "stripe_events"("stripe_event_id");
 
 -- Admin audit logs
-CREATE TABLE "admin_audit_logs" (
+CREATE TABLE IF NOT EXISTS "admin_audit_logs" (
     "id" TEXT NOT NULL,
     "admin_id" TEXT NOT NULL,
     "action" TEXT NOT NULL,
@@ -101,15 +113,18 @@ CREATE TABLE "admin_audit_logs" (
     CONSTRAINT "admin_audit_logs_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "admin_audit_logs_admin_id_idx" ON "admin_audit_logs"("admin_id");
-CREATE INDEX "admin_audit_logs_target_type_target_id_idx" ON "admin_audit_logs"("target_type", "target_id");
-CREATE INDEX "admin_audit_logs_created_at_idx" ON "admin_audit_logs"("created_at");
+CREATE INDEX IF NOT EXISTS "admin_audit_logs_admin_id_idx" ON "admin_audit_logs"("admin_id");
+CREATE INDEX IF NOT EXISTS "admin_audit_logs_target_type_target_id_idx" ON "admin_audit_logs"("target_type", "target_id");
+CREATE INDEX IF NOT EXISTS "admin_audit_logs_created_at_idx" ON "admin_audit_logs"("created_at");
 
-ALTER TABLE "admin_audit_logs" ADD CONSTRAINT "admin_audit_logs_admin_id_fkey"
-    FOREIGN KEY ("admin_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "admin_audit_logs" ADD CONSTRAINT "admin_audit_logs_admin_id_fkey"
+        FOREIGN KEY ("admin_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Cron job logs
-CREATE TABLE "cron_job_logs" (
+CREATE TABLE IF NOT EXISTS "cron_job_logs" (
     "id" TEXT NOT NULL,
     "job_name" TEXT NOT NULL,
     "status" TEXT NOT NULL,
@@ -123,4 +138,4 @@ CREATE TABLE "cron_job_logs" (
     CONSTRAINT "cron_job_logs_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "cron_job_logs_job_name_started_at_idx" ON "cron_job_logs"("job_name", "started_at");
+CREATE INDEX IF NOT EXISTS "cron_job_logs_job_name_started_at_idx" ON "cron_job_logs"("job_name", "started_at");
