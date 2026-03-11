@@ -37,7 +37,7 @@ export class AdminGuard implements CanActivate {
     }
 
     // Primary: DB role
-    if (dbUser.role === "admin") return true;
+    if (dbUser.role === "admin" || dbUser.role === "super_admin") return true;
 
     // Fallback: env allowlist (bootstrap first admin)
     const allowlist = (process.env.ADMIN_EMAILS || "")
