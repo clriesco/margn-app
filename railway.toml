@@ -1,8 +1,8 @@
 [build]
-buildCommand = "npm ci && cd infra/scripts && npm install && cd ../.. && npm --workspace apps/backend run prisma:generate && npm --workspace apps/backend run prisma:migrate:deploy && npm --workspace packages/shared run build && npm --workspace apps/backend run build"
+buildCommand = "npm ci && cd infra/scripts && npm install && cd ../.. && npm --workspace apps/backend run prisma:generate && npm --workspace packages/shared run build && npm --workspace apps/backend run build"
 
 [deploy]
-startCommand = "node apps/backend/dist/main.js"
+startCommand = "npm --workspace apps/backend run prisma:migrate:deploy && node apps/backend/dist/main.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 40
 restartPolicyType = "ON_FAILURE"
