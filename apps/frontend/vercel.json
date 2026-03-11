@@ -1,6 +1,6 @@
 {
-  "installCommand": "cd /vercel/path0 && npm ci",
-  "buildCommand": "cd /vercel/path0 && npx prisma generate --schema apps/backend/prisma/schema.prisma && npm --workspace packages/shared run build && npm --workspace apps/frontend run build",
+  "installCommand": "cd ../.. && npm ci",
+  "buildCommand": "cd ../.. && node node_modules/.bin/prisma generate --schema apps/backend/prisma/schema.prisma && node node_modules/.bin/tsc -p packages/shared/tsconfig.json && cd apps/frontend && next build",
   "outputDirectory": ".next",
   "framework": "nextjs"
 }
