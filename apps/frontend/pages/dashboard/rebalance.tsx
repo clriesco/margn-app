@@ -47,7 +47,7 @@ function formatQuantity(quantity: number, symbol: string, assetType?: string): s
 }
 
 /**
- * Rebalance page - Shows algorithm-calculated allocation simulation
+ * Rebalance page — algorithm-calculated allocation simulation
  * based on user-defined parameters and market data
  */
 export default function Rebalance() {
