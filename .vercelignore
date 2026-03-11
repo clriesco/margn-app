@@ -1,5 +1,4 @@
 apps/backend
-packages
 infra
 node_modules
 *.md
