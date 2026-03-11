@@ -1,6 +1,6 @@
 {
   "name": "margn",
-  "version": "0.18.7",
+  "version": "0.18.8",
   "private": true,
   "workspaces": [
     "apps/backend",
