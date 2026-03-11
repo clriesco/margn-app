@@ -1,6 +1,6 @@
 {
   "name": "admin",
-  "version": "0.18.4",
+  "version": "0.18.5",
   "private": true,
   "scripts": {
     "dev": "HOST=127.0.0.1 PORT=3004 next dev",
