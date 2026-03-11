@@ -1,6 +1,6 @@
 {
   "installCommand": "cd ../.. && npm ci",
-  "buildCommand": "ROOT=$(cd ../.. && pwd) && cd $ROOT && npm --workspace apps/backend run prisma:generate && npm --workspace packages/shared run build && npm --workspace apps/admin run build",
+  "buildCommand": "echo PWD=$PWD && echo UP2=$(cd ../.. && pwd && ls) && echo UP1=$(cd .. && pwd && ls)",
   "outputDirectory": ".next",
   "framework": "nextjs"
 }
