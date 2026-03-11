@@ -54,7 +54,7 @@ export default function Rebalance() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const { activePortfolioId: portfolioId } = usePortfolio();
-  const { hasAccess, isLoading: subLoading } = useSubscription();
+  const { hasAccess, isLoading: subLoading, tier } = useSubscription();
 
   const [proposal, setProposal] = useState<RebalanceProposal | null>(null);
   const [isCalculating, setIsCalculating] = useState(true);
@@ -110,7 +110,7 @@ export default function Rebalance() {
     if (user) {
       loadAndCalculate();
     }
-  }, [user, loading, portfolioId, subLoading, hasAccess]);
+  }, [user, loading, portfolioId, subLoading, tier]);
 
   const handleAccept = async () => {
     if (!portfolioId || !proposal) return;
