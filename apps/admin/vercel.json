@@ -1,6 +1,6 @@
 {
   "installCommand": "cd ../.. && npm ci",
-  "buildCommand": "cd ../.. && npm run prisma:generate && npm --workspace packages/shared run build && npm --workspace apps/admin run build",
+  "buildCommand": "cd ../.. && npm --workspace apps/backend run prisma:generate && npm --workspace packages/shared run build && npm --workspace apps/admin run build",
   "outputDirectory": ".next",
   "framework": "nextjs"
 }
