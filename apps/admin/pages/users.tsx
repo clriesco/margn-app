@@ -19,8 +19,8 @@ export default function UsersPage() {
       setLoading(true);
       try {
         const data = await getUsers({ search: search || undefined, page, limit });
-        setUsers(data.users || data);
-        setTotal(data.total || 0);
+        setUsers(data.data || data.users || (Array.isArray(data) ? data : []));
+        setTotal(data.meta?.total || data.total || 0);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error");
       } finally {
@@ -83,9 +83,9 @@ export default function UsersPage() {
                   <td style={{ padding: "0.75rem 1rem" }}>
                     <span style={{
                       padding: "0.125rem 0.5rem", borderRadius: "9999px", fontSize: "0.6875rem", fontWeight: 600,
-                      background: user.subscription?.tier === "pro" ? "rgba(59,130,246,0.1)" : user.subscription?.tier === "institutional" ? "rgba(168,85,247,0.1)" : "rgba(148,163,184,0.1)",
-                      color: user.subscription?.tier === "pro" ? "#60a5fa" : user.subscription?.tier === "institutional" ? "#c084fc" : "#94a3b8",
-                    }}>{user.subscription?.tier || "starter"}</span>
+                      background: user.tier === "pro" ? "rgba(59,130,246,0.1)" : user.tier === "institutional" ? "rgba(168,85,247,0.1)" : "rgba(148,163,184,0.1)",
+                      color: user.tier === "pro" ? "#60a5fa" : user.tier === "institutional" ? "#c084fc" : "#94a3b8",
+                    }}>{user.tier || "starter"}</span>
                   </td>
                   <td style={{ padding: "0.75rem 1rem", color: user.bannedAt ? "#f87171" : "#94a3b8" }}>
                     {user.bannedAt ? "Baneado" : "Activo"}

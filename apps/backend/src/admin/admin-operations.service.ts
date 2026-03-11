@@ -145,7 +145,7 @@ export class AdminOperationsService {
     // Fire and forget — the job runs asynchronously
     const endpoint = `${backendUrl}/api/cron/${jobName}`;
     fetch(endpoint, {
-      headers: { "x-cron-secret": cronSecret || "" },
+      headers: { Authorization: `Bearer ${cronSecret || ""}` },
     })
       .then(async (res) => {
         if (res.ok) {

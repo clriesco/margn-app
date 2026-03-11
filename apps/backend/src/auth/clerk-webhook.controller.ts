@@ -9,6 +9,7 @@ import {
 import { Request, Response } from "express";
 import { Webhook } from "svix";
 
+import { SubscriptionService } from "../billing/subscription.service";
 import { PrismaService } from "../prisma/prisma.service";
 
 interface ClerkWebhookEvent {
@@ -31,7 +32,10 @@ interface ClerkWebhookEvent {
  */
 @Controller("webhooks")
 export class ClerkWebhookController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private subscriptionService: SubscriptionService,
+  ) {}
 
   @Post("clerk")
   @HttpCode(200)
@@ -78,7 +82,7 @@ export class ClerkWebhookController {
         .filter(Boolean)
         .join(" ") || null;
 
-      await this.prisma.user.upsert({
+      const user = await this.prisma.user.upsert({
         where: { email: primaryEmail },
         update: { clerkId: data.id, fullName: fullName || undefined },
         create: { email: primaryEmail, clerkId: data.id, fullName },
@@ -87,6 +91,19 @@ export class ClerkWebhookController {
       console.log(
         `[ClerkWebhook] user.created: ${primaryEmail} → ${data.id}`
       );
+
+      // Provision starter (free) subscription — best-effort, non-blocking
+      try {
+        await this.subscriptionService.provisionStarterSubscription(
+          user.id,
+          primaryEmail,
+        );
+      } catch (err) {
+        console.error(
+          `[ClerkWebhook] Failed to provision starter subscription for ${primaryEmail}:`,
+          err,
+        );
+      }
     }
 
     if (type === "user.updated" && primaryEmail) {

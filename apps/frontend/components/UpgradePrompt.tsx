@@ -45,7 +45,7 @@ export default function UpgradePrompt({
           margin: "0 auto 1rem",
         }}
       >
-        <Lock size={22} color={colors.text} />
+        <Lock size={22} color={colors.text} aria-hidden="true" />
       </div>
 
       <h3

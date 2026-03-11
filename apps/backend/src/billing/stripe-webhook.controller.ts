@@ -12,6 +12,7 @@ import { PrismaService } from "../prisma/prisma.service";
 
 import { StripeService } from "./stripe.service";
 import { SubscriptionService } from "./subscription.service";
+import { VoucherService } from "./voucher.service";
 
 /**
  * Stripe webhook handler.
@@ -24,7 +25,8 @@ export class StripeWebhookController {
   constructor(
     private prisma: PrismaService,
     private stripeService: StripeService,
-    private subscriptionService: SubscriptionService
+    private subscriptionService: SubscriptionService,
+    private voucherService: VoucherService
   ) {}
 
   @Post("stripe")
@@ -109,10 +111,46 @@ export class StripeWebhookController {
       // ─── Checkout ──────────────────────────────────────────────
       case "checkout.session.completed":
         this.logger.log(`Checkout completed for customer ${data.customer}`);
+        await this.handleCheckoutCompleted(data);
         break;
 
       default:
         this.logger.log(`Unhandled event type: ${event.type}`);
+    }
+  }
+
+  /**
+   * Handle checkout.session.completed — redeem voucher if one was attached.
+   */
+  private async handleCheckoutCompleted(session: any): Promise<void> {
+    const voucherCode = session.metadata?.voucher_code;
+    const userId = session.metadata?.margn_user_id;
+
+    if (!voucherCode || !userId) {
+      return;
+    }
+
+    const sub = await this.prisma.subscription.findUnique({
+      where: { userId },
+    });
+
+    if (!sub) {
+      this.logger.warn(
+        `Checkout completed with voucher ${voucherCode} but no subscription found for user ${userId}`
+      );
+      return;
+    }
+
+    try {
+      await this.voucherService.redeem(voucherCode, sub.id, userId);
+      this.logger.log(
+        `Voucher ${voucherCode} redeemed on checkout completion for user ${userId}`
+      );
+    } catch (err: any) {
+      // Log but don't fail the webhook — the payment already succeeded
+      this.logger.error(
+        `Failed to redeem voucher ${voucherCode} for user ${userId}: ${err.message}`
+      );
     }
   }
 }

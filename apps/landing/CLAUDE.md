@@ -48,8 +48,8 @@ landing/
 
 | | Starter | Pro | Institutional |
 |---|---|---|---|
-| Monthly | Free | $19/mo | $49/mo |
-| Annual | Free | $15/mo | $39/mo |
+| Monthly | Free | €19/mo | €49/mo |
+| Annual | Free | €15/mo | €39/mo |
 
 ## Commands
 

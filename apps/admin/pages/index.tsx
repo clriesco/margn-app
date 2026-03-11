@@ -1,8 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Head from "next/head";
 import AdminLayout from "../components/AdminLayout";
 import { getDashboardStats, getDashboardActivity } from "../lib/api";
-import { Users, CreditCard, TrendingUp, Briefcase } from "lucide-react";
+import { Users, CreditCard, TrendingUp, Briefcase, UserPlus, DollarSign, RefreshCw } from "lucide-react";
+
+interface TimelineEvent {
+  type: "signup" | "contribution" | "rebalance";
+  email: string;
+  date: string;
+  detail?: string;
+}
+
+const EVENT_CONFIG = {
+  signup: { label: "Registro", icon: UserPlus, color: "#60a5fa", bg: "rgba(96,165,250,0.1)" },
+  contribution: { label: "Contribucion", icon: DollarSign, color: "#34d399", bg: "rgba(52,211,153,0.1)" },
+  rebalance: { label: "Rebalanceo", icon: RefreshCw, color: "#a78bfa", bg: "rgba(167,139,250,0.1)" },
+};
 
 export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
@@ -25,6 +38,34 @@ export default function Dashboard() {
     load();
   }, []);
 
+  const timeline = useMemo<TimelineEvent[]>(() => {
+    if (!activity) return [];
+    const events: TimelineEvent[] = [];
+
+    activity.recentSignups?.forEach((s: any) => {
+      events.push({ type: "signup", email: s.email, date: s.createdAt });
+    });
+    activity.recentContributions?.forEach((c: any) => {
+      events.push({
+        type: "contribution",
+        email: c.portfolio?.user?.email ?? "—",
+        date: c.contributedAt,
+        detail: `$${Number(c.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      });
+    });
+    activity.recentRebalances?.forEach((r: any) => {
+      events.push({
+        type: "rebalance",
+        email: r.portfolio?.user?.email ?? "—",
+        date: r.createdAt,
+        detail: r.triggeredBy === "auto" ? "auto" : "manual",
+      });
+    });
+
+    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return events.slice(0, 15);
+  }, [activity]);
+
   if (loading) {
     return (
       <AdminLayout title="Dashboard">
@@ -46,10 +87,10 @@ export default function Dashboard() {
   }
 
   const statCards = [
-    { label: "Usuarios", value: stats?.totalUsers ?? 0, icon: Users, color: "#60a5fa" },
-    { label: "Suscriptores Pro", value: stats?.proSubscribers ?? 0, icon: CreditCard, color: "#a78bfa" },
-    { label: "MRR", value: `€${stats?.mrr?.toFixed(2) ?? "0.00"}`, icon: TrendingUp, color: "#34d399" },
-    { label: "Portfolios", value: stats?.totalPortfolios ?? 0, icon: Briefcase, color: "#fbbf24" },
+    { label: "Usuarios", value: stats?.users?.total ?? 0, icon: Users, color: "#60a5fa" },
+    { label: "Suscriptores Pro", value: stats?.subscriptions?.pro ?? 0, icon: CreditCard, color: "#a78bfa" },
+    { label: "MRR", value: `$${stats?.revenue?.mrr?.toFixed(2) ?? "0.00"}`, icon: TrendingUp, color: "#34d399" },
+    { label: "Portfolios", value: stats?.portfolios?.total ?? 0, icon: Briefcase, color: "#fbbf24" },
   ];
 
   return (
@@ -69,17 +110,35 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Recent Activity */}
+      {/* Activity Timeline */}
       <div style={{ background: "#161822", border: "1px solid #1e2130", borderRadius: "12px", padding: "1.5rem" }}>
         <h2 style={{ fontSize: "1.125rem", fontWeight: 600, color: "#e2e8f0", marginBottom: "1rem" }}>Actividad Reciente</h2>
-        {activity?.recentSignups?.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {activity.recentSignups.slice(0, 10).map((item: any, i: number) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid #1e2130", fontSize: "0.8125rem" }}>
-                <span style={{ color: "#e2e8f0" }}>{item.email}</span>
-                <span style={{ color: "#64748b" }}>{new Date(item.createdAt).toLocaleDateString("es-ES")}</span>
-              </div>
-            ))}
+
+        {timeline.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            {timeline.map((event, i) => {
+              const config = EVENT_CONFIG[event.type];
+              return (
+                <div key={`${event.type}-${i}`} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.5rem 0.25rem", borderBottom: i < timeline.length - 1 ? "1px solid #1e2130" : "none" }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "6px", background: config.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {React.createElement(config.icon, { size: 14, color: config.color })}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                      {event.email}
+                    </span>
+                  </div>
+                  {event.detail && (
+                    <span style={{ fontSize: "0.75rem", color: config.color, fontWeight: 500, flexShrink: 0 }}>
+                      {event.detail}
+                    </span>
+                  )}
+                  <span style={{ fontSize: "0.6875rem", color: "#64748b", flexShrink: 0 }}>
+                    {formatRelativeDate(event.date)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p style={{ color: "#64748b", fontSize: "0.875rem" }}>Sin actividad reciente</p>
@@ -87,4 +146,18 @@ export default function Dashboard() {
       </div>
     </AdminLayout>
   );
+}
+
+function formatRelativeDate(iso: string): string {
+  const now = Date.now();
+  const date = new Date(iso).getTime();
+  const diffMs = now - date;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "ahora";
+  if (diffMin < 60) return `hace ${diffMin}m`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `hace ${diffH}h`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return `hace ${diffD}d`;
+  return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 }

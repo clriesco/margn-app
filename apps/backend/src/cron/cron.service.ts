@@ -23,8 +23,9 @@ export class CronService {
     }
 
     try {
-      // Register ts-node to handle .ts files in require()
-      require("ts-node/register");
+      // Register ts-node with transpileOnly to skip type checking
+      // (infra scripts live outside the backend's strict tsconfig)
+      require("ts-node").register({ transpileOnly: true });
       this.tsNodeRegistered = true;
       this.logger.debug("ts-node registered for runtime TypeScript execution");
     } catch (error) {

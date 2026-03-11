@@ -50,22 +50,28 @@ export class BillingController {
    */
   @Post("checkout")
   async createCheckout(@Req() req: any, @Body() dto: CreateCheckoutDto) {
-    const sub = await this.prisma.subscription.findUnique({
+    let sub = await this.prisma.subscription.findUnique({
       where: { userId: req.user.id },
     });
 
-    if (!sub) {
-      throw new BadRequestException("No subscription record found");
+    // Auto-provision starter subscription for existing users missing one
+    if (!sub || !sub.stripeCustomerId) {
+      await this.subscriptionService.provisionStarterSubscription(
+        req.user.id,
+        req.user.email,
+      );
+      sub = await this.prisma.subscription.findUnique({
+        where: { userId: req.user.id },
+      });
+      if (!sub?.stripeCustomerId) {
+        throw new BadRequestException("Failed to provision subscription. Please try again.");
+      }
     }
 
-    if (!sub.stripeCustomerId) {
-      throw new BadRequestException("No Stripe customer linked");
-    }
-
-    // If already on a paid plan, redirect to portal instead
+    // If already on a paid plan (active or trialing), redirect to portal instead
     if (
       sub.tier !== "starter" &&
-      sub.status === "active"
+      (sub.status === "active" || sub.status === "trialing")
     ) {
       throw new BadRequestException(
         "You already have an active subscription. Use the customer portal to change plans."
@@ -102,7 +108,7 @@ export class BillingController {
       trialDays = PRO_TRIAL_DAYS;
     }
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3002";
+    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3002").split(",")[0].trim();
 
     const session = await this.stripeService.createCheckoutSession({
       customerId: sub.stripeCustomerId,
@@ -111,19 +117,17 @@ export class BillingController {
       cancelUrl: `${frontendUrl}/dashboard/billing-cancel`,
       couponId,
       trialDays,
-      metadata: { margn_user_id: req.user.id },
+      metadata: {
+        margn_user_id: req.user.id,
+        ...(dto.voucherCode ? { voucher_code: dto.voucherCode.toUpperCase() } : {}),
+      },
     });
 
     this.logger.log(
       `Checkout session created for user ${req.user.id}: ${dto.priceKey}`
     );
 
-    // Redeem voucher now that checkout started
-    if (dto.voucherCode) {
-      await this.voucherService.redeem(dto.voucherCode, sub.id, req.user.id);
-    }
-
-    return { checkoutUrl: session.url };
+    return { url: session.url, sessionId: session.id };
   }
 
   /**
@@ -132,22 +136,32 @@ export class BillingController {
    */
   @Post("portal")
   async createPortalSession(@Req() req: any) {
-    const sub = await this.prisma.subscription.findUnique({
+    let sub = await this.prisma.subscription.findUnique({
       where: { userId: req.user.id },
     });
 
+    // Auto-provision if missing
     if (!sub?.stripeCustomerId) {
-      throw new BadRequestException("No Stripe customer linked");
+      await this.subscriptionService.provisionStarterSubscription(
+        req.user.id,
+        req.user.email,
+      );
+      sub = await this.prisma.subscription.findUnique({
+        where: { userId: req.user.id },
+      });
+      if (!sub?.stripeCustomerId) {
+        throw new BadRequestException("No Stripe customer linked");
+      }
     }
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3002";
+    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3002").split(",")[0].trim();
 
     const session = await this.stripeService.createBillingPortalSession(
       sub.stripeCustomerId,
       `${frontendUrl}/dashboard/billing`
     );
 
-    return { portalUrl: session.url };
+    return { url: session.url };
   }
 
   /**

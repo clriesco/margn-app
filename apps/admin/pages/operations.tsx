@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import AdminLayout from "../components/AdminLayout";
+import { useToast } from "../components/Toast";
 import { getCronStatus, triggerJob, getJobLogs } from "../lib/api";
 import { Play, RefreshCw } from "lucide-react";
 
@@ -15,15 +16,15 @@ export default function OperationsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState("");
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const { toast } = useToast();
 
   async function loadData() {
     setLoading(true);
     try {
       const [s, l] = await Promise.all([getCronStatus(), getJobLogs({ limit: 20 })]);
       setStatus(s);
-      setLogs(l.logs || l);
+      setLogs(l.data || l.logs || (Array.isArray(l) ? l : []));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
     } finally {
@@ -35,15 +36,12 @@ export default function OperationsPage() {
 
   const handleTrigger = async (job: string) => {
     setTriggering(job);
-    setError("");
-    setMessage("");
     try {
       await triggerJob(job);
-      setMessage(`Job "${job}" ejecutado.`);
-      setTimeout(() => setMessage(""), 5000);
+      toast(`Job "${job}" ejecutado.`);
       loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      toast(err instanceof Error ? err.message : "Error", "error");
     } finally {
       setTriggering("");
     }
@@ -53,7 +51,6 @@ export default function OperationsPage() {
     <AdminLayout title="Operaciones">
       <Head><title>Operaciones - Margn Admin</title></Head>
 
-      {message && <div style={{ padding: "0.75rem", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "8px", marginBottom: "1rem", color: "#34d399", fontSize: "0.8125rem" }}>{message}</div>}
       {error && <div style={{ padding: "0.75rem", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.3)", borderRadius: "8px", marginBottom: "1rem", color: "#f87171", fontSize: "0.8125rem" }}>{error}</div>}
 
       <button onClick={loadData} style={{ display: "flex", alignItems: "center", gap: "0.375rem", padding: "0.5rem 0.75rem", background: "#161822", color: "#94a3b8", border: "1px solid #1e2130", borderRadius: "8px", fontSize: "0.8125rem", cursor: "pointer", marginBottom: "1.5rem" }}>

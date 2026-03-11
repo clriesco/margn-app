@@ -17,7 +17,7 @@ import Stripe from "stripe";
 const prisma = new PrismaClient();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-04-30.basil",
+  apiVersion: "2026-02-25.clover",
 });
 
 async function main() {
@@ -52,7 +52,7 @@ async function main() {
         const customer = await stripe.customers.create({
           email: user.email,
           name: user.fullName || undefined,
-          metadata: { userId: user.id },
+          metadata: { margn_user_id: user.id },
         });
         customerId = customer.id;
         console.log(

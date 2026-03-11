@@ -54,28 +54,35 @@ export class AdminSubscriptionsService {
       throw new BadRequestException(`Invalid tier: ${tier}`);
     }
 
-    const sub = await this.prisma.subscription.findUnique({
-      where: { userId },
-      include: { user: { select: { email: true } } },
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
     });
-    if (!sub) throw new NotFoundException("Subscription not found for user");
+    if (!user) throw new NotFoundException("User not found");
 
-    const before = { tier: sub.tier, status: sub.status };
-
-    const updated = await this.prisma.subscription.update({
+    const existing = await this.prisma.subscription.findUnique({
       where: { userId },
-      data: { tier, status: "active" },
+    });
+
+    const before = existing
+      ? { tier: existing.tier, status: existing.status }
+      : { tier: "none", status: "none" };
+
+    const updated = await this.prisma.subscription.upsert({
+      where: { userId },
+      update: { tier, status: "active" },
+      create: { userId, tier, status: "active" },
     });
 
     await this.auditLog.log({
       adminId,
       action: "subscription.override_tier",
       targetType: "subscription",
-      targetId: sub.id,
+      targetId: updated.id,
       details: {
         before,
         after: { tier, status: "active" },
-        email: sub.user.email,
+        email: user.email,
       },
       ipAddress: ip,
     });
@@ -93,24 +100,38 @@ export class AdminSubscriptionsService {
       throw new BadRequestException("Days must be between 1 and 365");
     }
 
-    const sub = await this.prisma.subscription.findUnique({
-      where: { userId },
-      include: { user: { select: { email: true } } },
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
     });
-    if (!sub) throw new NotFoundException("Subscription not found for user");
+    if (!user) throw new NotFoundException("User not found");
 
-    const baseDate = sub.trialEnd && sub.trialEnd > new Date()
-      ? sub.trialEnd
+    const existing = await this.prisma.subscription.findUnique({
+      where: { userId },
+    });
+
+    const baseDate = existing?.trialEnd && existing.trialEnd > new Date()
+      ? existing.trialEnd
       : new Date();
     const newTrialEnd = new Date(baseDate);
     newTrialEnd.setDate(newTrialEnd.getDate() + days);
 
-    const updated = await this.prisma.subscription.update({
+    const newTier = existing && existing.tier !== SubscriptionTier.STARTER
+      ? existing.tier
+      : SubscriptionTier.PRO;
+
+    const updated = await this.prisma.subscription.upsert({
       where: { userId },
-      data: {
+      update: {
         trialEnd: newTrialEnd,
         status: "trialing",
-        tier: sub.tier === SubscriptionTier.STARTER ? SubscriptionTier.PRO : sub.tier,
+        tier: newTier,
+      },
+      create: {
+        userId,
+        trialEnd: newTrialEnd,
+        status: "trialing",
+        tier: SubscriptionTier.PRO,
       },
     });
 
@@ -118,12 +139,12 @@ export class AdminSubscriptionsService {
       adminId,
       action: "subscription.extend_trial",
       targetType: "subscription",
-      targetId: sub.id,
+      targetId: updated.id,
       details: {
         days,
-        previousTrialEnd: sub.trialEnd,
+        previousTrialEnd: existing?.trialEnd ?? null,
         newTrialEnd,
-        email: sub.user.email,
+        email: user.email,
       },
       ipAddress: ip,
     });
@@ -142,15 +163,21 @@ export class AdminSubscriptionsService {
       throw new BadRequestException(`Invalid tier: ${tier}`);
     }
 
-    const sub = await this.prisma.subscription.findUnique({
-      where: { userId },
-      include: { user: { select: { email: true } } },
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
     });
-    if (!sub) throw new NotFoundException("Subscription not found for user");
+    if (!user) throw new NotFoundException("User not found");
 
-    const updated = await this.prisma.subscription.update({
+    const updated = await this.prisma.subscription.upsert({
       where: { userId },
-      data: {
+      update: {
+        tier,
+        status: "active",
+        currentPeriodEnd: expiresAt ? new Date(expiresAt) : null,
+      },
+      create: {
+        userId,
         tier,
         status: "active",
         currentPeriodEnd: expiresAt ? new Date(expiresAt) : null,
@@ -161,8 +188,8 @@ export class AdminSubscriptionsService {
       adminId,
       action: "subscription.comp",
       targetType: "subscription",
-      targetId: sub.id,
-      details: { tier, expiresAt, email: sub.user.email },
+      targetId: updated.id,
+      details: { tier, expiresAt, email: user.email },
       ipAddress: ip,
     });
 

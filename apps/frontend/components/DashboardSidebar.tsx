@@ -22,9 +22,12 @@ import {
   Moon,
   Bookmark,
   CreditCard,
+  Lock,
 } from "lucide-react";
 import { usePortfolio } from "../contexts/PortfolioContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useSubscription } from "../lib/hooks/use-subscription";
+import { SubscriptionTier } from "../lib/subscription";
 import PortfolioSelector from "./PortfolioSelector";
 import TopBar from "./TopBar";
 
@@ -63,6 +66,7 @@ export default function DashboardSidebar({
   const { signOut } = useClerk();
   const { activePortfolioId: portfolioId } = usePortfolio();
   const { theme, toggleTheme } = useTheme();
+  const { hasAccess } = useSubscription();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -77,7 +81,13 @@ export default function DashboardSidebar({
     }
   };
 
-  const menuItems = [
+  const menuItems: {
+    label: string;
+    icon: typeof LayoutDashboard;
+    path: string;
+    color: string;
+    requiredTier?: SubscriptionTier;
+  }[] = [
     {
       label: "Dashboard",
       icon: LayoutDashboard,
@@ -95,6 +105,7 @@ export default function DashboardSidebar({
       icon: Scale,
       path: "/dashboard/rebalance",
       color: "#a5b4fc",
+      requiredTier: "pro",
     },
     {
       label: "Sincronizar Posiciones",
@@ -107,6 +118,7 @@ export default function DashboardSidebar({
       icon: BarChart3,
       path: "/dashboard/backtest",
       color: "#f59e0b",
+      requiredTier: "pro",
     },
     {
       label: "Estrategias",
@@ -219,6 +231,7 @@ export default function DashboardSidebar({
       {/* Mobile Menu Overlay */}
       {isMobile && isMobileMenuOpen && (
         <div
+          role="presentation"
           style={{
             position: "fixed",
             top: 0,
@@ -259,7 +272,7 @@ export default function DashboardSidebar({
       )}
 
       {/* Sidebar */}
-      <div style={sidebarStyle}>
+      <nav aria-label="Panel principal" style={sidebarStyle}>
         {/* Logo / Header */}
         <div
           style={{
@@ -318,6 +331,7 @@ export default function DashboardSidebar({
         >
           {menuItems.map((item) => {
             const active = isActive(item.path);
+            const locked = item.requiredTier && !hasAccess(item.requiredTier);
             return (
               <button
                 key={item.path}
@@ -360,7 +374,33 @@ export default function DashboardSidebar({
                   size: 20,
                   style: { flexShrink: 0 },
                 })}
-                {!isCollapsed && <span>{item.label}</span>}
+                {!isCollapsed && (
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                )}
+                {!isCollapsed && locked && (
+                  <>
+                    <Lock
+                      size={14}
+                      aria-hidden="true"
+                      style={{ flexShrink: 0, opacity: 0.4 }}
+                    />
+                    <span
+                      style={{
+                        position: "absolute",
+                        width: "1px",
+                        height: "1px",
+                        padding: 0,
+                        margin: "-1px",
+                        overflow: "hidden",
+                        clip: "rect(0, 0, 0, 0)",
+                        whiteSpace: "nowrap",
+                        borderWidth: 0,
+                      }}
+                    >
+                      (requiere Pro)
+                    </span>
+                  </>
+                )}
               </button>
             );
           })}
@@ -489,7 +529,7 @@ export default function DashboardSidebar({
             {!isCollapsed && <span>Cerrar Sesión</span>}
           </button>
         </div>
-      </div>
+      </nav>
 
       {/* Top Bar */}
       <TopBar

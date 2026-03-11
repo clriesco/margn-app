@@ -22,8 +22,8 @@ export default function SubscriptionsPage() {
       setLoading(true);
       try {
         const data = await getSubscriptions({ tier: tier || undefined, status: status || undefined, page, limit });
-        setSubs(data.subscriptions || data);
-        setTotal(data.total || 0);
+        setSubs(data.data || data.subscriptions || (Array.isArray(data) ? data : []));
+        setTotal(data.meta?.total || data.total || 0);
       } catch { /* ignore */ } finally {
         setLoading(false);
       }

@@ -25,11 +25,21 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     if (response.status === 401 && typeof window !== "undefined") {
-      window.location.href = "/";
+      // If token was null, Clerk may still be initializing — retry once after a short delay
+      if (!token && _tokenGetter) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const retryToken = await _tokenGetter();
+        if (retryToken) {
+          headers["Authorization"] = `Bearer ${retryToken}`;
+          const retry = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+          if (retry.ok) return retry.json();
+        }
+      }
+      window.location.href = "/sign-in";
       throw new Error("Session expired");
     }
     if (response.status === 403) {
-      throw new Error("No tienes permisos de administrador");
+      throw new Error("No tienes permisos de administrador. Contacta al equipo de desarrollo.");
     }
     const error = await response.json().catch(() => ({ message: "Network error" }));
     throw new Error(error.message || `HTTP ${response.status}`);

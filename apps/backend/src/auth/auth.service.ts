@@ -1,6 +1,7 @@
 import { createClerkClient, verifyToken } from "@clerk/backend";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable, forwardRef } from "@nestjs/common";
 
+import { SubscriptionService } from "../billing/subscription.service";
 import { PrismaService } from "../prisma/prisma.service";
 
 /**
@@ -8,7 +9,11 @@ import { PrismaService } from "../prisma/prisma.service";
  */
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => SubscriptionService))
+    private subscriptionService: SubscriptionService,
+  ) {}
 
   /**
    * Verify Clerk session token and return local user
@@ -29,10 +34,27 @@ export class AuthService {
         token.startsWith("e2e-test-token:")
       ) {
         const clerkId = token.substring("e2e-test-token:".length);
-        const user = await this.prisma.user.findUnique({
+        let user = await this.prisma.user.findUnique({
           where: { clerkId },
         });
-        return user ? { id: user.id, email: user.email } : null;
+        if (!user) {
+          const email = `${clerkId}@e2e-test.margn.es`;
+          user = await this.prisma.user.create({
+            data: { email, clerkId },
+          });
+          try {
+            await this.subscriptionService.provisionStarterSubscription(
+              user.id,
+              email,
+            );
+          } catch (err) {
+            console.error(
+              `[AuthService] E2E: Failed to provision subscription:`,
+              err,
+            );
+          }
+        }
+        return { id: user.id, email: user.email };
       }
 
       const authorizedParties = (
@@ -75,6 +97,19 @@ export class AuthService {
             user = await this.prisma.user.create({
               data: { email, clerkId },
             });
+
+            // Provision starter subscription — best-effort, non-blocking
+            try {
+              await this.subscriptionService.provisionStarterSubscription(
+                user.id,
+                email,
+              );
+            } catch (err) {
+              console.error(
+                `[AuthService] Failed to provision starter subscription for ${email}:`,
+                err,
+              );
+            }
           }
         }
       }

@@ -11,6 +11,7 @@ import {
 } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import FeatureGate from "../../components/FeatureGate";
+import { useSubscription } from "../../lib/hooks/use-subscription";
 import { LegalDisclaimer } from "../../components/LegalDisclaimer";
 import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
 import { DollarSign, Lightbulb, Brain, ClipboardList } from "lucide-react";
@@ -53,6 +54,7 @@ export default function Rebalance() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const { activePortfolioId: portfolioId } = usePortfolio();
+  const { hasAccess, isLoading: subLoading } = useSubscription();
 
   const [proposal, setProposal] = useState<RebalanceProposal | null>(null);
   const [isCalculating, setIsCalculating] = useState(true);
@@ -82,7 +84,7 @@ export default function Rebalance() {
   // Load portfolio and calculate proposal
   useEffect(() => {
     async function loadAndCalculate() {
-      if (!user?.email || !portfolioId) return;
+      if (!user?.email || !portfolioId || subLoading || !hasAccess("pro")) return;
       if (wasRestoredRef.current) {
         wasRestoredRef.current = false;
         return;
@@ -108,7 +110,7 @@ export default function Rebalance() {
     if (user) {
       loadAndCalculate();
     }
-  }, [user, loading, portfolioId]);
+  }, [user, loading, portfolioId, subLoading, hasAccess]);
 
   const handleAccept = async () => {
     if (!portfolioId || !proposal) return;

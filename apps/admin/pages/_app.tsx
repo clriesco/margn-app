@@ -1,17 +1,37 @@
+import { useState, useEffect, ReactNode } from "react";
 import { AppProps } from "next/app";
 import Head from "next/head";
 import { ClerkProvider } from "@clerk/nextjs";
 import { esES } from "@clerk/localizations";
 import { ClerkTokenProvider } from "../components/ClerkTokenProvider";
+import { ToastProvider } from "../components/Toast";
 
 const clerkPubKey =
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
   "pk_test_Y2xlcmsucGxhY2Vob2xkZXIuZGV2JA";
 
+const isE2ETesting = process.env.NEXT_PUBLIC_E2E_TESTING === "true";
+
+function useE2EBypass(): boolean {
+  const [bypass, setBypass] = useState(isE2ETesting);
+  useEffect(() => {
+    if (!bypass && typeof document !== "undefined" && document.cookie.includes("__e2e_bypass=1")) {
+      setBypass(true);
+    }
+  }, [bypass]);
+  return bypass;
+}
+
+function MaybeTokenProvider({ skip, children }: { skip: boolean; children: ReactNode }) {
+  if (skip) return <>{children}</>;
+  return <ClerkTokenProvider>{children}</ClerkTokenProvider>;
+}
+
 export default function App({ Component, pageProps }: AppProps) {
+  const e2e = useE2EBypass();
   return (
     <ClerkProvider publishableKey={clerkPubKey} localization={esES} {...pageProps}>
-      <ClerkTokenProvider>
+      <MaybeTokenProvider skip={e2e}>
         <Head>
           <title>Margn Admin</title>
         </Head>
@@ -36,8 +56,10 @@ export default function App({ Component, pageProps }: AppProps) {
             text-decoration: none;
           }
         `}</style>
-        <Component {...pageProps} />
-      </ClerkTokenProvider>
+        <ToastProvider>
+          <Component {...pageProps} />
+        </ToastProvider>
+      </MaybeTokenProvider>
     </ClerkProvider>
   );
 }

@@ -7,14 +7,29 @@ import Stripe from "stripe";
  */
 @Injectable()
 export class StripeService {
-  private stripe: Stripe;
+  private _stripe: Stripe | null = null;
   private readonly logger = new Logger(StripeService.name);
 
   constructor() {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: "2026-02-25.clover",
-      typescript: true,
-    });
+    if (process.env.STRIPE_SECRET_KEY) {
+      this._stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+        apiVersion: "2026-02-25.clover",
+        typescript: true,
+      });
+    } else {
+      this.logger.warn(
+        "STRIPE_SECRET_KEY not set — billing features will be unavailable"
+      );
+    }
+  }
+
+  private get stripe(): Stripe {
+    if (!this._stripe) {
+      throw new Error(
+        "Stripe is not configured. Set STRIPE_SECRET_KEY env var."
+      );
+    }
+    return this._stripe;
   }
 
   // ─── Customers ──────────────────────────────────────────────────────

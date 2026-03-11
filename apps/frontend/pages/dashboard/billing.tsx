@@ -117,6 +117,7 @@ export default function Billing() {
             {/* Error */}
             {error && (
               <div
+                role="alert"
                 style={{
                   padding: "1rem",
                   background: "rgba(248, 113, 113, 0.1)",
@@ -218,9 +219,9 @@ export default function Billing() {
                       cursor: "pointer",
                     }}
                   >
-                    <CreditCard size={16} />
+                    <CreditCard size={16} aria-hidden="true" />
                     Gestionar suscripción
-                    <ExternalLink size={14} />
+                    <ExternalLink size={14} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -235,6 +236,8 @@ export default function Billing() {
               }}
             >
               <div
+                role="group"
+                aria-label="Ciclo de facturación"
                 style={{
                   display: "inline-flex",
                   background: "var(--bg-card)",
@@ -248,6 +251,7 @@ export default function Billing() {
                   <button
                     key={cycle}
                     onClick={() => setBillingCycle(cycle)}
+                    aria-pressed={billingCycle === cycle}
                     style={{
                       padding: "0.5rem 1.25rem",
                       background:
@@ -275,7 +279,7 @@ export default function Billing() {
                           fontWeight: 600,
                         }}
                       >
-                        -20%
+                        ~20%
                       </span>
                     )}
                   </button>
@@ -413,6 +417,7 @@ export default function Billing() {
                           <Check
                             size={16}
                             color="#10b981"
+                            aria-hidden="true"
                             style={{ flexShrink: 0, marginTop: "0.125rem" }}
                           />
                           {feature}

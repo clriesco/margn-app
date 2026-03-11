@@ -6,7 +6,9 @@
     "dev": "HOST=127.0.0.1 PORT=3004 next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e": "echo 'Requires admin running with NEXT_PUBLIC_E2E_TESTING=true on port 3004' && npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui"
   },
   "dependencies": {
     "@clerk/localizations": "^3.35.3",
@@ -18,6 +20,8 @@
     "swr": "^2.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/test": "^1.58.2",
     "@types/node": "^20.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
