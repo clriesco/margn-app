@@ -11,14 +11,18 @@ import {
 
 import { AuthGuard } from "../auth/auth.guard";
 import { PortfolioOwnershipGuard } from "../auth/portfolio-ownership.guard";
+import { RequireTier } from "../billing/decorators/require-tier.decorator";
+import { SubscriptionTierGuard } from "../billing/guards/subscription-tier.guard";
 
 import { RebalanceService, RebalanceProposal } from "./rebalance.service";
 
 /**
  * Controller for portfolio rebalancing simulation operations
+ * Requires Pro tier or higher.
  */
 @Controller("portfolios/:portfolioId/rebalance")
-@UseGuards(AuthGuard, PortfolioOwnershipGuard)
+@UseGuards(AuthGuard, PortfolioOwnershipGuard, SubscriptionTierGuard)
+@RequireTier("pro")
 export class RebalanceController {
   constructor(private readonly rebalanceService: RebalanceService) {}
 

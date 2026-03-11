@@ -4,6 +4,7 @@ import Head from "next/head";
 import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import DashboardSidebar from "../../components/DashboardSidebar";
+import SubscriptionBanner from "../../components/SubscriptionBanner";
 import { LegalDisclaimer } from "../../components/LegalDisclaimer";
 import { Notification, NotificationLevel } from "../../lib/api";
 import {
@@ -575,6 +576,7 @@ function Dashboard() {
           className="dashboard-content-wrapper"
         >
           <div style={{ maxWidth: "1600px", margin: "0 auto" }}>
+            <SubscriptionBanner />
             {/* Header */}
             <div
               style={{

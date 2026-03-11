@@ -1,9 +1,11 @@
 import { Module } from "@nestjs/common";
 
+import { AdminModule } from "./admin/admin.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
 import { BacktestModule } from "./backtest/backtest.module";
+import { BillingModule } from "./billing/billing.module";
 import { ContributionsModule } from "./contributions/contributions.module";
 import { CronModule } from "./cron/cron.module";
 import { PortfoliosModule } from "./portfolios/portfolios.module";
@@ -17,6 +19,8 @@ import { UsersModule } from "./users/users.module";
   imports: [
     PrismaModule,
     AuthModule,
+    BillingModule,
+    AdminModule,
     UsersModule,
     ContributionsModule,
     PositionsModule,

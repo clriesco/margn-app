@@ -55,7 +55,7 @@ export default function Terms() {
               marginBottom: "2.5rem",
             }}
           >
-            Última actualización: 7 de febrero de 2025
+            Ultima actualizacion: marzo de 2026
           </p>
 
           <Section title="1. Aceptación de los términos">
@@ -179,7 +179,33 @@ export default function Terms() {
             </ul>
           </Section>
 
-          <Section title="6. Datos y privacidad">
+          <Section title="6. Planes y suscripciones">
+            <p>
+              Margn ofrece distintos planes de suscripcion (gratuito y de pago).
+              Los detalles de cada plan, incluyendo funcionalidades y precios,
+              estan disponibles en la seccion de facturacion de la Aplicacion.
+            </p>
+            <ul>
+              <li>
+                Las suscripciones de pago se facturan de forma recurrente
+                (mensual o anual, segun el plan seleccionado).
+              </li>
+              <li>
+                El usuario puede cancelar su suscripcion en cualquier momento.
+                Tras la cancelacion, mantendra acceso a las funcionalidades del
+                plan de pago hasta el final del periodo ya facturado.
+              </li>
+              <li>
+                Los precios pueden actualizarse con previo aviso al usuario.
+              </li>
+              <li>
+                No se realizan reembolsos por periodos parciales no utilizados,
+                salvo que la legislacion aplicable lo requiera.
+              </li>
+            </ul>
+          </Section>
+
+          <Section title="7. Datos y privacidad">
             <p>La Aplicación recopila y almacena los siguientes datos:</p>
             <ul>
               <li>
@@ -196,9 +222,12 @@ export default function Terms() {
               </li>
             </ul>
             <p>
-              Los datos se almacenan en servidores seguros proporcionados por
-              Clerk y Render. <strong>No compartimos tus datos personales ni
-              financieros con terceros</strong>, salvo requerimiento legal.
+              Los datos se almacenan en servidores seguros. La autenticacion
+              se gestiona a traves de Clerk, un proveedor externo de
+              identidad. <strong>No compartimos tus datos personales ni
+              financieros con terceros</strong>, salvo los proveedores
+              tecnicos necesarios para operar el servicio o por requerimiento
+              legal.
             </p>
             <p>
               Puedes solicitar la eliminación de tu cuenta y todos los datos
@@ -206,7 +235,7 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section title="7. Propiedad intelectual">
+          <Section title="8. Propiedad intelectual">
             <p>
               El código fuente, diseño, contenido y algoritmos de la Aplicación
               son propiedad de Margn. Queda prohibida la reproducción,
@@ -215,7 +244,7 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section title="8. Limitación de responsabilidad">
+          <Section title="9. Limitacion de responsabilidad">
             <p>
               En la máxima medida permitida por la ley, Margn{" "}
               <strong>no será responsable</strong> por:
@@ -244,7 +273,7 @@ export default function Terms() {
             </ul>
           </Section>
 
-          <Section title="9. Disponibilidad del servicio">
+          <Section title="10. Disponibilidad del servicio">
             <p>
               La Aplicación se proporciona &quot;tal cual&quot; (as is) y
               &quot;según disponibilidad&quot; (as available). No garantizamos
@@ -254,7 +283,7 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section title="10. Modificaciones de los términos">
+          <Section title="11. Modificaciones de los terminos">
             <p>
               Nos reservamos el derecho de actualizar estos Términos y
               Condiciones en cualquier momento. La fecha de última actualización
@@ -264,15 +293,15 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section title="11. Contacto">
+          <Section title="12. Contacto">
             <p>
               Para cualquier consulta sobre estos términos, puedes contactarnos
               en:{" "}
               <a
-                href="mailto:trapfocussl@gmail.com"
-                style={{ color: "#3b82f6" }}
+                href="mailto:hello@margn.es"
+                style={{ color: "var(--accent-blue)" }}
               >
-                trapfocussl@gmail.com
+                hello@margn.es
               </a>
             </p>
           </Section>
@@ -281,7 +310,7 @@ export default function Terms() {
             style={{
               marginTop: "3rem",
               paddingTop: "1.5rem",
-              borderTop: "1px solid var(--border-color, #333)",
+              borderTop: "1px solid var(--border)",
               color: "var(--text-muted)",
               fontSize: "0.85rem",
               textAlign: "center",

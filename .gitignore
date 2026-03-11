@@ -25,6 +25,8 @@ infra/scripts/*.d.ts.map
 
 # Testing
 coverage/
+test-results/
+**/test-results/
 
 # Cache
 .cache/

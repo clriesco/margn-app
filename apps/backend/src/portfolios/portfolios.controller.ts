@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Header,
   Param,
@@ -16,6 +17,7 @@ import { Response } from "express";
 import { AuthGuard } from "../auth/auth.guard";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { PortfolioOwnershipGuard } from "../auth/portfolio-ownership.guard";
+import { SubscriptionService } from "../billing/subscription.service";
 
 import { CreatePortfolioDto } from "./dto/create-portfolio.dto";
 import { OnboardingService } from "./onboarding.service";
@@ -25,7 +27,8 @@ import { PortfoliosService } from "./portfolios.service";
 export class PortfoliosController {
   constructor(
     private readonly portfoliosService: PortfoliosService,
-    private readonly onboardingService: OnboardingService
+    private readonly onboardingService: OnboardingService,
+    private readonly subscriptionService: SubscriptionService
   ) {}
 
   /**
@@ -53,6 +56,22 @@ export class PortfoliosController {
     @CurrentUser() user: any,
     @Res() res: Response
   ) {
+    // Check portfolio limit before starting SSE
+    const limits = await this.subscriptionService.getTierLimits(user.id);
+    if (limits.maxPortfolios !== -1) {
+      const count = await this.portfoliosService.countByUser(user.id);
+      if (count >= limits.maxPortfolios) {
+        throw new ForbiddenException({
+          statusCode: 403,
+          error: "LIMIT_REACHED",
+          message: `Tu plan permite ${limits.maxPortfolios} portfolio(s). Actualiza tu plan para crear más.`,
+          limit: "maxPortfolios",
+          current: count,
+          max: limits.maxPortfolios,
+        });
+      }
+    }
+
     // Set up SSE headers
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");

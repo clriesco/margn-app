@@ -5,11 +5,13 @@
   "workspaces": [
     "apps/backend",
     "apps/frontend",
+    "apps/admin",
     "packages/*"
   ],
   "scripts": {
     "dev:backend": "npm --workspace apps/backend run dev",
     "dev:frontend": "npm --workspace apps/frontend run dev",
+    "dev:admin": "npm --workspace apps/admin run dev",
     "dev:landing": "cd apps/landing && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "lint": "npm run lint --workspaces",

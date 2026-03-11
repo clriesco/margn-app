@@ -1,11 +1,14 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import { useAuth } from "../../lib/auth";
 import { usePortfolio } from "../../contexts/PortfolioContext";
 import { getProfile, updateProfile, UserProfile } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import AvatarUpload from "../../components/AvatarUpload";
-import { FileText, Bell } from "lucide-react";
+import PlanBadge from "../../components/PlanBadge";
+import { useSubscription } from "../../lib/hooks/use-subscription";
+import { FileText, Bell, CreditCard } from "lucide-react";
 
 /**
  * Profile page - User profile management
@@ -13,6 +16,7 @@ import { FileText, Bell } from "lucide-react";
 export default function Profile() {
   const { user, loading } = useAuth();
   const { activePortfolioId: portfolioId } = usePortfolio();
+  const { tier, status, isTrialing, trialEndsAt } = useSubscription();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -316,6 +320,52 @@ export default function Profile() {
                       boxSizing: "border-box",
                     }}
                   />
+                </div>
+              </div>
+
+              {/* Subscription */}
+              <div
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  padding: "1.5rem",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: "600",
+                    color: "var(--text-primary)",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <CreditCard size={18} />
+                    Suscripción
+                  </div>
+                </h2>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <PlanBadge tier={tier} status={status} showStatus size="md" />
+                    {isTrialing && trialEndsAt && (
+                      <span style={{ color: "var(--text-muted)", fontSize: "0.8125rem" }}>
+                        Prueba hasta {trialEndsAt.toLocaleDateString("es-ES", { day: "numeric", month: "long" })}
+                      </span>
+                    )}
+                  </div>
+                  <Link
+                    href="/dashboard/billing"
+                    style={{
+                      color: "#60a5fa",
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                      textDecoration: "none",
+                    }}
+                  >
+                    Gestionar plan
+                  </Link>
                 </div>
               </div>
 

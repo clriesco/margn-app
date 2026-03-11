@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth/auth.module';
+import { BillingModule } from '../billing/billing.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 import { BacktestExplanationService } from './backtest-explanation.service';
@@ -8,7 +9,7 @@ import { BacktestController } from './backtest.controller';
 import { BacktestService } from './backtest.service';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, BillingModule],
   controllers: [BacktestController],
   providers: [BacktestService, BacktestExplanationService],
 })

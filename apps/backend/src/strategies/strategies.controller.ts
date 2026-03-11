@@ -15,6 +15,8 @@ import { IsOptional, IsString, MinLength } from 'class-validator';
 import { Response } from 'express';
 
 import { AuthGuard } from '../auth/auth.guard';
+import { RequireTier } from '../billing/decorators/require-tier.decorator';
+import { SubscriptionTierGuard } from '../billing/guards/subscription-tier.guard';
 
 import { CreatePortfolioFromStrategyDto } from './dto/create-portfolio-from-strategy.dto';
 import { CreateStrategyDto, UpdateVisibilityDto } from './dto/create-strategy.dto';
@@ -33,7 +35,7 @@ class UpdateStrategyDto {
 }
 
 @Controller('strategies')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, SubscriptionTierGuard)
 export class StrategiesController {
   constructor(
     private readonly strategiesService: StrategiesService,
@@ -41,6 +43,7 @@ export class StrategiesController {
   ) {}
 
   @Post()
+  @RequireTier('pro')
   async create(@Request() req: any, @Body() dto: CreateStrategyDto) {
     return this.strategiesService.create(req.user.id, dto);
   }
@@ -69,6 +72,7 @@ export class StrategiesController {
   }
 
   @Patch(':id')
+  @RequireTier('pro')
   async update(
     @Request() req: any,
     @Param('id') id: string,
@@ -78,6 +82,7 @@ export class StrategiesController {
   }
 
   @Patch(':id/visibility')
+  @RequireTier('pro')
   async updateVisibility(
     @Request() req: any,
     @Param('id') id: string,
@@ -91,11 +96,13 @@ export class StrategiesController {
   }
 
   @Delete(':id')
+  @RequireTier('pro')
   async delete(@Request() req: any, @Param('id') id: string) {
     return this.strategiesService.delete(req.user.id, id);
   }
 
   @Post(':id/analyze')
+  @RequireTier('pro')
   async analyzeStrategy(
     @Request() req: any,
     @Param('id') id: string,
@@ -127,6 +134,7 @@ export class StrategiesController {
   }
 
   @Post(':id/create-portfolio')
+  @RequireTier('pro')
   async createPortfolioFromStrategy(
     @Request() req: any,
     @Param('id') id: string,

@@ -2,8 +2,8 @@ import { resolve } from "node:path";
 
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
 import { config as dotenvConfig } from "dotenv";
-import { json, urlencoded } from "express";
 
 import { AppModule } from "./app.module";
 
@@ -13,11 +13,17 @@ dotenvConfig({
 });
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  // Disable default body parser so we can configure it with rawBody + custom limit.
+  // Using rawBody: true with a separate app.use(json()) clobbers the raw buffer
+  // that Stripe webhook signature verification depends on.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+    bodyParser: false,
+  });
 
-  // Increase body size limit for large payloads (e.g., strategy trajectories)
-  app.use(json({ limit: "5mb" }));
-  app.use(urlencoded({ extended: true, limit: "5mb" }));
+  // Register body parsers with rawBody support AND increased size limit
+  app.useBodyParser("json", { limit: "5mb" });
+  app.useBodyParser("urlencoded", { limit: "5mb", extended: true });
 
   app.useGlobalPipes(
     new ValidationPipe({

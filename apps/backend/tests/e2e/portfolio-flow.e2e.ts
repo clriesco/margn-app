@@ -224,6 +224,15 @@ describe("E2E: Portfolio Flow", () => {
     });
     testUserId = testUser.id;
 
+    // Grant pro subscription so tier-gated endpoints work
+    await prisma.subscription.create({
+      data: {
+        userId: testUserId,
+        tier: "pro",
+        status: "active",
+      },
+    });
+
     // Generate test token
     bearerToken = generateTestToken();
 
