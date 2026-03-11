@@ -44,8 +44,10 @@ async function bootstrap() {
   app.setGlobalPrefix("api");
   await app.listen(process.env.PORT ? Number(process.env.PORT) : 3003);
 
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { version } = require("../package.json");
   console.log(
-    `🚀 Backend running on http://localhost:${process.env.PORT || 3003}/api`
+    `🚀 Backend v${version} running on http://localhost:${process.env.PORT || 3003}/api`
   );
 }
 
