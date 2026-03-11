@@ -1,6 +1,4 @@
-apps/backend/src
-apps/backend/tests
-apps/backend/dist
+apps/backend
 infra
 node_modules
 *.md
