@@ -1,7 +1,9 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isTestingBypass = process.env.NEXT_PUBLIC_E2E_TESTING === "true";
+const isTestingBypass =
+  process.env.NEXT_PUBLIC_E2E_TESTING === "true" &&
+  process.env.NODE_ENV !== "production";
 const isSignInRoute = createRouteMatcher(["/sign-in(.*)"]);
 
 // In e2e testing mode, bypass Clerk entirely (including key validation)

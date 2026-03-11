@@ -31,6 +31,7 @@ export class AuthService {
       // E2E test mode: accept test tokens when CLERK_TEST_MODE=true
       if (
         process.env.CLERK_TEST_MODE === "true" &&
+        process.env.NODE_ENV !== "production" &&
         token.startsWith("e2e-test-token:")
       ) {
         const clerkId = token.substring("e2e-test-token:".length);
