@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.18.3",
+  "version": "0.18.4",
   "private": true,
   "scripts": {
     "dev": "HOST=127.0.0.1 PORT=3002 next dev",
