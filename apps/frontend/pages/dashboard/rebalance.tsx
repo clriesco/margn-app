@@ -173,20 +173,21 @@ export default function Rebalance() {
   const handleConfirm = async () => {
     if (!portfolioId || !proposal) return;
 
+    // Exit confirm mode immediately so inputs disappear during submit
+    const pricesToApply = hasCustomPrices ? { ...executionPrices } : undefined;
+    setAppliedPrices(executionPrices);
+    setConfirmMode(false);
+    setExecutionPrices({});
+
     setIsSubmitting(true);
     setError("");
 
     try {
-      await applyRebalanceSimulation(portfolioId, proposal, hasCustomPrices ? executionPrices : undefined);
+      await applyRebalanceSimulation(portfolioId, proposal, pricesToApply);
 
       // Invalidate cache so dashboard shows updated data
       invalidatePortfolioCache(portfolioId, user?.email);
       clearPageState();
-
-      // Exit confirm mode and persist execution prices for display
-      setAppliedPrices(executionPrices);
-      setConfirmMode(false);
-      setExecutionPrices({});
 
       setMessage("Ajustes confirmados. Nueva composición guardada.");
 
@@ -194,6 +195,12 @@ export default function Rebalance() {
         router.push("/dashboard");
       }, 2000);
     } catch (err) {
+      // Restore confirm mode so user can retry
+      if (pricesToApply) {
+        setExecutionPrices(pricesToApply);
+        setConfirmMode(true);
+        setAppliedPrices({});
+      }
       setError(
         err instanceof Error ? err.message : "Error al aplicar los ajustes"
       );
