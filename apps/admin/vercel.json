@@ -1,7 +1,4 @@
 {
-  "installCommand": "npm ci",
-  "buildCommand": "cd apps/admin && next build",
-  "outputDirectory": "apps/admin/.next",
   "framework": "nextjs",
-  "ignoreCommand": "git diff --quiet HEAD~1 -- apps/admin/"
+  "ignoreCommand": "cd ../.. && git diff --quiet HEAD~1 -- apps/admin/"
 }

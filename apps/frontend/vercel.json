@@ -1,7 +1,4 @@
 {
-  "installCommand": "npm ci",
-  "buildCommand": "cd apps/frontend && next build",
-  "outputDirectory": "apps/frontend/.next",
   "framework": "nextjs",
-  "ignoreCommand": "git diff --quiet HEAD~1 -- apps/frontend/"
+  "ignoreCommand": "cd ../.. && git diff --quiet HEAD~1 -- apps/frontend/"
 }
