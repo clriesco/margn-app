@@ -1,16 +1,16 @@
 import {
-  RISK_PROFILES,
-  detectRiskProfile,
-  isValidRiskProfileId,
-  type RiskProfileId,
-} from "@margn/shared";
-import {
   Injectable,
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
 
 import { PrismaService } from "../prisma/prisma.service";
+import {
+  RISK_PROFILES,
+  detectRiskProfile,
+  isValidRiskProfileId,
+  type RiskProfileId,
+} from "../shared";
 
 import {
   UpdatePortfolioConfigurationDto,

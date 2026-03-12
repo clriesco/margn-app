@@ -1,4 +1,3 @@
-import type { RiskProfileId } from "@margn/shared";
 import { Type } from "class-transformer";
 import {
   IsArray,
@@ -13,6 +12,8 @@ import {
   Min,
   ValidateNested,
 } from "class-validator";
+
+import type { RiskProfileId } from "../../shared";
 
 /**
  * Asset to add to portfolio during onboarding

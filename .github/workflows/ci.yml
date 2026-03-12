@@ -26,9 +26,6 @@ jobs:
       - name: Generate Prisma Client
         run: npm --workspace apps/backend run prisma:generate
 
-      - name: Build shared package
-        run: npm --workspace packages/shared run build
-
       - name: Lint backend only
         run: npm --workspace apps/backend run lint
 

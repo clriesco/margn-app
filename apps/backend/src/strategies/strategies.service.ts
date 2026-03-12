@@ -1,4 +1,3 @@
-import { detectRiskProfile } from '@margn/shared';
 import {
   Injectable,
   NotFoundException,
@@ -8,6 +7,7 @@ import {
 
 import { OnboardingService } from '../portfolios/onboarding.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { detectRiskProfile } from '../shared';
 
 import { CreatePortfolioFromStrategyDto } from './dto/create-portfolio-from-strategy.dto';
 import { CreateStrategyDto } from './dto/create-strategy.dto';

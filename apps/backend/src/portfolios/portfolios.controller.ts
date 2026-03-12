@@ -1,4 +1,3 @@
-import { getAllRiskProfiles } from "@margn/shared";
 import {
   Body,
   Controller,
@@ -18,6 +17,7 @@ import { AuthGuard } from "../auth/auth.guard";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { PortfolioOwnershipGuard } from "../auth/portfolio-ownership.guard";
 import { SubscriptionService } from "../billing/subscription.service";
+import { getAllRiskProfiles } from "../shared";
 
 import { CreatePortfolioDto } from "./dto/create-portfolio.dto";
 import { OnboardingService } from "./onboarding.service";

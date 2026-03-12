@@ -1,4 +1,3 @@
-import type { RiskProfileId } from "@margn/shared";
 import {
   IsBoolean,
   IsIn,
@@ -9,6 +8,8 @@ import {
   Max,
   Min,
 } from "class-validator";
+
+import type { RiskProfileId } from "../../shared";
 
 /**
  * Target weight for a single asset
