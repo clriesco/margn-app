@@ -35,7 +35,7 @@ import type {
 const prisma = new PrismaClient();
 
 // ---------------------------------------------------------------------------
-// Risk profile backtest params (mirrored from packages/shared/src/risk-profiles.ts)
+// Risk profile backtest params (mirrored from apps/backend/src/shared/risk-profiles.ts)
 // ---------------------------------------------------------------------------
 
 interface RiskParams {

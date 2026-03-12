@@ -1,6 +1,6 @@
 {
   "installCommand": "cd ../.. && npm ci",
-  "buildCommand": "cd ../.. && tsc -p packages/shared/tsconfig.json && cd apps/admin && next build",
+  "buildCommand": "cd ../.. && cd apps/admin && next build",
   "outputDirectory": ".next",
   "framework": "nextjs"
 }

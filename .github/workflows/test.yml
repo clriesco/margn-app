@@ -28,14 +28,8 @@ jobs:
       - name: Generate Prisma Client
         run: npm --workspace apps/backend run prisma:generate
 
-      - name: Build shared package
-        run: npm --workspace packages/shared run build
-
       - name: Lint backend
         run: npm --workspace apps/backend run lint
-
-      - name: Lint shared
-        run: npm --workspace packages/shared run lint
 
   unit-tests:
     name: Unit Tests
@@ -55,8 +49,6 @@ jobs:
       - name: Generate Prisma Client
         run: npm --workspace apps/backend run prisma:generate
 
-      - name: Build shared package
-        run: npm --workspace packages/shared run build
 
       - name: Run unit tests
         run: npm --workspace apps/backend run test
@@ -111,8 +103,6 @@ jobs:
       - name: Generate Prisma Client for backend
         run: npm --workspace apps/backend run prisma:generate
 
-      - name: Build shared package
-        run: npm --workspace packages/shared run build
 
       - name: Copy Prisma Client to infra/scripts
         run: |
@@ -169,8 +159,6 @@ jobs:
       - name: Generate Prisma Client
         run: npm --workspace apps/backend run prisma:generate
 
-      - name: Build shared package
-        run: npm --workspace packages/shared run build
 
       - name: Build
         run: npm run build

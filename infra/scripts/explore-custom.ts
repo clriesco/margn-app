@@ -26,7 +26,7 @@ import type {
 import {
   RISK_PROFILES,
   type RiskProfileId,
-} from "../../packages/shared/src/risk-profiles";
+} from "../../apps/backend/src/shared/risk-profiles";
 
 // ---------------------------------------------------------------------------
 // Asset universe

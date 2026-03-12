@@ -19,9 +19,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
-    "paths": {
-      "@margn/shared": ["packages/shared/src"]
-    }
+    "paths": {}
   }
 }
 

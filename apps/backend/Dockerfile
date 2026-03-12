@@ -6,7 +6,6 @@ WORKDIR /workspace
 # Copy package files
 COPY package.json package-lock.json* ./
 COPY apps/backend/package.json apps/backend/
-COPY packages/shared/package.json packages/shared/
 
 # Install dependencies
 RUN npm ci
@@ -32,7 +31,6 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json* ./
 COPY apps/backend/package.json apps/backend/
-COPY packages/shared/package.json packages/shared/
 
 # Install only production dependencies
 RUN npm ci --omit=dev && npm cache clean --force
