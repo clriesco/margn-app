@@ -65,6 +65,8 @@ export default function Rebalance() {
   // Confirmation mode: user can override execution prices before applying
   const [confirmMode, setConfirmMode] = useState(false);
   const [executionPrices, setExecutionPrices] = useState<Record<string, number>>({});
+  // After applying, store final prices so labels reflect execution prices
+  const [appliedPrices, setAppliedPrices] = useState<Record<string, number>>({});
 
   // Track whether proposal was restored to skip API fetch
   const wasRestoredRef = useRef(false);
@@ -146,10 +148,13 @@ export default function Rebalance() {
 
   // Recalculate summary values when execution prices change
   const adjustedSummary = React.useMemo(() => {
-    if (!proposal || !confirmMode) return proposal?.summary;
+    if (!proposal) return undefined;
+    const prices = confirmMode ? executionPrices : appliedPrices;
+    const hasOverrides = Object.keys(prices).length > 0;
+    if (!hasOverrides) return proposal.summary;
     let newExposure = 0;
     for (const pos of proposal.positions) {
-      const price = executionPrices[pos.assetId] ?? pos.currentPrice;
+      const price = prices[pos.assetId] ?? pos.currentPrice;
       newExposure += pos.targetQuantity * price;
     }
     // borrowedAmount stays the same: equity changes with exposure
@@ -162,7 +167,7 @@ export default function Rebalance() {
       newEquity,
       newLeverage,
     };
-  }, [proposal, confirmMode, executionPrices]);
+  }, [proposal, confirmMode, executionPrices, appliedPrices]);
 
   // Apply with actual execution prices
   const handleConfirm = async () => {
@@ -177,6 +182,11 @@ export default function Rebalance() {
       // Invalidate cache so dashboard shows updated data
       invalidatePortfolioCache(portfolioId, user?.email);
       clearPageState();
+
+      // Exit confirm mode and persist execution prices for display
+      setAppliedPrices(executionPrices);
+      setConfirmMode(false);
+      setExecutionPrices({});
 
       setMessage("Ajustes confirmados. Nueva composición guardada.");
 
@@ -705,10 +715,12 @@ export default function Rebalance() {
                                     }}
                                   >
                                     @{" "}
-                                    {formatCurrencyES(pos.currentPrice, {
+                                    {formatCurrencyES(appliedPrices[pos.assetId] ?? pos.currentPrice, {
                                       maximumFractionDigits: 2,
                                     })}{" "}
-                                    ≈ {formatCurrencyES(Math.abs(pos.deltaValue))}
+                                    ≈ {formatCurrencyES(
+                                      Math.abs(pos.deltaQuantity) * (appliedPrices[pos.assetId] ?? pos.currentPrice)
+                                    )}
                                   </div>
                                 )}
                               </>
