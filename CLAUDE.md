@@ -69,7 +69,8 @@ margn/
         ├── run-daily-jobs.ts   # Orquestador de jobs (secuencial, fail-fast en step 1)
         ├── reset-database.ts   # Reset de BD para desarrollo
         ├── seed-demo-portfolio.ts  # Seed de datos demo
-        └── migrate-users-to-clerk.ts  # Migración de usuarios existentes a Clerk
+        ├── migrate-users-to-clerk.ts  # Migración de usuarios existentes a Clerk
+        └── fix-equity-history.ts  # One-time correction of equity/borrowedAmount history (applied 2026-03-12)
 ```
 
 ---

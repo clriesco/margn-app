@@ -82,7 +82,8 @@ async function calculateMetrics(portfolioId: string, date: Date) {
       exposure: true,
       borrowedAmount: true,
       createdAt: true,
-      metadataJson: true, // Include to check already processed contributions
+      updatedAt: true,
+      metadataJson: true,
     },
   });
 
@@ -102,39 +103,24 @@ async function calculateMetrics(portfolioId: string, date: Date) {
     },
   });
 
-  // Determine which contributions have already been processed
-  // Search across recent metrics (not just the latest) to avoid missing IDs
-  // when today's metric was created by a different source than yesterday's
-  let processedContributionIds: Set<string> = new Set();
+  // Determine which contributions are truly new (not yet reflected in equity)
+  // Time-based deduplication: a contribution is "new" only if it was created
+  // AFTER the latest metric was last written. This avoids the previous bug where
+  // a limited lookback window (take: 5) caused old contributions to be "forgotten"
+  // and re-added to equity every ~5 days.
+  let newContributions: typeof allContributions = [];
 
-  const recentMetrics = await prisma.metricsTimeseries.findMany({
-    where: { portfolioId },
-    orderBy: { date: "desc" },
-    take: 5,
-    select: { metadataJson: true },
-  });
-
-  for (const metric of recentMetrics) {
-    if (metric.metadataJson) {
-      try {
-        const meta = JSON.parse(metric.metadataJson);
-        if (meta.contributions && Array.isArray(meta.contributions)) {
-          meta.contributions.forEach((c: any) => {
-            if (c.contributionId) {
-              processedContributionIds.add(c.contributionId);
-            }
-          });
-        }
-      } catch (e) {
-        // If parsing fails, skip this metric
-      }
-    }
+  if (latestMetric) {
+    // Only contributions created after the latest metric was written are truly new.
+    // If the contribution service already wrote a metric that includes a contribution,
+    // latestMetric.updatedAt will be >= contributedAt, so it won't be re-counted.
+    newContributions = allContributions.filter(
+      (c: (typeof allContributions)[0]) => c.contributedAt > latestMetric.updatedAt
+    );
+  } else if (allContributions.length > 0) {
+    // No previous metrics — process all contributions
+    newContributions = allContributions;
   }
-
-  // Filter to find contributions NOT yet processed
-  const newContributions = allContributions.filter(
-    (c: (typeof allContributions)[0]) => !processedContributionIds.has(c.id)
-  );
 
   let contributionsSinceLastMetric = newContributions.reduce(
     (sum: number, c: any) => sum + (c.type === "withdrawal" ? -c.amount : c.amount),
@@ -145,9 +131,7 @@ async function calculateMetrics(portfolioId: string, date: Date) {
     console.log(
       `[metrics-refresh] Found ${
         newContributions.length
-      } NEW contribution(s) (not yet processed) totaling $${contributionsSinceLastMetric.toFixed(
-        2
-      )}`
+      } NEW contribution(s) totaling $${contributionsSinceLastMetric.toFixed(2)}`
     );
     newContributions.forEach((c: any) => {
       console.log(
@@ -156,22 +140,9 @@ async function calculateMetrics(portfolioId: string, date: Date) {
         }, contributedAt: ${c.contributedAt.toISOString()})`
       );
     });
-  } else if (latestMetric) {
+  } else {
     console.log(
-      `[metrics-refresh] No new contributions (${processedContributionIds.size} already processed)`
-    );
-  } else if (allContributions.length > 0) {
-    // No previous metrics but we have contributions - process all of them
-    contributionsSinceLastMetric = allContributions.reduce(
-      (sum: number, c: (typeof allContributions)[0]) => sum + ((c as any).type === "withdrawal" ? -c.amount : c.amount),
-      0
-    );
-    console.log(
-      `[metrics-refresh] Found ${
-        allContributions.length
-      } contribution(s) (no previous metrics) totaling $${contributionsSinceLastMetric.toFixed(
-        2
-      )}`
+      `[metrics-refresh] No new contributions (${allContributions.length} total, all before latest metric)`
     );
   }
 
