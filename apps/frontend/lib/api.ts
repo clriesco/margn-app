@@ -267,14 +267,16 @@ export async function getRebalanceSimulation(
 
 /**
  * Apply a rebalance simulation
+ * @param executionPrices - Optional map of assetId → actual execution price (to correct slippage vs mark price)
  */
 export async function applyRebalanceSimulation(
   portfolioId: string,
-  proposal: RebalanceProposal
+  proposal: RebalanceProposal,
+  executionPrices?: Record<string, number>
 ): Promise<{ success: boolean; message: string }> {
   return fetchAPI(`/portfolios/${portfolioId}/rebalance/apply`, {
     method: "POST",
-    body: JSON.stringify(proposal),
+    body: JSON.stringify({ ...proposal, executionPrices }),
   });
 }
 
