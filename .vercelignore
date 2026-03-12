@@ -2,9 +2,6 @@ apps/backend
 infra
 node_modules
 *.md
-.git
 .env
 .env.local
 *.log
-
-
