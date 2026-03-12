@@ -53,10 +53,11 @@ export class RebalanceController {
   @Post("apply")
   async applySimulation(
     @Param("portfolioId") portfolioId: string,
-    @Body() proposal: RebalanceProposal
+    @Body() body: RebalanceProposal & { executionPrices?: Record<string, number> }
   ): Promise<{ success: boolean; message: string }> {
     try {
-      await this.rebalanceService.acceptProposal(portfolioId, proposal);
+      const { executionPrices, ...proposal } = body;
+      await this.rebalanceService.acceptProposal(portfolioId, proposal, executionPrices);
       return {
         success: true,
         message: "Simulation applied and portfolio updated",

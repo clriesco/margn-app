@@ -62,6 +62,10 @@ export default function Rebalance() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  // Confirmation mode: user can override execution prices before applying
+  const [confirmMode, setConfirmMode] = useState(false);
+  const [executionPrices, setExecutionPrices] = useState<Record<string, number>>({});
+
   // Track whether proposal was restored to skip API fetch
   const wasRestoredRef = useRef(false);
 
@@ -112,20 +116,69 @@ export default function Rebalance() {
     }
   }, [user, loading, portfolioId, subLoading, tier]);
 
-  const handleAccept = async () => {
+  // Enter confirmation mode: pre-fill execution prices with mark prices
+  const handleAccept = () => {
+    if (!proposal) return;
+    const prices: Record<string, number> = {};
+    for (const pos of proposal.positions) {
+      if (pos.action !== "HOLD") {
+        prices[pos.assetId] = pos.currentPrice;
+      }
+    }
+    setExecutionPrices(prices);
+    setConfirmMode(true);
+  };
+
+  const handleCancelConfirm = () => {
+    setConfirmMode(false);
+    setExecutionPrices({});
+  };
+
+  // Check if any execution price differs from mark price
+  const hasCustomPrices = proposal
+    ? proposal.positions.some(
+        (pos) =>
+          pos.action !== "HOLD" &&
+          executionPrices[pos.assetId] !== undefined &&
+          executionPrices[pos.assetId] !== pos.currentPrice
+      )
+    : false;
+
+  // Recalculate summary values when execution prices change
+  const adjustedSummary = React.useMemo(() => {
+    if (!proposal || !confirmMode) return proposal?.summary;
+    let newExposure = 0;
+    for (const pos of proposal.positions) {
+      const price = executionPrices[pos.assetId] ?? pos.currentPrice;
+      newExposure += pos.targetQuantity * price;
+    }
+    // borrowedAmount stays the same: equity changes with exposure
+    const originalBorrowed = proposal.summary.newExposure - proposal.summary.newEquity;
+    const newEquity = newExposure - originalBorrowed;
+    const newLeverage = newEquity > 0 ? newExposure / newEquity : 0;
+    return {
+      ...proposal.summary,
+      newExposure,
+      newEquity,
+      newLeverage,
+    };
+  }, [proposal, confirmMode, executionPrices]);
+
+  // Apply with actual execution prices
+  const handleConfirm = async () => {
     if (!portfolioId || !proposal) return;
 
     setIsSubmitting(true);
     setError("");
 
     try {
-      await applyRebalanceSimulation(portfolioId, proposal);
+      await applyRebalanceSimulation(portfolioId, proposal, hasCustomPrices ? executionPrices : undefined);
 
       // Invalidate cache so dashboard shows updated data
       invalidatePortfolioCache(portfolioId, user?.email);
       clearPageState();
 
-      setMessage("✅ Ajustes confirmados. Nueva composición guardada.");
+      setMessage("Ajustes confirmados. Nueva composición guardada.");
 
       setTimeout(() => {
         router.push("/dashboard");
@@ -345,7 +398,7 @@ export default function Rebalance() {
                         Equity:{" "}
                       </span>
                       <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
-                        {formatCurrencyES(proposal.summary.newEquity)}
+                        {formatCurrencyES(adjustedSummary?.newEquity ?? proposal.summary.newEquity)}
                       </span>
                     </div>
                     <div style={{ marginBottom: "0.5rem" }}>
@@ -353,7 +406,7 @@ export default function Rebalance() {
                         Exposición:{" "}
                       </span>
                       <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
-                        {formatCurrencyES(proposal.summary.newExposure)}
+                        {formatCurrencyES(adjustedSummary?.newExposure ?? proposal.summary.newExposure)}
                       </span>
                     </div>
                     <div>
@@ -361,7 +414,7 @@ export default function Rebalance() {
                         Apalancamiento:{" "}
                       </span>
                       <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
-                        {formatNumberES(proposal.summary.newLeverage, {
+                        {formatNumberES(adjustedSummary?.newLeverage ?? proposal.summary.newLeverage, {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
@@ -578,18 +631,86 @@ export default function Rebalance() {
                                     {isFractionalAsset(pos.assetSymbol, pos.assetType) ? "unidades" : "acciones"}
                                   </span>
                                 </div>
-                                <div
-                                  style={{
-                                    color: "var(--text-on-glass-muted)",
-                                    fontSize: "0.85rem",
-                                  }}
-                                >
-                                  @{" "}
-                                  {formatCurrencyES(pos.currentPrice, {
-                                    maximumFractionDigits: 2,
-                                  })}{" "}
-                                  ≈ {formatCurrencyES(Math.abs(pos.deltaValue))}
-                                </div>
+                                {confirmMode ? (
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "0.5rem",
+                                      marginTop: "0.25rem",
+                                    }}
+                                  >
+                                    <span style={{ color: "var(--text-on-glass-muted)", fontSize: "0.85rem" }}>@</span>
+                                    <div style={{ position: "relative" }}>
+                                      <span style={{
+                                        position: "absolute",
+                                        left: "0.5rem",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        color: "var(--text-on-glass-muted)",
+                                        fontSize: "0.85rem",
+                                        pointerEvents: "none",
+                                      }}>$</span>
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        value={executionPrices[pos.assetId] ?? pos.currentPrice}
+                                        onChange={(e) => {
+                                          const val = parseFloat(e.target.value);
+                                          if (!isNaN(val) && val > 0) {
+                                            setExecutionPrices((prev) => ({
+                                              ...prev,
+                                              [pos.assetId]: val,
+                                            }));
+                                          }
+                                        }}
+                                        style={{
+                                          width: "120px",
+                                          padding: "0.375rem 0.5rem 0.375rem 1.25rem",
+                                          background: "var(--bg-glass)",
+                                          border: executionPrices[pos.assetId] !== pos.currentPrice
+                                            ? "1px solid #a78bfa"
+                                            : "1px solid var(--border)",
+                                          borderRadius: "6px",
+                                          color: "var(--text-primary)",
+                                          fontSize: "0.85rem",
+                                          fontFamily: "inherit",
+                                        }}
+                                      />
+                                    </div>
+                                    {executionPrices[pos.assetId] !== undefined &&
+                                      executionPrices[pos.assetId] !== pos.currentPrice && (
+                                      <span
+                                        style={{
+                                          color: "var(--text-on-glass-muted)",
+                                          fontSize: "0.75rem",
+                                          textDecoration: "line-through",
+                                          opacity: 0.6,
+                                        }}
+                                      >
+                                        {formatCurrencyES(pos.currentPrice, { maximumFractionDigits: 2 })}
+                                      </span>
+                                    )}
+                                    <span style={{ color: "var(--text-on-glass-muted)", fontSize: "0.85rem" }}>
+                                      ≈ {formatCurrencyES(
+                                        Math.abs(pos.deltaQuantity) * (executionPrices[pos.assetId] ?? pos.currentPrice)
+                                      )}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div
+                                    style={{
+                                      color: "var(--text-on-glass-muted)",
+                                      fontSize: "0.85rem",
+                                    }}
+                                  >
+                                    @{" "}
+                                    {formatCurrencyES(pos.currentPrice, {
+                                      maximumFractionDigits: 2,
+                                    })}{" "}
+                                    ≈ {formatCurrencyES(Math.abs(pos.deltaValue))}
+                                  </div>
+                                )}
                               </>
                             )}
                           </div>
@@ -687,9 +808,9 @@ export default function Rebalance() {
                   >
                     <Lightbulb size={16} style={{ flexShrink: 0 }} />
                     <span>
-                      Cuando hayas ejecutado estos ajustes en tu broker,
-                      pulsa &quot;Confirmar Ajustes&quot; para actualizar
-                      composición en Margn.
+                      {confirmMode
+                        ? "Revisa y ajusta los precios de ejecución reales de tu broker. Si no hubo slippage, aplica directamente."
+                        : "Cuando hayas ejecutado estos ajustes en tu broker, pulsa \"Confirmar Ajustes\" para actualizar composición en Margn."}
                     </span>
                   </p>
                 </div>
@@ -702,7 +823,6 @@ export default function Rebalance() {
                   const noBorrowIncrease =
                     Math.abs(proposal.summary.borrowIncrease) < 0.01;
                   const needsRebalance = !(allHold && noBorrowIncrease);
-                  const isDisabled = isSubmitting || !needsRebalance;
 
                   return (
                     <div
@@ -713,29 +833,78 @@ export default function Rebalance() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <button
-                        onClick={handleAccept}
-                        disabled={isDisabled}
-                        style={{
-                          padding: "0.875rem 2rem",
-                          background: isDisabled
-                            ? "var(--bg-glass)"
-                            : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                          color: isDisabled
-                            ? "var(--text-on-glass-muted)"
-                            : "white",
-                          border: isDisabled
-                            ? "1px solid var(--border)"
-                            : "none",
-                          borderRadius: "6px",
-                          fontSize: "0.95rem",
-                          fontWeight: "600",
-                          opacity: isDisabled ? 0.5 : 1,
-                          cursor: isDisabled ? "not-allowed" : "pointer",
-                        }}
-                      >
-                        {isSubmitting ? "Aplicando..." : "✓ Confirmar Ajustes"}
-                      </button>
+                      {confirmMode ? (
+                        <>
+                          <button
+                            onClick={handleCancelConfirm}
+                            disabled={isSubmitting}
+                            style={{
+                              padding: "0.875rem 1.5rem",
+                              background: "transparent",
+                              color: "var(--text-on-glass-muted)",
+                              border: "1px solid var(--border)",
+                              borderRadius: "6px",
+                              fontSize: "0.95rem",
+                              fontWeight: "500",
+                              cursor: isSubmitting ? "not-allowed" : "pointer",
+                              opacity: isSubmitting ? 0.5 : 1,
+                            }}
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={handleConfirm}
+                            disabled={isSubmitting}
+                            style={{
+                              padding: "0.875rem 2rem",
+                              background: isSubmitting
+                                ? "var(--bg-glass)"
+                                : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                              color: isSubmitting
+                                ? "var(--text-on-glass-muted)"
+                                : "white",
+                              border: isSubmitting
+                                ? "1px solid var(--border)"
+                                : "none",
+                              borderRadius: "6px",
+                              fontSize: "0.95rem",
+                              fontWeight: "600",
+                              cursor: isSubmitting ? "not-allowed" : "pointer",
+                              opacity: isSubmitting ? 0.5 : 1,
+                            }}
+                          >
+                            {isSubmitting
+                              ? "Aplicando..."
+                              : hasCustomPrices
+                              ? "Aplicar con precios reales"
+                              : "Aplicar Ajustes"}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={handleAccept}
+                          disabled={!needsRebalance}
+                          style={{
+                            padding: "0.875rem 2rem",
+                            background: !needsRebalance
+                              ? "var(--bg-glass)"
+                              : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                            color: !needsRebalance
+                              ? "var(--text-on-glass-muted)"
+                              : "white",
+                            border: !needsRebalance
+                              ? "1px solid var(--border)"
+                              : "none",
+                            borderRadius: "6px",
+                            fontSize: "0.95rem",
+                            fontWeight: "600",
+                            opacity: !needsRebalance ? 0.5 : 1,
+                            cursor: !needsRebalance ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          Confirmar Ajustes
+                        </button>
+                      )}
                     </div>
                   );
                 })()}

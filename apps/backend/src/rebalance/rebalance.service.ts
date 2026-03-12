@@ -1200,7 +1200,8 @@ export class RebalanceService {
    */
   async acceptProposal(
     portfolioId: string,
-    proposal: RebalanceProposal
+    proposal: RebalanceProposal,
+    executionPrices?: Record<string, number>
   ): Promise<{ success: boolean; message: string }> {
     // Create rebalance event
     const rebalanceEvent = await this.prisma.rebalanceEvent.create({
@@ -1211,24 +1212,40 @@ export class RebalanceService {
       },
     });
 
+    // If execution prices are provided, recalculate exposure-based values
+    // so metrics reflect actual broker prices, not Yahoo mark prices
+    let adjustedExposure = proposal.summary.newExposure;
+    if (executionPrices && Object.keys(executionPrices).length > 0) {
+      // Recalculate total exposure from actual execution prices
+      adjustedExposure = 0;
+      for (const pos of proposal.positions) {
+        const execPrice = executionPrices[pos.assetId] ?? pos.currentPrice;
+        adjustedExposure += pos.targetQuantity * execPrice;
+      }
+    }
+
     // Save rebalance positions and update portfolio positions
     for (const pos of proposal.positions) {
+      // Use execution price if provided, otherwise fall back to mark price
+      const effectivePrice = executionPrices?.[pos.assetId] ?? pos.currentPrice;
+      const effectiveTargetValue = pos.targetQuantity * effectivePrice;
+
       // Save rebalance position record
       await this.prisma.rebalancePosition.create({
         data: {
           rebalanceEventId: rebalanceEvent.id,
           assetId: pos.assetId,
           targetWeight: pos.targetWeight,
-          targetUsd: pos.targetValue,
+          targetUsd: effectiveTargetValue,
           deltaQuantity: pos.deltaQuantity,
         },
       });
 
       // Update portfolio position with weighted average price
-      // BUY: newAvgPrice = (oldQty * oldAvgPrice + deltaQty * currentPrice) / newQty
+      // BUY: newAvgPrice = (oldQty * oldAvgPrice + deltaQty * effectivePrice) / newQty
       // SELL: avgPrice stays the same (cost basis doesn't change on sells)
-      // NEW: avgPrice = currentPrice
-      let updatedAvgPrice = pos.currentPrice;
+      // NEW: avgPrice = effectivePrice
+      let updatedAvgPrice = effectivePrice;
       if (pos.action === "BUY" && pos.currentQuantity > 0) {
         // Fetch stored avgPrice (cost basis) from DB — don't use currentValue/currentQuantity
         // which gives market price and would reset PnL to zero on every rebalance
@@ -1242,10 +1259,10 @@ export class RebalanceService {
             },
             select: { avgPrice: true },
           });
-        const storedAvgPrice = existingPosition?.avgPrice || pos.currentPrice;
+        const storedAvgPrice = existingPosition?.avgPrice || effectivePrice;
         updatedAvgPrice =
           (pos.currentQuantity * storedAvgPrice +
-            pos.deltaQuantity * pos.currentPrice) /
+            pos.deltaQuantity * effectivePrice) /
           pos.targetQuantity;
       }
 
@@ -1260,32 +1277,41 @@ export class RebalanceService {
           portfolioId,
           assetId: pos.assetId,
           quantity: pos.targetQuantity,
-          avgPrice: pos.currentPrice,
-          exposureUsd: pos.targetValue,
+          avgPrice: effectivePrice,
+          exposureUsd: effectiveTargetValue,
         },
         update: {
           quantity: pos.targetQuantity,
           ...(pos.action !== "SELL" && { avgPrice: updatedAvgPrice }),
-          exposureUsd: pos.targetValue,
+          exposureUsd: effectiveTargetValue,
         },
       });
     }
 
+    // Recalculate equity and leverage from adjusted exposure
+    // borrowedAmount stays the same as proposed; equity shifts with exposure difference
+    const originalBorrowed = proposal.summary.newExposure - proposal.summary.newEquity;
+    const adjustedEquity = adjustedExposure - originalBorrowed;
+    const adjustedLeverage = adjustedEquity > 0 ? adjustedExposure / adjustedEquity : 0;
+
     // Save metrics snapshot with metadata for dashboard tracing
     const pnl =
-      proposal.summary.newEquity -
+      adjustedEquity -
       proposal.currentEquity -
       proposal.pendingContribution;
     const pnlPercent =
       proposal.currentEquity > 0 ? (pnl / proposal.currentEquity) * 100 : 0;
-    const composition = proposal.positions.map((pos) => ({
-      symbol: pos.assetSymbol,
-      name: pos.assetName,
-      weight: pos.targetWeight,
-      value: pos.targetValue,
-      delta: pos.deltaValue,
-      action: pos.action,
-    }));
+    const composition = proposal.positions.map((pos) => {
+      const execPrice = executionPrices?.[pos.assetId] ?? pos.currentPrice;
+      return {
+        symbol: pos.assetSymbol,
+        name: pos.assetName,
+        weight: pos.targetWeight,
+        value: pos.targetQuantity * execPrice,
+        delta: pos.deltaValue,
+        action: pos.action,
+      };
+    });
 
     // Get today's date in UTC to avoid timezone issues
     const now = new Date();
@@ -1348,6 +1374,7 @@ export class RebalanceService {
     });
 
     // Use upsert to avoid unique constraint errors if entry already exists for today
+    const borrowedAmount = adjustedExposure - adjustedEquity;
     await this.prisma.metricsTimeseries.upsert({
       where: {
         portfolioId_date: {
@@ -1358,24 +1385,24 @@ export class RebalanceService {
       create: {
         portfolioId,
         date: today,
-        equity: proposal.summary.newEquity,
-        exposure: proposal.summary.newExposure,
-        leverage: proposal.summary.newLeverage,
-        borrowedAmount: proposal.summary.newExposure - proposal.summary.newEquity,
+        equity: adjustedEquity,
+        exposure: adjustedExposure,
+        leverage: adjustedLeverage,
+        borrowedAmount,
         drawdown: proposal.drawdown,
-        marginRatio: proposal.summary.newEquity > 0
-          ? proposal.summary.newEquity / proposal.summary.newExposure
+        marginRatio: adjustedEquity > 0
+          ? adjustedEquity / adjustedExposure
           : 1,
         metadataJson: JSON.stringify(metadata),
       },
       update: {
-        equity: proposal.summary.newEquity,
-        exposure: proposal.summary.newExposure,
-        leverage: proposal.summary.newLeverage,
-        borrowedAmount: proposal.summary.newExposure - proposal.summary.newEquity,
+        equity: adjustedEquity,
+        exposure: adjustedExposure,
+        leverage: adjustedLeverage,
+        borrowedAmount,
         drawdown: proposal.drawdown,
-        marginRatio: proposal.summary.newEquity > 0
-          ? proposal.summary.newEquity / proposal.summary.newExposure
+        marginRatio: adjustedEquity > 0
+          ? adjustedEquity / adjustedExposure
           : 1,
         metadataJson: JSON.stringify(metadata),
       },
