@@ -116,7 +116,7 @@ export default function Rebalance() {
     if (user) {
       loadAndCalculate();
     }
-  }, [user, loading, portfolioId, subLoading, tier]);
+  }, [user, loading, portfolioId, subLoading, tier, hasAccess]);
 
   // Enter confirmation mode: pre-fill execution prices with mark prices
   const handleAccept = () => {
@@ -827,7 +827,9 @@ export default function Rebalance() {
                   >
                     <Lightbulb size={16} style={{ flexShrink: 0 }} />
                     <span>
-                      {confirmMode
+                      {isSubmitting
+                        ? "Aplicando ajustes..."
+                        : confirmMode
                         ? "Revisa y ajusta los precios de ejecución reales de tu broker. Si no hubo slippage, aplica directamente."
                         : "Cuando hayas ejecutado estos ajustes en tu broker, pulsa \"Confirmar Ajustes\" para actualizar composición en Margn."}
                     </span>
@@ -902,26 +904,26 @@ export default function Rebalance() {
                       ) : (
                         <button
                           onClick={handleAccept}
-                          disabled={!needsRebalance}
+                          disabled={!needsRebalance || isSubmitting}
                           style={{
                             padding: "0.875rem 2rem",
-                            background: !needsRebalance
+                            background: !needsRebalance || isSubmitting
                               ? "var(--bg-glass)"
                               : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                            color: !needsRebalance
+                            color: !needsRebalance || isSubmitting
                               ? "var(--text-on-glass-muted)"
                               : "white",
-                            border: !needsRebalance
+                            border: !needsRebalance || isSubmitting
                               ? "1px solid var(--border)"
                               : "none",
                             borderRadius: "6px",
                             fontSize: "0.95rem",
                             fontWeight: "600",
-                            opacity: !needsRebalance ? 0.5 : 1,
-                            cursor: !needsRebalance ? "not-allowed" : "pointer",
+                            opacity: !needsRebalance || isSubmitting ? 0.5 : 1,
+                            cursor: !needsRebalance || isSubmitting ? "not-allowed" : "pointer",
                           }}
                         >
-                          Confirmar Ajustes
+                          {isSubmitting ? "Aplicando..." : "Confirmar Ajustes"}
                         </button>
                       )}
                     </div>
