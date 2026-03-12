@@ -116,7 +116,8 @@ export default function Rebalance() {
     if (user) {
       loadAndCalculate();
     }
-  }, [user, loading, portfolioId, subLoading, tier, hasAccess]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading, portfolioId, subLoading, tier]);
 
   // Enter confirmation mode: pre-fill execution prices with mark prices
   const handleAccept = () => {
