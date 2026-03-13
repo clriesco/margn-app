@@ -426,7 +426,7 @@ export default function Profile() {
                           marginTop: "0.25rem",
                         }}
                       >
-                        Recibe notificaciones cuando haya cambios relevantes en el estado de tu portfolio
+                        Recibe notificaciones por email cuando haya cambios relevantes en el estado de tu portfolio
                       </div>
                     </div>
                   </label>
@@ -463,7 +463,7 @@ export default function Profile() {
                           marginTop: "0.25rem",
                         }}
                       >
-                        Recibe recordatorios cuando sea el día de realizar una aportación periódica
+                        Recibe recordatorios por email cuando sea el día de realizar una aportación periódica
                       </div>
                     </div>
                   </label>
@@ -500,7 +500,7 @@ export default function Profile() {
                           marginTop: "0.25rem",
                         }}
                       >
-                        Recibe alertas cuando el leverage efectivo esté fuera del rango configurado
+                        Recibe alertas por email cuando el leverage efectivo esté fuera del rango configurado
                       </div>
                     </div>
                   </label>
@@ -537,7 +537,7 @@ export default function Profile() {
                           marginTop: "0.25rem",
                         }}
                       >
-                        Recibe notificaciones cuando los cálculos detecten desviación en los pesos del portfolio
+                        Recibe notificaciones por email cuando los cálculos detecten desviación en los pesos del portfolio
                       </div>
                     </div>
                   </label>

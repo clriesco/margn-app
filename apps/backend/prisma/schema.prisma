@@ -77,6 +77,8 @@ model Portfolio {
 
   // Risk parameters
   maintenanceMarginRatio Float @default(0.05) @map("maintenance_margin_ratio")
+  safeMarginRatio        Float @default(0.15) @map("safe_margin_ratio")
+  criticalMarginRatio    Float @default(0.10) @map("critical_margin_ratio")
 
   // Deploy signal thresholds
   drawdownRedeployThreshold   Float @default(0.12) @map("drawdown_redeploy_threshold")
@@ -417,6 +419,27 @@ model AdminAuditLog {
   @@index([targetType, targetId])
   @@index([createdAt])
   @@map("admin_audit_logs")
+}
+
+// Email notification log
+model EmailLog {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  portfolioId      String?   @map("portfolio_id")
+  notificationType String    @map("notification_type")
+  subject          String
+  recipientEmail   String    @map("recipient_email")
+  resendId         String?   @map("resend_id")
+  status           String    @default("sent") // 'sent' | 'delivered' | 'bounced' | 'failed'
+  errorMessage     String?   @map("error_message") @db.Text
+  deduplicationKey String    @map("deduplication_key")
+  sentAt           DateTime  @default(now()) @map("sent_at")
+  deliveredAt      DateTime? @map("delivered_at")
+
+  @@index([userId, sentAt])
+  @@index([deduplicationKey])
+  @@index([portfolioId, notificationType, sentAt])
+  @@map("email_logs")
 }
 
 // Cron job execution log
