@@ -141,8 +141,8 @@ export class PortfolioConfigurationService {
 
       // Risk parameters
       maintenanceMarginRatio: portfolio.maintenanceMarginRatio,
-      safeMarginRatio: null, // Field not yet in DB schema
-      criticalMarginRatio: null, // Field not yet in DB schema
+      safeMarginRatio: portfolio.safeMarginRatio,
+      criticalMarginRatio: portfolio.criticalMarginRatio,
 
       // Deploy signal thresholds
       drawdownRedeployThreshold: portfolio.drawdownRedeployThreshold,
@@ -275,13 +275,12 @@ export class PortfolioConfigurationService {
     if (dto.maintenanceMarginRatio !== undefined) {
       updateData.maintenanceMarginRatio = dto.maintenanceMarginRatio;
     }
-    // safeMarginRatio and criticalMarginRatio not yet in DB schema
-    // if (dto.safeMarginRatio !== undefined) {
-    //   updateData.safeMarginRatio = dto.safeMarginRatio;
-    // }
-    // if (dto.criticalMarginRatio !== undefined) {
-    //   updateData.criticalMarginRatio = dto.criticalMarginRatio;
-    // }
+    if (dto.safeMarginRatio !== undefined) {
+      updateData.safeMarginRatio = dto.safeMarginRatio;
+    }
+    if (dto.criticalMarginRatio !== undefined) {
+      updateData.criticalMarginRatio = dto.criticalMarginRatio;
+    }
 
     // Deploy signal thresholds
     if (dto.drawdownRedeployThreshold !== undefined) {
