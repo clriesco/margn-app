@@ -658,109 +658,133 @@ export default function Rebalance() {
                             >
                               {pos.action}
                             </div>
-                            {pos.action !== "HOLD" && (
-                              <>
-                                <div
-                                  style={{
-                                    fontSize: "1.25rem",
-                                    fontWeight: "600",
-                                    color: "var(--text-primary)",
-                                  }}
-                                >
-                                  {formatQuantity(Math.abs(pos.deltaQuantity), pos.assetSymbol, pos.assetType, requireWholeShares)}{" "}
-                                  <span
-                                    style={{
-                                      color: "var(--text-on-glass-muted)",
-                                      fontSize: "0.9rem",
-                                    }}
-                                  >
-                                    {isFractionalAsset(pos.assetSymbol, pos.assetType) ? "unidades" : "acciones"}
-                                  </span>
-                                </div>
-                                {confirmMode ? (
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "0.5rem",
-                                      marginTop: "0.25rem",
-                                    }}
-                                  >
-                                    <span style={{ color: "var(--text-on-glass-muted)", fontSize: "0.85rem" }}>@</span>
-                                    <div style={{ position: "relative" }}>
-                                      <span style={{
-                                        position: "absolute",
-                                        left: "0.5rem",
-                                        top: "50%",
-                                        transform: "translateY(-50%)",
-                                        color: "var(--text-on-glass-muted)",
-                                        fontSize: "0.85rem",
-                                        pointerEvents: "none",
-                                      }}>$</span>
-                                      <input
-                                        type="number"
-                                        step="0.01"
-                                        value={executionPrices[pos.assetId] ?? pos.currentPrice}
-                                        onChange={(e) => {
-                                          const val = parseFloat(e.target.value);
-                                          if (!isNaN(val) && val > 0) {
-                                            setExecutionPrices((prev) => ({
-                                              ...prev,
-                                              [pos.assetId]: val,
-                                            }));
-                                          }
-                                        }}
-                                        style={{
-                                          width: "120px",
-                                          padding: "0.375rem 0.5rem 0.375rem 1.25rem",
-                                          background: "var(--bg-glass)",
-                                          border: executionPrices[pos.assetId] !== pos.currentPrice
-                                            ? "1px solid #a78bfa"
-                                            : "1px solid var(--border)",
-                                          borderRadius: "6px",
-                                          color: "var(--text-primary)",
-                                          fontSize: "0.85rem",
-                                          fontFamily: "inherit",
-                                        }}
-                                      />
+                            {pos.action !== "HOLD" && (() => {
+                              const execPrice = confirmMode
+                                ? (executionPrices[pos.assetId] ?? pos.currentPrice)
+                                : (appliedPrices[pos.assetId] ?? pos.currentPrice);
+                              const totalUsd = Math.abs(pos.deltaQuantity) * execPrice;
+                              const qtyLabel = isFractionalAsset(pos.assetSymbol, pos.assetType) ? "unidades" : "acciones";
+
+                              return (
+                                <>
+                                  {/* Primary: USD amount when fractional, quantity when whole shares */}
+                                  {!requireWholeShares ? (
+                                    <div
+                                      style={{
+                                        fontSize: "1.25rem",
+                                        fontWeight: "700",
+                                        color: "var(--text-primary)",
+                                      }}
+                                    >
+                                      {formatCurrencyES(totalUsd)}
                                     </div>
-                                    {executionPrices[pos.assetId] !== undefined &&
-                                      executionPrices[pos.assetId] !== pos.currentPrice && (
-                                      <span
-                                        style={{
-                                          color: "var(--text-on-glass-muted)",
-                                          fontSize: "0.75rem",
-                                          textDecoration: "line-through",
-                                          opacity: 0.6,
-                                        }}
-                                      >
-                                        {formatCurrencyES(pos.currentPrice, { maximumFractionDigits: 2 })}
+                                  ) : (
+                                    <div
+                                      style={{
+                                        fontSize: "1.25rem",
+                                        fontWeight: "600",
+                                        color: "var(--text-primary)",
+                                      }}
+                                    >
+                                      {formatQuantity(Math.abs(pos.deltaQuantity), pos.assetSymbol, pos.assetType, requireWholeShares)}{" "}
+                                      <span style={{ color: "var(--text-on-glass-muted)", fontSize: "0.9rem" }}>
+                                        {qtyLabel}
                                       </span>
-                                    )}
-                                    <span style={{ color: "var(--text-on-glass-muted)", fontSize: "0.85rem" }}>
-                                      ≈ {formatCurrencyES(
-                                        Math.abs(pos.deltaQuantity) * (executionPrices[pos.assetId] ?? pos.currentPrice)
+                                    </div>
+                                  )}
+
+                                  {/* Secondary line: quantity (fractional mode) or price+total (whole mode) */}
+                                  {confirmMode ? (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "0.5rem",
+                                        marginTop: "0.25rem",
+                                        justifyContent: "flex-end",
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      {!requireWholeShares && (
+                                        <span style={{ color: "var(--text-on-glass-muted)", fontSize: "0.8rem" }}>
+                                          {formatQuantity(Math.abs(pos.deltaQuantity), pos.assetSymbol, pos.assetType, requireWholeShares)} {qtyLabel}
+                                        </span>
                                       )}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div
-                                    style={{
-                                      color: "var(--text-on-glass-muted)",
-                                      fontSize: "0.85rem",
-                                    }}
-                                  >
-                                    @{" "}
-                                    {formatCurrencyES(appliedPrices[pos.assetId] ?? pos.currentPrice, {
-                                      maximumFractionDigits: 2,
-                                    })}{" "}
-                                    ≈ {formatCurrencyES(
-                                      Math.abs(pos.deltaQuantity) * (appliedPrices[pos.assetId] ?? pos.currentPrice)
-                                    )}
-                                  </div>
-                                )}
-                              </>
-                            )}
+                                      <span style={{ color: "var(--text-on-glass-muted)", fontSize: "0.85rem" }}>@</span>
+                                      <div style={{ position: "relative" }}>
+                                        <span style={{
+                                          position: "absolute",
+                                          left: "0.5rem",
+                                          top: "50%",
+                                          transform: "translateY(-50%)",
+                                          color: "var(--text-on-glass-muted)",
+                                          fontSize: "0.85rem",
+                                          pointerEvents: "none",
+                                        }}>$</span>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={executionPrices[pos.assetId] ?? pos.currentPrice}
+                                          onChange={(e) => {
+                                            const val = parseFloat(e.target.value);
+                                            if (!isNaN(val) && val > 0) {
+                                              setExecutionPrices((prev) => ({
+                                                ...prev,
+                                                [pos.assetId]: val,
+                                              }));
+                                            }
+                                          }}
+                                          style={{
+                                            width: "120px",
+                                            padding: "0.375rem 0.5rem 0.375rem 1.25rem",
+                                            background: "var(--bg-glass)",
+                                            border: executionPrices[pos.assetId] !== pos.currentPrice
+                                              ? "1px solid #a78bfa"
+                                              : "1px solid var(--border)",
+                                            borderRadius: "6px",
+                                            color: "var(--text-primary)",
+                                            fontSize: "0.85rem",
+                                            fontFamily: "inherit",
+                                          }}
+                                        />
+                                      </div>
+                                      {executionPrices[pos.assetId] !== undefined &&
+                                        executionPrices[pos.assetId] !== pos.currentPrice && (
+                                        <span
+                                          style={{
+                                            color: "var(--text-on-glass-muted)",
+                                            fontSize: "0.75rem",
+                                            textDecoration: "line-through",
+                                            opacity: 0.6,
+                                          }}
+                                        >
+                                          {formatCurrencyES(pos.currentPrice, { maximumFractionDigits: 2 })}
+                                        </span>
+                                      )}
+                                      {requireWholeShares && (
+                                        <span style={{ color: "var(--text-on-glass-muted)", fontSize: "0.85rem" }}>
+                                          ≈ {formatCurrencyES(totalUsd)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div style={{ color: "var(--text-on-glass-muted)", fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                                      {!requireWholeShares ? (
+                                        <>
+                                          {formatQuantity(Math.abs(pos.deltaQuantity), pos.assetSymbol, pos.assetType, requireWholeShares)} {qtyLabel}{" "}
+                                          @ {formatCurrencyES(appliedPrices[pos.assetId] ?? pos.currentPrice, { maximumFractionDigits: 2 })}
+                                        </>
+                                      ) : (
+                                        <>
+                                          @ {formatCurrencyES(appliedPrices[pos.assetId] ?? pos.currentPrice, { maximumFractionDigits: 2 })}{" "}
+                                          ≈ {formatCurrencyES(totalUsd)}
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
 
