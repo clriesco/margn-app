@@ -22,7 +22,7 @@ import { RebalanceService, RebalanceProposal } from "./rebalance.service";
  */
 @Controller("portfolios/:portfolioId/rebalance")
 @UseGuards(AuthGuard, PortfolioOwnershipGuard, SubscriptionTierGuard)
-@RequireTier("pro")
+@RequireTier("starter")
 export class RebalanceController {
   constructor(private readonly rebalanceService: RebalanceService) {}
 

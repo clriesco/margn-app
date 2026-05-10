@@ -105,7 +105,6 @@ export default function DashboardSidebar({
       icon: Scale,
       path: "/dashboard/rebalance",
       color: "#a5b4fc",
-      requiredTier: "pro",
     },
     {
       label: "Sincronizar Posiciones",
@@ -118,7 +117,6 @@ export default function DashboardSidebar({
       icon: BarChart3,
       path: "/dashboard/backtest",
       color: "#f59e0b",
-      requiredTier: "pro",
     },
     {
       label: "Estrategias",

@@ -21,7 +21,7 @@ import { ExplainBacktestDto } from './dto/explain-backtest.dto';
 
 @Controller('backtest')
 @UseGuards(AuthGuard, SubscriptionTierGuard)
-@RequireTier('pro')
+@RequireTier('starter')
 export class BacktestController {
   constructor(
     private readonly backtestService: BacktestService,

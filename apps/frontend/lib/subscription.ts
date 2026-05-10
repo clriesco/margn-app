@@ -40,10 +40,9 @@ export const PLANS: PlanDefinition[] = [
     priceYearly: 0,
     priceYearlyTotal: 0,
     features: [
-      "1 portfolio",
-      "Hasta 5 activos",
-      "Rebalanceo con pesos manuales",
-      "Métricas básicas",
+      "Portfolios ilimitados",
+      "Activos ilimitados",
+      "Todas las funcionalidades",
       "Soporte comunidad",
     ],
   },
@@ -55,7 +54,7 @@ export const PLANS: PlanDefinition[] = [
     priceYearlyTotal: 180,
     highlighted: true,
     features: [
-      "Hasta 3 portfolios",
+      "Portfolios ilimitados",
       "Activos ilimitados",
       "Optimización Sharpe dinámico",
       "Señales DCA condicional",

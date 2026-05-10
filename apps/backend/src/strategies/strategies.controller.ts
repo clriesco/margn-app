@@ -43,7 +43,7 @@ export class StrategiesController {
   ) {}
 
   @Post()
-  @RequireTier('pro')
+  @RequireTier('starter')
   async create(@Request() req: any, @Body() dto: CreateStrategyDto) {
     return this.strategiesService.create(req.user.id, dto);
   }
@@ -72,7 +72,7 @@ export class StrategiesController {
   }
 
   @Patch(':id')
-  @RequireTier('pro')
+  @RequireTier('starter')
   async update(
     @Request() req: any,
     @Param('id') id: string,
@@ -82,7 +82,7 @@ export class StrategiesController {
   }
 
   @Patch(':id/visibility')
-  @RequireTier('pro')
+  @RequireTier('starter')
   async updateVisibility(
     @Request() req: any,
     @Param('id') id: string,
@@ -96,13 +96,13 @@ export class StrategiesController {
   }
 
   @Delete(':id')
-  @RequireTier('pro')
+  @RequireTier('starter')
   async delete(@Request() req: any, @Param('id') id: string) {
     return this.strategiesService.delete(req.user.id, id);
   }
 
   @Post(':id/analyze')
-  @RequireTier('pro')
+  @RequireTier('starter')
   async analyzeStrategy(
     @Request() req: any,
     @Param('id') id: string,
@@ -134,7 +134,7 @@ export class StrategiesController {
   }
 
   @Post(':id/create-portfolio')
-  @RequireTier('pro')
+  @RequireTier('starter')
   async createPortfolioFromStrategy(
     @Request() req: any,
     @Param('id') id: string,
