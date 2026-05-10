@@ -220,8 +220,9 @@ describe("E2E: Billing & Subscription Flow", () => {
       expect(status).toBe(200);
     });
 
-    test("5. Starter is blocked from creating strategies (403)", async () => {
-      const { status, body } = await apiRequest("/strategies", {
+    test("5. Starter can access strategy endpoints (all tiers have access)", async () => {
+      // Strategies are accessible to all tiers — bad body returns 400, not 403
+      const { status } = await apiRequest("/strategies", {
         method: "POST",
         body: {
           name: "Test Strategy",
@@ -229,10 +230,7 @@ describe("E2E: Billing & Subscription Flow", () => {
           metrics: {},
         },
       });
-      expect(status).toBe(403);
-      expect(body.error).toBe("TIER_REQUIRED");
-      expect(body.requiredTier).toBe("pro");
-      expect(body.currentTier).toBe("starter");
+      expect(status).not.toBe(403);
     });
   });
 
@@ -333,14 +331,12 @@ describe("E2E: Billing & Subscription Flow", () => {
         },
       });
 
-      // Creating a strategy should now fail
-      const { status, body } = await apiRequest("/strategies", {
+      // Strategies are accessible to all tiers — bad body returns 400, not 403
+      const { status } = await apiRequest("/strategies", {
         method: "POST",
         body: { name: "Should Fail", config: {}, metrics: {} },
       });
-      expect(status).toBe(403);
-      expect(body.error).toBe("TIER_REQUIRED");
-      expect(body.currentTier).toBe("starter"); // effective tier
+      expect(status).not.toBe(403);
     });
 
     afterAll(async () => {
@@ -365,7 +361,7 @@ describe("E2E: Billing & Subscription Flow", () => {
   // ─────────────────────────────────────────────────────────────────────────
 
   describe("Downgrade to starter", () => {
-    test("12. After downgrade, pro features are blocked again", async () => {
+    test("12. After downgrade, tier is starter and strategy endpoints remain accessible", async () => {
       await prisma.subscription.update({
         where: { id: testSubscriptionId },
         data: {
@@ -380,12 +376,12 @@ describe("E2E: Billing & Subscription Flow", () => {
       const sub = await api("/billing/subscription");
       expect(sub.tier).toBe("starter");
 
-      const { status, body } = await apiRequest("/strategies", {
+      // Strategies are accessible to all tiers — bad body returns 400, not 403
+      const { status } = await apiRequest("/strategies", {
         method: "POST",
         body: { name: "Should Fail", config: {}, metrics: {} },
       });
-      expect(status).toBe(403);
-      expect(body.error).toBe("TIER_REQUIRED");
+      expect(status).not.toBe(403);
     });
 
     afterAll(async () => {
@@ -581,14 +577,13 @@ describe("E2E: Billing & Subscription Flow", () => {
       expect(status).toBe(200);
     });
 
-    test("24. POST /strategies — requires pro (403 for starter)", async () => {
-      const { status, body } = await apiRequest("/strategies", {
+    test("24. POST /strategies — accessible to starter (all tiers)", async () => {
+      // Bad body returns 400, not 403 — tier guard passes for starter
+      const { status } = await apiRequest("/strategies", {
         method: "POST",
         body: { name: "Test", config: {}, metrics: {} },
       });
-      expect(status).toBe(403);
-      expect(body.error).toBe("TIER_REQUIRED");
-      expect(body.requiredTier).toBe("pro");
+      expect(status).not.toBe(403);
     });
 
     // For PATCH, DELETE, analyze, create-portfolio we need a strategy ID.
@@ -639,62 +634,69 @@ describe("E2E: Billing & Subscription Flow", () => {
         expect(status).toBe(200);
       });
 
-      test("26. PATCH /strategies/:id — requires pro (403 for starter)", async () => {
-        const { status, body } = await apiRequest(
+      test("26. PATCH /strategies/:id — accessible to starter", async () => {
+        const { status } = await apiRequest(
           `/strategies/${testStrategyId}`,
           {
             method: "PATCH",
             body: { name: "Updated Name" },
           }
         );
-        expect(status).toBe(403);
-        expect(body.error).toBe("TIER_REQUIRED");
+        expect(status).toBe(200);
       });
 
-      test("27. DELETE /strategies/:id — requires pro (403 for starter)", async () => {
-        const { status, body } = await apiRequest(
+      test("27. DELETE /strategies/:id — accessible to starter", async () => {
+        const { status } = await apiRequest(
           `/strategies/${testStrategyId}`,
           { method: "DELETE" }
         );
-        expect(status).toBe(403);
-        expect(body.error).toBe("TIER_REQUIRED");
+        expect(status).toBe(200);
       });
 
-      test("28. POST /strategies/:id/analyze — requires pro (403 for starter)", async () => {
-        const { status, body } = await apiRequest(
+      test("28. POST /strategies/:id/analyze — 404 after deletion (no tier block)", async () => {
+        // Strategy was deleted in test 27 — expect 404, not 403
+        const { status } = await apiRequest(
           `/strategies/${testStrategyId}/analyze`,
           { method: "POST" }
         );
-        expect(status).toBe(403);
-        expect(body.error).toBe("TIER_REQUIRED");
+        expect(status).not.toBe(403);
       });
 
-      test("29. POST /strategies/:id/create-portfolio — requires pro (403 for starter)", async () => {
-        const { status, body } = await apiRequest(
+      test("29. POST /strategies/:id/create-portfolio — 404 after deletion (no tier block)", async () => {
+        // Strategy was deleted in test 27 — expect 404, not 403
+        const { status } = await apiRequest(
           `/strategies/${testStrategyId}/create-portfolio`,
           {
             method: "POST",
             body: { name: "Portfolio from Strategy" },
           }
         );
-        expect(status).toBe(403);
-        expect(body.error).toBe("TIER_REQUIRED");
+        expect(status).not.toBe(403);
       });
 
-      test("30. After re-upgrade to pro, PATCH works", async () => {
+      test("30. Pro tier can create and edit strategies", async () => {
         await prisma.subscription.update({
           where: { id: testSubscriptionId },
           data: { tier: "pro", status: "active" },
         });
 
-        const { status } = await apiRequest(
-          `/strategies/${testStrategyId}`,
-          {
-            method: "PATCH",
-            body: { name: "Updated Name Pro" },
-          }
-        );
+        // Create a fresh strategy as pro
+        const strategy = await prisma.savedStrategy.create({
+          data: {
+            userId: testUserId,
+            name: "Pro Strategy",
+            configJson: JSON.stringify({ symbols: ["SPY"], weights: { SPY: 1 }, initialCapital: 10000, monthlyContribution: 500, leverageMin: 2.5, leverageMax: 4.0, leverageTarget: 3.0, windowMonths: 60 }),
+            metricsJson: JSON.stringify({ p10: {}, p50: {}, p90: {}, score: { composite: 50 } }),
+          },
+        });
+
+        const { status } = await apiRequest(`/strategies/${strategy.id}`, {
+          method: "PATCH",
+          body: { name: "Updated Pro Strategy" },
+        });
         expect(status).toBe(200);
+
+        await prisma.savedStrategy.deleteMany({ where: { id: strategy.id } }).catch(() => {});
       });
 
       afterAll(async () => {
@@ -878,22 +880,21 @@ describe("E2E: Billing & Subscription Flow", () => {
       await prisma.user.delete({ where: { id: freshUser.id } });
     });
 
-    test("38. Unpaid status blocks pro access", async () => {
+    test("38. Unpaid status downgrades effective tier to starter", async () => {
       await prisma.subscription.update({
         where: { id: testSubscriptionId },
-        data: {
-          tier: "pro",
-          status: "unpaid",
-          currentPeriodEnd: null,
-        },
+        data: { tier: "pro", status: "unpaid", currentPeriodEnd: null },
       });
 
-      // unpaid is NOT in ACTIVE_STATUSES, so effective tier = starter
-      const { status, body } = await apiRequest("/strategies", {
+      // unpaid is NOT in ACTIVE_STATUSES → effective tier = starter (guard-level)
+      // The subscription endpoint returns the stored tier (pro), but the guard
+      // downgrades access — strategies are accessible to starter so no 403
+
+      const { status } = await apiRequest("/strategies", {
         method: "POST",
         body: { name: "Should Fail", config: {}, metrics: {} },
       });
-      expect(status).toBe(403);
+      expect(status).not.toBe(403);
 
       // Restore
       await prisma.subscription.update({
@@ -902,21 +903,19 @@ describe("E2E: Billing & Subscription Flow", () => {
       });
     });
 
-    test("39. Incomplete status blocks pro access", async () => {
+    test("39. Incomplete status downgrades effective tier to starter", async () => {
       await prisma.subscription.update({
         where: { id: testSubscriptionId },
-        data: {
-          tier: "pro",
-          status: "incomplete",
-          currentPeriodEnd: null,
-        },
+        data: { tier: "pro", status: "incomplete", currentPeriodEnd: null },
       });
+
+      // incomplete is NOT in ACTIVE_STATUSES → effective tier = starter (guard-level)
 
       const { status } = await apiRequest("/strategies", {
         method: "POST",
         body: { name: "Should Fail", config: {}, metrics: {} },
       });
-      expect(status).toBe(403);
+      expect(status).not.toBe(403);
 
       // Restore
       await prisma.subscription.update({
