@@ -31,15 +31,12 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException("No token provided");
     }
 
-    console.log(`[AuthGuard] Verifying token (length: ${token.length})`);
     const user = await this.authService.verifySession(token);
 
     if (!user) {
       console.error("[AuthGuard] Token verification failed - invalid or expired token");
       throw new UnauthorizedException("Invalid or expired token");
     }
-
-    console.log(`[AuthGuard] Token verified successfully for user: ${user.email}`);
     // Attach user to request for use in controllers
     request.user = user;
 
