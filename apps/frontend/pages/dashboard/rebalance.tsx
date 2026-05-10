@@ -47,7 +47,7 @@ function formatQuantity(
   const fractional = requireWholeShares ? isFractionalAsset(symbol, assetType) : true;
   return formatNumberES(quantity, {
     minimumFractionDigits: 0,
-    maximumFractionDigits: fractional ? 6 : 0,
+    maximumFractionDigits: fractional ? 2 : 0,
   });
 }
 
