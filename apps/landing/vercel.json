@@ -1,6 +1,6 @@
 {
   "framework": "astro",
-  "installCommand": "npm install",
+  "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "ignoreCommand": "cd ../.. && git diff --quiet HEAD~1 -- apps/landing/"

@@ -1,0 +1,2 @@
+# Un-ignore lock file for deterministic Vercel builds (root .gitignore excludes it)
+!package-lock.json
