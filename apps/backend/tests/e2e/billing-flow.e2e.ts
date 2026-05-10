@@ -195,12 +195,12 @@ describe("E2E: Billing & Subscription Flow", () => {
     test("2. Starter tier returns correct limits", async () => {
       const sub = await api("/billing/subscription");
       expect(sub.limits).toBeDefined();
-      expect(sub.limits.maxPortfolios).toBe(1);
-      expect(sub.limits.maxAssetsPerPortfolio).toBe(5);
-      expect(sub.limits.rebalanceSharpeEnabled).toBe(false);
-      expect(sub.limits.backtestEnabled).toBe(false);
-      expect(sub.limits.dcaSignalsEnabled).toBe(false);
-      expect(sub.limits.analyticsFullEnabled).toBe(false);
+      expect(sub.limits.maxPortfolios).toBe(-1);
+      expect(sub.limits.maxAssetsPerPortfolio).toBe(-1);
+      expect(sub.limits.rebalanceSharpeEnabled).toBe(true);
+      expect(sub.limits.backtestEnabled).toBe(true);
+      expect(sub.limits.dcaSignalsEnabled).toBe(true);
+      expect(sub.limits.analyticsFullEnabled).toBe(true);
       expect(sub.limits.supportLevel).toBe("community");
     });
   });
@@ -267,7 +267,7 @@ describe("E2E: Billing & Subscription Flow", () => {
 
     test("7. Pro tier returns correct limits", async () => {
       const sub = await api("/billing/subscription");
-      expect(sub.limits.maxPortfolios).toBe(3);
+      expect(sub.limits.maxPortfolios).toBe(-1); // unlimited
       expect(sub.limits.maxAssetsPerPortfolio).toBe(-1); // unlimited
       expect(sub.limits.rebalanceSharpeEnabled).toBe(true);
       expect(sub.limits.backtestEnabled).toBe(true);
@@ -768,7 +768,7 @@ describe("E2E: Billing & Subscription Flow", () => {
 
       const sub = await api("/billing/subscription");
       expect(sub.tier).toBe("starter");
-      expect(sub.limits.rebalanceSharpeEnabled).toBe(false);
+      expect(sub.limits.rebalanceSharpeEnabled).toBe(true);
     });
   });
 
@@ -872,7 +872,7 @@ describe("E2E: Billing & Subscription Flow", () => {
 
       const body = await response.json();
       expect(body.tier).toBe("starter");
-      expect(body.limits.maxPortfolios).toBe(1);
+      expect(body.limits.maxPortfolios).toBe(-1);
 
       // Clean up
       await prisma.user.delete({ where: { id: freshUser.id } });

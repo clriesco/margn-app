@@ -94,6 +94,9 @@ model Portfolio {
   riskFreeRate                Float   @default(0.02) @map("risk_free_rate")
   optimizationObjective       String  @default("sharpe") @map("optimization_objective") // 'sharpe', 'sortino', 'calmar', 'ulcer'
 
+  // Broker settings
+  requireWholeShares          Boolean @default(false) @map("require_whole_shares") // false = fractional shares OK (Trade Republic); true = whole shares only (Quantfury)
+
   user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   targetAssets      PortfolioTargetAsset[]
   positions         PortfolioPosition[]

@@ -73,6 +73,7 @@ export default function Configuration() {
     sharpeWeightsLookbackMonths: 0,
     meanReturnShrinkage: 0.6,
     riskFreeRate: 0.02,
+    requireWholeShares: false,
     maintenanceMarginRatio: 0.05,
     safeMarginRatio: 0.15,
     criticalMarginRatio: 0.1,
@@ -149,6 +150,7 @@ export default function Configuration() {
             configData.sharpeWeightsLookbackMonths ?? 0,
           meanReturnShrinkage: configData.meanReturnShrinkage || 0.6,
           riskFreeRate: configData.riskFreeRate || 0.02,
+          requireWholeShares: configData.requireWholeShares ?? false,
           maintenanceMarginRatio: configData.maintenanceMarginRatio || 0.05,
           safeMarginRatio: configData.safeMarginRatio || 0.15,
           criticalMarginRatio: configData.criticalMarginRatio || 0.1,
@@ -1399,6 +1401,53 @@ export default function Configuration() {
                   </div>
                 </ConfigSection>
               )}
+
+              {/* Broker Settings */}
+              <ConfigSection
+                title={
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <Settings size={18} />
+                    Configuración del Broker
+                  </div>
+                }
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "0.75rem",
+                    cursor: "pointer",
+                    padding: "0.875rem 1rem",
+                    background: formData.requireWholeShares
+                      ? "rgba(59, 130, 246, 0.1)"
+                      : "var(--input-bg)",
+                    border: formData.requireWholeShares
+                      ? "1px solid rgba(59, 130, 246, 0.4)"
+                      : "1px solid var(--input-border)",
+                    borderRadius: "8px",
+                    maxWidth: "480px",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.requireWholeShares}
+                    onChange={(e) =>
+                      setFormData({ ...formData, requireWholeShares: e.target.checked })
+                    }
+                    style={{ accentColor: "#3b82f6", marginTop: "2px", flexShrink: 0 }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 500, fontSize: "0.9rem", marginBottom: "0.25rem" }}>
+                      Solo acciones completas (sin fracciones)
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                      Activa si tu broker no permite comprar fracciones (p. ej. Quantfury). El simulador
+                      redondeará las cantidades a la unidad más próxima para stocks, ETFs y commodities.
+                      Crypto y forex siempre son fraccionados.
+                    </div>
+                  </div>
+                </label>
+              </ConfigSection>
 
               {/* Submit button */}
               <div

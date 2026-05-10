@@ -158,6 +158,9 @@ export class PortfolioConfigurationService {
       riskFreeRate: portfolio.riskFreeRate,
       optimizationObjective: portfolio.optimizationObjective,
 
+      // Broker settings
+      requireWholeShares: portfolio.requireWholeShares,
+
       // Metadata
       updatedAt: portfolio.updatedAt.toISOString(),
     };
@@ -314,6 +317,11 @@ export class PortfolioConfigurationService {
     }
     if (dto.optimizationObjective !== undefined) {
       updateData.optimizationObjective = dto.optimizationObjective;
+    }
+
+    // Broker settings
+    if (dto.requireWholeShares !== undefined) {
+      updateData.requireWholeShares = dto.requireWholeShares;
     }
 
     // Update portfolio

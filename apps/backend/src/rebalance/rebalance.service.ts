@@ -259,7 +259,8 @@ export class RebalanceService {
       targetExposure,
       weightsToUse.weights,
       assets,
-      latestPrices
+      latestPrices,
+      portfolio.requireWholeShares
     );
 
     // 10. Actual exposure after rounding (sum of rounded position values)
@@ -1096,15 +1097,17 @@ export class RebalanceService {
   }
 
   /**
-   * Calculate target positions for each asset
-   * Rounds non-fractional assets (stocks, ETFs) to whole shares
+   * Calculate target positions for each asset.
+   * When requireWholeShares is true, rounds stocks/ETFs to whole shares (Quantfury style).
+   * When false (default), all assets are fractional (Trade Republic style).
    */
   private calculateTargetPositions(
     currentState: any,
     targetExposure: number,
     weights: Record<string, number>,
     assets: any[],
-    latestPrices: Record<string, number>
+    latestPrices: Record<string, number>,
+    requireWholeShares: boolean = false
   ): ProposalPosition[] {
     const positions: ProposalPosition[] = [];
     const { positionValues, positionQuantities, exposure } = currentState;
@@ -1123,8 +1126,11 @@ export class RebalanceService {
       // Calculate raw target quantity
       let targetQuantity = (targetExposure * weight) / price;
 
-      // Round to whole shares for non-fractional assets
-      const fractional = isFractionalAsset(asset.symbol, asset.assetType);
+      // When requireWholeShares is enabled, round non-fractional assets (stocks, ETFs,
+      // commodities) to whole shares. Crypto and forex remain fractional regardless.
+      const fractional = requireWholeShares
+        ? isFractionalAsset(asset.symbol, asset.assetType)
+        : true;
       if (!fractional) {
         targetQuantity = Math.round(targetQuantity);
       }
@@ -1135,7 +1141,7 @@ export class RebalanceService {
       const deltaQuantity = targetQuantity - currentQuantity;
       const deltaValue = targetValue - currentValue;
 
-      // Adjust threshold for action based on asset type
+      // Adjust threshold for action based on whether fractional trading is used
       const threshold = fractional ? 0.0001 : 0.5;
       let action: "BUY" | "SELL" | "HOLD" = "HOLD";
       if (deltaQuantity > threshold) {

@@ -166,6 +166,11 @@ export class UpdatePortfolioConfigurationDto {
   @IsString()
   @IsIn(["sharpe", "sortino", "calmar", "ulcer"])
   optimizationObjective?: string;
+
+  // Broker settings
+  @IsOptional()
+  @IsBoolean()
+  requireWholeShares?: boolean;
 }
 
 /**
@@ -218,6 +223,9 @@ export interface PortfolioConfigurationResponse {
   meanReturnShrinkage: number;
   riskFreeRate: number;
   optimizationObjective: string;
+
+  // Broker settings
+  requireWholeShares: boolean;
 
   // Metadata
   updatedAt: string;

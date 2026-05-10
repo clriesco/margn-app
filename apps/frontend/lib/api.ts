@@ -325,6 +325,7 @@ export interface PortfolioConfiguration {
   sharpeWeightsLookbackMonths: number;
   meanReturnShrinkage: number;
   riskFreeRate: number;
+  requireWholeShares: boolean;
   maxWeight: number;
   minWeight: number;
   targetWeights: TargetWeight[];
@@ -355,6 +356,7 @@ export interface UpdatePortfolioConfigurationDto {
   sharpeWeightsLookbackMonths?: number;
   meanReturnShrinkage?: number;
   riskFreeRate?: number;
+  requireWholeShares?: boolean;
   maxWeight?: number;
   minWeight?: number;
   targetWeights?: TargetWeight[];
