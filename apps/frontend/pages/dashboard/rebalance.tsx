@@ -7,12 +7,13 @@ import { usePageState } from "../../lib/hooks/use-page-state";
 import {
   getRebalanceSimulation,
   applyRebalanceSimulation,
+  getPortfolioConfiguration,
   RebalanceProposal,
 } from "../../lib/api";
 import DashboardSidebar from "../../components/DashboardSidebar";
 import { LegalDisclaimer } from "../../components/LegalDisclaimer";
 import { invalidatePortfolioCache } from "../../lib/hooks/use-portfolio-data";
-import { DollarSign, Lightbulb, Brain, ClipboardList } from "lucide-react";
+import { DollarSign, Lightbulb, Brain, ClipboardList, Settings } from "lucide-react";
 import {
   formatCurrencyES,
   formatPercentES,
@@ -33,11 +34,17 @@ function isFractionalAsset(symbol: string, assetType?: string): boolean {
 }
 
 /**
- * Format quantity based on asset type
- * Fractional assets: up to 6 decimals, whole share assets: 0 decimals
+ * Format quantity based on broker setting and asset type.
+ * When requireWholeShares is false (default), all assets show decimals.
+ * When true, only crypto/forex show decimals; stocks/ETFs show integers.
  */
-function formatQuantity(quantity: number, symbol: string, assetType?: string): string {
-  const fractional = isFractionalAsset(symbol, assetType);
+function formatQuantity(
+  quantity: number,
+  symbol: string,
+  assetType?: string,
+  requireWholeShares?: boolean
+): string {
+  const fractional = requireWholeShares ? isFractionalAsset(symbol, assetType) : true;
   return formatNumberES(quantity, {
     minimumFractionDigits: 0,
     maximumFractionDigits: fractional ? 6 : 0,
@@ -54,6 +61,7 @@ export default function Rebalance() {
   const { activePortfolioId: portfolioId } = usePortfolio();
 
   const [proposal, setProposal] = useState<RebalanceProposal | null>(null);
+  const [requireWholeShares, setRequireWholeShares] = useState(false);
   const [isCalculating, setIsCalculating] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -97,9 +105,12 @@ export default function Rebalance() {
       setError("");
 
       try {
-        // Get rebalance simulation from backend
-        const proposalData = await getRebalanceSimulation(portfolioId);
+        const [proposalData, configData] = await Promise.all([
+          getRebalanceSimulation(portfolioId),
+          getPortfolioConfiguration(portfolioId),
+        ]);
         setProposal(proposalData);
+        setRequireWholeShares(configData.requireWholeShares ?? false);
       } catch (err) {
         console.error("Error calculating proposal:", err);
         setError(
@@ -452,26 +463,27 @@ export default function Rebalance() {
                     gap: "1rem",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                    <span
-                      style={{
-                        color: "var(--text-on-glass-muted)",
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      Pesos:
-                    </span>
-                    <span
-                      style={{
-                        color: proposal.dynamicWeightsComputed
-                          ? "#a78bfa"
-                          : "var(--text-muted)",
-                        fontSize: "0.85rem",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                      }}
-                    >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                      <span
+                        style={{
+                          color: "var(--text-on-glass-muted)",
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        Pesos:
+                      </span>
+                      <span
+                        style={{
+                          color: proposal.dynamicWeightsComputed
+                            ? "#a78bfa"
+                            : "var(--text-muted)",
+                          fontSize: "0.85rem",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                        }}
+                      >
                         {proposal.dynamicWeightsComputed ? (
                           <>
                             <Brain size={16} />
@@ -480,7 +492,27 @@ export default function Rebalance() {
                         ) : (
                           <span>Estáticos (Configuración del portfolio)</span>
                         )}
-                    </span>
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                      <span style={{ color: "var(--text-on-glass-muted)", fontSize: "0.85rem" }}>
+                        Cantidades:
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "0.8rem",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.375rem",
+                          color: requireWholeShares ? "var(--text-secondary)" : "#34d399",
+                        }}
+                      >
+                        <Settings size={13} />
+                        {requireWholeShares
+                          ? "Solo acciones completas — crypto y forex siguen siendo fraccionados"
+                          : "Acciones fraccionadas permitidas — las cantidades pueden tener decimales"}
+                      </span>
+                    </div>
                   </div>
                   <div
                     style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}
@@ -635,7 +667,7 @@ export default function Rebalance() {
                                     color: "var(--text-primary)",
                                   }}
                                 >
-                                  {formatQuantity(Math.abs(pos.deltaQuantity), pos.assetSymbol, pos.assetType)}{" "}
+                                  {formatQuantity(Math.abs(pos.deltaQuantity), pos.assetSymbol, pos.assetType, requireWholeShares)}{" "}
                                   <span
                                     style={{
                                       color: "var(--text-on-glass-muted)",
@@ -745,13 +777,13 @@ export default function Rebalance() {
                         >
                           <span>
                             Actual:{" "}
-                            {formatQuantity(pos.currentQuantity, pos.assetSymbol, pos.assetType)}{" "}
+                            {formatQuantity(pos.currentQuantity, pos.assetSymbol, pos.assetType, requireWholeShares)}{" "}
                             ({formatCurrencyES(pos.currentValue)})
                           </span>
                           <span>→</span>
                           <span>
                             Objetivo:{" "}
-                            {formatQuantity(pos.targetQuantity, pos.assetSymbol, pos.assetType)}{" "}
+                            {formatQuantity(pos.targetQuantity, pos.assetSymbol, pos.assetType, requireWholeShares)}{" "}
                             ({formatCurrencyES(pos.targetValue)})
                           </span>
                         </div>
