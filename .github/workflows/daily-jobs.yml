@@ -1,9 +1,9 @@
 name: Daily Jobs
 
+# Periodic execution now runs in-process inside the backend (Railway) via the
+# CronScheduler, gated by the CRON_ENABLED env var. This workflow is kept for
+# manual, on-demand runs only (backfills / reruns).
 on:
-  schedule:
-    # Run all update scripts every 6 hours
-    - cron: "0 */6 * * *"
   workflow_dispatch:
     inputs:
       job:
@@ -42,7 +42,7 @@ jobs:
         id: check
         run: |
           INPUT_ENV="${{ github.event.inputs.environment }}"
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "$INPUT_ENV" = "both" ] || [ "$INPUT_ENV" = "${{ matrix.env_name }}" ]; then
+          if [ "$INPUT_ENV" = "both" ] || [ "$INPUT_ENV" = "${{ matrix.env_name }}" ]; then
             echo "should_run=true" >> $GITHUB_OUTPUT
           else
             echo "should_run=false" >> $GITHUB_OUTPUT
@@ -70,7 +70,7 @@ jobs:
       - name: Price Ingestion (${{ matrix.env_name }})
         if: |
           steps.check.outputs.should_run == 'true' &&
-          (github.event_name == 'schedule' || github.event.inputs.job == 'all' || github.event.inputs.job == 'prices')
+          (github.event.inputs.job == 'all' || github.event.inputs.job == 'prices')
         working-directory: infra/scripts
         run: npx ts-node price-ingestion.ts
         env:
@@ -79,7 +79,7 @@ jobs:
       - name: Metrics Refresh (${{ matrix.env_name }})
         if: |
           steps.check.outputs.should_run == 'true' &&
-          (github.event_name == 'schedule' || github.event.inputs.job == 'all' || github.event.inputs.job == 'metrics')
+          (github.event.inputs.job == 'all' || github.event.inputs.job == 'metrics')
         working-directory: infra/scripts
         run: npx ts-node metrics-refresh.ts
         env:
@@ -88,7 +88,7 @@ jobs:
       - name: Daily Check (${{ matrix.env_name }})
         if: |
           steps.check.outputs.should_run == 'true' &&
-          (github.event_name == 'schedule' || github.event.inputs.job == 'all' || github.event.inputs.job == 'daily-check')
+          (github.event.inputs.job == 'all' || github.event.inputs.job == 'daily-check')
         working-directory: infra/scripts
         run: npx ts-node daily-check.ts
         env:
