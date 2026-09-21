@@ -1,6 +1,12 @@
 /**
  * Backtest metrics calculations
  * CAGR, Sharpe, drawdown, recovery, margin call detection
+ *
+ * Strategy metrics (CAGR, Sharpe, drawdown, recovery) are computed on the TIME-WEIGHTED
+ * return series, which strips contributions out. A contribution is money the investor
+ * added, not something the portfolio earned: counting it as a return inflates CAGR and
+ * Sharpe, and hides part of every drawdown behind the deposits that arrived during it.
+ * XIRR answers the other question - what each contributed dollar earned - and is unchanged.
  */
 
 import type { PortfolioState, WindowMetrics } from '../types';
@@ -55,26 +61,24 @@ export function calculateWindowMetrics(
   const totalInvested = firstEquity + totalContributed;
   const returnPercent = totalInvested > 0 ? absoluteReturn / totalInvested : 0;
 
-  // CAGR
-  const years = states.length / 252;
-  const cagr = years > 0 && firstEquity > 0
-    ? Math.pow(finalCapital / firstEquity, 1 / years) - 1
-    : 0;
+  // Time-weighted daily returns and the growth index they compound into.
+  const { dailyReturns, index: twrIndex } = timeWeightedReturns(
+    states, contributions, contributionIndices
+  );
 
-  // Daily returns (excluding contribution days to avoid spikes)
-  const dailyReturns: number[] = [];
-  for (let i = 1; i < states.length; i++) {
-    if (states[i - 1].equity > 0) {
-      dailyReturns.push(states[i].equity / states[i - 1].equity - 1);
-    }
-  }
+  // CAGR: annualized time-weighted return. finalCapital / firstEquity would count every
+  // contribution as profit - 40k growing to 177k looks like 35% a year when 59k of it was
+  // deposited. XIRR is the money-weighted counterpart.
+  const years = states.length / 252;
+  const growth = twrIndex[twrIndex.length - 1];
+  const cagr = years > 0 && growth > 0 ? Math.pow(growth, 1 / years) - 1 : 0;
 
   // Sharpe
   const sharpe = calculateSharpe(dailyReturns, riskFreeRate);
 
-  // Max drawdown and recovery
+  // Max drawdown and recovery, on the time-weighted index: a deposit is not a recovery.
   let maxDrawdown = 0;
-  let peakEquity = states[0].equity;
+  let peakIndex = twrIndex[0];
   let maxRecoveryDays = 0;
   let currentRecovery = 0;
   let underwaterDays = 0;
@@ -88,11 +92,11 @@ export function calculateWindowMetrics(
   for (let i = 0; i < states.length; i++) {
     const state = states[i];
 
-    if (state.equity > peakEquity) {
-      peakEquity = state.equity;
+    if (twrIndex[i] > peakIndex) {
+      peakIndex = twrIndex[i];
       currentRecovery = 0;
     } else {
-      const dd = state.equity / peakEquity - 1;
+      const dd = twrIndex[i] / peakIndex - 1;
       if (dd < maxDrawdown) maxDrawdown = dd;
       currentRecovery++;
       if (currentRecovery > maxRecoveryDays) {
@@ -149,6 +153,36 @@ export function calculateWindowMetrics(
     marginCall: false,
     finalLeverage: lastState.leverage,
   };
+}
+
+/**
+ * Time-weighted returns: each day's return with that day's contribution taken out.
+ *
+ * `contributionIndices[k]` is the state index whose equity already includes
+ * `contributions[k]`, so that day's return is (equity - contribution) / previous equity - 1.
+ * Returns the daily returns (one per state after the first) and the growth index they
+ * compound into, which starts at 1 and has one entry per state.
+ */
+export function timeWeightedReturns(
+  states: PortfolioState[],
+  contributions: number[] = [],
+  contributionIndices: number[] = []
+): { dailyReturns: number[]; index: number[] } {
+  const flows = new Map<number, number>();
+  for (let k = 0; k < contributions.length; k++) {
+    const at = contributionIndices[k];
+    if (at !== undefined) flows.set(at, (flows.get(at) ?? 0) + contributions[k]);
+  }
+
+  const dailyReturns: number[] = [];
+  const index: number[] = [1];
+  for (let i = 1; i < states.length; i++) {
+    const previous = states[i - 1].equity;
+    const r = previous > 0 ? (states[i].equity - (flows.get(i) ?? 0)) / previous - 1 : 0;
+    if (previous > 0) dailyReturns.push(r);
+    index.push(index[i - 1] * (1 + r));
+  }
+  return { dailyReturns, index };
 }
 
 /**

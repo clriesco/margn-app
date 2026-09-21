@@ -1,4 +1,6 @@
-import { calculateWindowMetrics, calculateSharpe, selectPercentileWindow } from '../engine/metrics';
+import {
+  calculateWindowMetrics, calculateSharpe, selectPercentileWindow, timeWeightedReturns,
+} from '../engine/metrics';
 import type { PortfolioState, WindowMetrics } from '../types';
 
 describe('metrics', () => {
@@ -146,6 +148,78 @@ describe('metrics', () => {
       // Day 60-89: invested = 11000, equity ~11818 and grows
       // Day 90-99: invested = 11500, equity ~12727 and grows
       expect(metrics.underwaterDays).toBe(0);
+    });
+  });
+
+  describe('contributions are not returns', () => {
+    // 252 days of FLAT prices with a 1,000 contribution every 21 days: the portfolio earned
+    // nothing, so every strategy metric must say nothing was earned.
+    function flatWithContributions() {
+      const states: PortfolioState[] = [];
+      const contributions: number[] = [];
+      const contributionIndices: number[] = [];
+      let equity = 40000;
+      for (let d = 0; d < 252; d++) {
+        if (d > 0 && d % 21 === 0) {
+          equity += 1000;
+          contributions.push(1000);
+          contributionIndices.push(d);
+        }
+        states.push(makeState(d, equity));
+      }
+      return { states, contributions, contributionIndices };
+    }
+
+    it('reports zero CAGR when the only growth is deposits', () => {
+      const { states, contributions, contributionIndices } = flatWithContributions();
+      const total = contributions.reduce((a, b) => a + b, 0);
+      const metrics = calculateWindowMetrics(
+        states, total, 0.02, 0, '2020-01-01', '2020-12-31', contributions, contributionIndices
+      );
+
+      expect(metrics.finalCapital).toBe(40000 + total);
+      expect(metrics.cagr).toBeCloseTo(0, 10); // was ~ +27%: 51k / 40k
+      expect(metrics.returnPercent).toBeCloseTo(0, 10);
+    });
+
+    it('does not let deposits inflate the Sharpe ratio', () => {
+      const { states, contributions, contributionIndices } = flatWithContributions();
+      const { dailyReturns } = timeWeightedReturns(states, contributions, contributionIndices);
+
+      expect(dailyReturns).toHaveLength(251);
+      expect(dailyReturns.every((r) => Math.abs(r) < 1e-12)).toBe(true);
+      // With no volatility left, Sharpe falls back to 0 instead of a large positive number.
+      const metrics = calculateWindowMetrics(
+        states, 11000, 0.02, 0, '2020-01-01', '2020-12-31', contributions, contributionIndices
+      );
+      expect(metrics.sharpe).toBe(0);
+    });
+
+    it('does not let a deposit hide a drawdown', () => {
+      // Prices fall 10% on the very day a 1,000 contribution arrives: equity goes
+      // 10,000 -> 9,000 + 1,000 = 10,000 and looks flat. The strategy still lost 10%.
+      const states = [makeState(0, 10000), makeState(1, 10000), makeState(2, 10000)];
+      const metrics = calculateWindowMetrics(
+        states, 1000, 0.02, 0, '2020-01-01', '2020-01-03', [1000], [1]
+      );
+
+      expect(metrics.maxDrawdownEquity).toBeCloseTo(-0.1, 10); // was 0
+      expect(metrics.recoveryDays).toBeGreaterThanOrEqual(2); // a deposit is not a recovery
+    });
+
+    it('matches plain equity returns when there are no contributions', () => {
+      const states = [makeState(0, 100), makeState(1, 110), makeState(2, 99)];
+      const { dailyReturns, index } = timeWeightedReturns(states);
+
+      expect(dailyReturns[0]).toBeCloseTo(0.1, 12);
+      expect(dailyReturns[1]).toBeCloseTo(-0.1, 12);
+      expect(index[2]).toBeCloseTo(0.99, 12);
+    });
+
+    it('sums contributions that land on the same day', () => {
+      const states = [makeState(0, 1000), makeState(1, 1300)];
+      const { dailyReturns } = timeWeightedReturns(states, [100, 200], [1, 1]);
+      expect(dailyReturns[0]).toBeCloseTo(0, 12);
     });
   });
 
