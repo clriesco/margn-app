@@ -215,7 +215,7 @@ IMPORTANTE:
 - CAGR: ${formatPct(p10.cagr)}, Sharpe: ${p10.sharpe.toFixed(2)}
 - Max drawdown: ${formatPct(p10.maxDrawdownEquity)}, Recovery: ${p10.recoveryDays} días
 - Días bajo el agua: ${p10.underwaterDays}
-- Retornos mensuales: ${this.formatMonthlyReturns(p10.monthlyReturns)}
+- Retornos mensuales (time-weighted, sin contar aportaciones): ${this.formatMonthlyReturns(p10.monthlyReturns)}
 
 **Escenario P50 (mediana):**
 - Período: ${p50.startDate} a ${p50.endDate}
@@ -223,7 +223,7 @@ IMPORTANTE:
 - CAGR: ${formatPct(p50.cagr)}, Sharpe: ${p50.sharpe.toFixed(2)}
 - Max drawdown: ${formatPct(p50.maxDrawdownEquity)}, Recovery: ${p50.recoveryDays} días
 - Días bajo el agua: ${p50.underwaterDays}
-- Retornos mensuales: ${this.formatMonthlyReturns(p50.monthlyReturns)}
+- Retornos mensuales (time-weighted, sin contar aportaciones): ${this.formatMonthlyReturns(p50.monthlyReturns)}
 
 **Escenario P90 (mejor 10%):**
 - Período: ${p90.startDate} a ${p90.endDate}
@@ -231,7 +231,7 @@ IMPORTANTE:
 - CAGR: ${formatPct(p90.cagr)}, Sharpe: ${p90.sharpe.toFixed(2)}
 - Max drawdown: ${formatPct(p90.maxDrawdownEquity)}, Recovery: ${p90.recoveryDays} días
 - Días bajo el agua: ${p90.underwaterDays}
-- Retornos mensuales: ${this.formatMonthlyReturns(p90.monthlyReturns)}
+- Retornos mensuales (time-weighted, sin contar aportaciones): ${this.formatMonthlyReturns(p90.monthlyReturns)}
 
 Analiza estos resultados conectando los retornos mensuales con eventos macro y ciclos de mercado específicos.`;
 

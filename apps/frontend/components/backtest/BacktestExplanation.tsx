@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import type { BacktestResult, WindowMetrics, WindowTrajectory } from '../../lib/backtest/types';
+import { monthlyTimeWeightedReturns } from '../../lib/backtest/engine/metrics';
+import type { BacktestResult, WindowMetrics } from '../../lib/backtest/types';
 import { renderMarkdown } from '../../lib/render-markdown';
 
 interface Props {
@@ -37,36 +38,6 @@ const sanitize = {
   num: (v: number): number => (Number.isFinite(v) ? v : 0),
 };
 
-// Get equity at end of each month for monthly returns
-function getMonthlyEquityReturns(trajectory: WindowTrajectory): Record<string, number> {
-  const { states } = trajectory;
-  if (!states || states.length === 0) return {};
-
-  const monthEndStates: Record<string, { equity: number; date: string }> = {};
-
-  for (const state of states) {
-    const month = state.date.substring(0, 7);
-    monthEndStates[month] = { equity: state.equity, date: state.date };
-  }
-
-  const months = Object.keys(monthEndStates).sort();
-  const monthlyReturns: Record<string, number> = {};
-
-  for (let i = 1; i < months.length; i++) {
-    const prevMonth = months[i - 1];
-    const currMonth = months[i];
-    const prevEquity = monthEndStates[prevMonth].equity;
-    const currEquity = monthEndStates[currMonth].equity;
-
-    if (prevEquity > 0) {
-      const ret = (currEquity - prevEquity) / prevEquity;
-      monthlyReturns[currMonth] = sanitize.returnPct(ret);
-    }
-  }
-
-  return monthlyReturns;
-}
-
 const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ result }, ref) => {
   const { getToken } = useAuth();
   const [state, setState] = useState<ExplanationState>('idle');
@@ -87,7 +58,14 @@ const BacktestExplanation = forwardRef<BacktestExplanationHandle, Props>(({ resu
 
     const buildScenario = (s: WindowMetrics) => {
       const trajectory = result.trajectories[s.windowIndex];
-      const monthlyReturns = trajectory ? getMonthlyEquityReturns(trajectory) : {};
+      // Time-weighted, so a month's return is what the portfolio earned, not what was deposited
+      const monthlyReturns: Record<string, number> = {};
+      if (trajectory) {
+        const raw = monthlyTimeWeightedReturns(
+          trajectory.states, trajectory.contributions, trajectory.contributionIndices
+        );
+        for (const month of Object.keys(raw)) monthlyReturns[month] = sanitize.returnPct(raw[month]);
+      }
 
       return {
         startDate: s.startDate,

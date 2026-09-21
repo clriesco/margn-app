@@ -1,5 +1,6 @@
 import {
   calculateWindowMetrics, calculateSharpe, selectPercentileWindow, timeWeightedReturns,
+  monthlyTimeWeightedReturns,
 } from '../engine/metrics';
 import type { PortfolioState, WindowMetrics } from '../types';
 
@@ -205,6 +206,21 @@ describe('metrics', () => {
 
       expect(metrics.maxDrawdownEquity).toBeCloseTo(-0.1, 10); // was 0
       expect(metrics.recoveryDays).toBeGreaterThanOrEqual(2); // a deposit is not a recovery
+    });
+
+    it('keeps deposits out of monthly returns', () => {
+      // January ends at 10,000. February: a 1,000 deposit, then +10% on the market.
+      const dated = (day: number, date: string, equity: number) => ({ ...makeState(day, equity), date });
+      const states = [
+        dated(0, '2020-01-30', 10000),
+        dated(1, '2020-01-31', 10000),
+        dated(2, '2020-02-03', 11000), // deposit only
+        dated(3, '2020-02-28', 12100),
+      ];
+      const monthly = monthlyTimeWeightedReturns(states, [1000], [2]);
+
+      expect(Object.keys(monthly)).toEqual(['2020-02']);
+      expect(monthly['2020-02']).toBeCloseTo(0.1, 12); // raw equity says +21%
     });
 
     it('matches plain equity returns when there are no contributions', () => {

@@ -186,6 +186,31 @@ export function timeWeightedReturns(
 }
 
 /**
+ * Time-weighted return of each calendar month (YYYY-MM), from the growth index at each
+ * month's last state. The window's first month has no previous month-end and is skipped.
+ */
+export function monthlyTimeWeightedReturns(
+  states: PortfolioState[],
+  contributions: number[] = [],
+  contributionIndices: number[] = []
+): Record<string, number> {
+  const { index } = timeWeightedReturns(states, contributions, contributionIndices);
+
+  const monthEndIndex = new Map<string, number>();
+  for (let i = 0; i < states.length; i++) {
+    monthEndIndex.set(states[i].date.substring(0, 7), index[i]);
+  }
+
+  const months = Array.from(monthEndIndex.keys()).sort();
+  const monthlyReturns: Record<string, number> = {};
+  for (let m = 1; m < months.length; m++) {
+    const previous = monthEndIndex.get(months[m - 1])!;
+    if (previous > 0) monthlyReturns[months[m]] = monthEndIndex.get(months[m])! / previous - 1;
+  }
+  return monthlyReturns;
+}
+
+/**
  * Calculate XIRR (Extended Internal Rate of Return) using Newton-Raphson.
  * Accounts for the timing of DCA contributions, unlike CAGR.
  */
