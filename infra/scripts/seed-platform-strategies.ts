@@ -210,7 +210,10 @@ async function cachePricesToDb(
 }
 
 /**
- * Get price data for a symbol. Tries DB first, falls back to Yahoo.
+ * Get price data for a symbol. Yahoo first: it returns one dividend-adjusted series for the
+ * whole range, whereas the DB mixes adjusted history with the raw daily closes ingested
+ * since. The DB is only a fallback, and only when it reaches back to the requested start:
+ * a shorter series makes the engine drop the asset or run out of windows.
  */
 async function getPricesForSymbol(
   symbol: string,
@@ -220,7 +223,23 @@ async function getPricesForSymbol(
 ): Promise<Record<string, number>> {
   const assetId = await ensureAsset(symbol);
 
-  // Try DB cache first
+  try {
+    const yahooPrices = await fetchFromYahoo(symbol, from, to);
+    const dayCount = Object.keys(yahooPrices).length;
+    if (dayCount < minDays) {
+      throw new Error(`only ${dayCount} days returned (need ${minDays})`);
+    }
+    console.log(`      ${symbol}: downloaded ${dayCount} days from Yahoo`);
+
+    // Cache to DB for future runs
+    await cachePricesToDb(assetId, yahooPrices);
+    return yahooPrices;
+  } catch (err) {
+    console.log(
+      `      ${symbol}: Yahoo failed (${err instanceof Error ? err.message : err}), trying DB cache...`
+    );
+  }
+
   const cached = await prisma.assetPrice.findMany({
     where: {
       assetId,
@@ -229,27 +248,24 @@ async function getPricesForSymbol(
     orderBy: { date: "asc" },
   });
 
-  if (cached.length >= minDays) {
-    const result: Record<string, number> = {};
-    for (const p of cached) {
-      result[p.date.toISOString().split("T")[0]] = p.close;
-    }
-    console.log(`      ${symbol}: ${cached.length} days from DB cache`);
-    return result;
+  const CACHE_START_TOLERANCE_DAYS = 10;
+  const coversStart =
+    cached.length > 0 &&
+    cached[0].date.getTime() - new Date(from).getTime() <=
+      CACHE_START_TOLERANCE_DAYS * 24 * 60 * 60 * 1000;
+  if (cached.length < minDays || !coversStart) {
+    throw new Error(
+      `No usable price data for ${symbol}: ${cached.length} cached days` +
+        (cached.length > 0 ? ` starting ${cached[0].date.toISOString().split("T")[0]}` : "")
+    );
   }
 
-  // Download from Yahoo
-  console.log(
-    `      ${symbol}: ${cached.length} cached days (need ${minDays}), fetching from Yahoo...`
-  );
-  const yahooPrices = await fetchFromYahoo(symbol, from, to);
-  const dayCount = Object.keys(yahooPrices).length;
-  console.log(`      ${symbol}: downloaded ${dayCount} days from Yahoo`);
-
-  // Cache to DB for future runs
-  await cachePricesToDb(assetId, yahooPrices);
-
-  return yahooPrices;
+  const result: Record<string, number> = {};
+  for (const p of cached) {
+    result[p.date.toISOString().split("T")[0]] = p.adjClose ?? p.close;
+  }
+  console.log(`      ${symbol}: ${cached.length} days from DB cache`);
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -603,7 +619,7 @@ async function seedPlatformStrategies() {
         symbol,
         PRICE_START_DATE,
         endDate,
-        500 // Minimum days needed to consider DB cache sufficient
+        500 // Fewer days than this is not a usable series
       );
     } catch (err) {
       console.error(
@@ -669,6 +685,12 @@ async function seedPlatformStrategies() {
         `      Running backtest (${riskParams.windowMonths}mo windows)...`
       );
       const result = runBacktest(backtestConfig, strategyPrices);
+
+      // The engine drops assets without enough history instead of failing. A strategy
+      // published with Bitcoin must not show the numbers of the same portfolio without it.
+      if (result.excludedSymbols && result.excludedSymbols.length > 0) {
+        throw new Error(`assets excluded by the engine: ${result.excludedSymbols.join(", ")}`);
+      }
       const { metricsJson, trajectoriesJson } = extractResults(result);
 
       const parsedScore = JSON.parse(metricsJson).score;
