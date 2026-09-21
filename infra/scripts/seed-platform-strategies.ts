@@ -276,6 +276,7 @@ function buildBacktestConfig(
     endDate,
     windowMonths: riskParams.windowMonths,
     weightMode: strategy.weightMode,
+    optimizationObjective: "sharpe",
     meanReturnShrinkage: riskParams.meanReturnShrinkage,
     riskFreeRate: BACKTEST_RISK_FREE_RATE,
     maxWeight: riskParams.maxWeight,
@@ -577,7 +578,7 @@ async function seedPlatformStrategies() {
     const existing = await prisma.savedStrategy.count({
       where: { isPlatform: true },
     });
-    console.log(`Keeping ${existing} existing platform strategies (DELETE_EXISTING != true)\n`);
+    console.log(`Updating in place: ${existing} existing platform strategies are matched by name (DELETE_EXISTING != true)\n`);
   }
 
   // 2. Collect all unique symbols
@@ -618,6 +619,7 @@ async function seedPlatformStrategies() {
   // 4. Run backtests and create strategies
   let created = 0;
   let failed = 0;
+  let updatedCount = 0;
 
   for (let i = 0; i < PLATFORM_STRATEGIES.length; i++) {
     const strategy = PLATFORM_STRATEGIES[i];
@@ -647,10 +649,10 @@ async function seedPlatformStrategies() {
     }
 
     if (missingSymbol) {
-      // Create without metrics (fallback)
-      await createStrategyRecord(strategy, null, null);
-      console.log(`      Created without metrics (missing price data)\n`);
-      created++;
+      // Create without metrics (fallback); an existing row keeps what it has
+      const outcome = await saveStrategyRecord(strategy, null, null);
+      console.log(`      ${outcome === "kept" ? "Kept existing row untouched" : "Created without metrics"} (missing price data)\n`);
+      if (outcome === "created") created++;
       continue;
     }
 
@@ -698,34 +700,40 @@ async function seedPlatformStrategies() {
         console.log(`      AI analysis generated (${aiAnalysis.length} chars)`);
       }
 
-      await createStrategyRecord(strategy, metricsJson, trajectoriesJson, aiAnalysis);
-      console.log(`      Saved with metrics, trajectories, and AI analysis\n`);
-      created++;
+      const outcome = await saveStrategyRecord(strategy, metricsJson, trajectoriesJson, aiAnalysis);
+      console.log(`      ${outcome === "updated" ? "Updated in place" : "Created"} with metrics, trajectories${aiAnalysis ? ", and AI analysis" : ""}\n`);
+      if (outcome === "updated") updatedCount++; else created++;
     } catch (err) {
       console.error(
         `      BACKTEST ERROR: ${err instanceof Error ? err.message : err}`
       );
-      // Create without metrics (fallback)
-      await createStrategyRecord(strategy, null, null);
-      console.log(`      Created without metrics (backtest failed)\n`);
-      created++;
+      // Create without metrics (fallback); an existing row keeps what it has
+      const outcome = await saveStrategyRecord(strategy, null, null);
+      console.log(`      ${outcome === "kept" ? "Kept existing row untouched" : "Created without metrics"} (backtest failed)\n`);
+      if (outcome === "created") created++;
       failed++;
     }
   }
 
   console.log("=== Summary ===");
   console.log(`Created: ${created} strategies`);
+  console.log(`Updated in place: ${updatedCount} strategies`);
   if (failed > 0) {
     console.log(`Failed backtests: ${failed} (created without metrics)`);
   }
 }
 
-async function createStrategyRecord(
+/**
+ * Create the platform strategy, or update it in place when one with the same name exists,
+ * so its id (and every link to it) survives a re-seed. A re-seed that could not produce
+ * metrics leaves the existing row untouched rather than blanking it.
+ */
+async function saveStrategyRecord(
   strategy: PlatformStrategy,
   metricsJson: string | null,
   trajectoriesJson: string | null,
   aiAnalysis: string | null = null,
-) {
+): Promise<"created" | "updated" | "kept"> {
   const configJson = JSON.stringify({
     symbols: Object.keys(strategy.weights),
     weights: strategy.weights,
@@ -738,6 +746,29 @@ async function createStrategyRecord(
     weightMode: strategy.weightMode,
     dynamicWeights: strategy.dynamicWeights,
   });
+
+  const existing = await prisma.savedStrategy.findFirst({
+    where: { isPlatform: true, name: strategy.name },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (existing) {
+    if (!metricsJson) return "kept";
+    await prisma.savedStrategy.update({
+      where: { id: existing.id },
+      data: {
+        description: strategy.description,
+        configJson,
+        metricsJson,
+        trajectoriesJson,
+        // The previous analysis quotes the previous metrics: replace it, or clear it so
+        // backfill-ai-analysis.ts regenerates it
+        aiAnalysis,
+        riskProfileId: strategy.riskProfileId,
+      },
+    });
+    return "updated";
+  }
 
   await prisma.savedStrategy.create({
     data: {
@@ -753,6 +784,7 @@ async function createStrategyRecord(
       riskProfileId: strategy.riskProfileId,
     },
   });
+  return "created";
 }
 
 seedPlatformStrategies()

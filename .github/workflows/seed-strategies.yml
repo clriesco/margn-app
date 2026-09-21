@@ -69,3 +69,4 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets[matrix.database_url_secret] }}
           DELETE_EXISTING: ${{ github.event.inputs.delete_existing }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
