@@ -1,10 +1,17 @@
 import React, { useMemo, useState, useCallback, useRef } from 'react';
 import type { BacktestResult } from '../../lib/backtest/types';
+import { timeWeightedReturns } from '../../lib/backtest/engine/metrics';
 import { formatNumberES } from '../../lib/number-format';
 
 interface Props {
   result: BacktestResult;
 }
+
+/**
+ * 'return': cumulative time-weighted return, contributions stripped out.
+ * 'equity': account equity, which climbs with every monthly contribution.
+ */
+type ChartMode = 'return' | 'equity';
 
 interface HoverData {
   month: number;
@@ -19,6 +26,10 @@ interface HoverData {
 
 const fmtUsd = (v: number) => '$' + formatNumberES(v, { maximumFractionDigits: 0 });
 const fmtPct = (v: number) => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+const fmtPctTick = (v: number) => {
+  const pct = Number((v * 100).toFixed(1));
+  return (pct > 0 ? '+' : '') + pct + '%';
+};
 
 // Chart dimensions (constant)
 const CHART_WIDTH = 800;
@@ -29,65 +40,89 @@ const INNER_HEIGHT = CHART_HEIGHT - PADDING.top - PADDING.bottom;
 
 export default function TrajectoryChart({ result }: Props) {
   const [hover, setHover] = useState<HoverData | null>(null);
+  const [mode, setMode] = useState<ChartMode>('return');
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const p10Traj = result.trajectories[result.p10.windowIndex];
-  const p50Traj = result.trajectories[result.p50.windowIndex];
-  const p90Traj = result.trajectories[result.p90.windowIndex];
+  const p10Idx = result.p10.windowIndex;
+  const p50Idx = result.p50.windowIndex;
+  const p90Idx = result.p90.windowIndex;
+
+  // One series per window, for each mode. The return series is the time-weighted growth
+  // index minus 1, so every window starts at 0% and deposits never move it.
+  const equitySeries = useMemo(
+    () => result.trajectories.map((t) => t.states.map((s) => s.equity)),
+    [result]
+  );
+  const returnSeries = useMemo(
+    () => result.trajectories.map((t) =>
+      timeWeightedReturns(t.states, t.contributions, t.contributionIndices).index.map((v) => v - 1)
+    ),
+    [result]
+  );
+  const series = mode === 'return' ? returnSeries : equitySeries;
 
   const { paths, p10Path, p50Path, p90Path, p50AreaPath, yMin, yMax, maxMonths, yTicks } = useMemo(() => {
-    const maxDays = Math.max(...result.trajectories.map((t) => t.states.length));
+    const maxDays = Math.max(...series.map((s) => s.length));
     const maxMo = Math.ceil(maxDays / 21);
 
     let minY = Infinity;
     let maxY = -Infinity;
-    for (const traj of result.trajectories) {
-      for (let i = 0; i < traj.states.length; i += 21) {
-        const eq = traj.states[i].equity;
-        if (eq < minY) minY = eq;
-        if (eq > maxY) maxY = eq;
+    for (const values of series) {
+      for (let i = 0; i < values.length; i += 21) {
+        if (values[i] < minY) minY = values[i];
+        if (values[i] > maxY) maxY = values[i];
       }
-      const last = traj.states[traj.states.length - 1].equity;
+      const last = values[values.length - 1];
       if (last < minY) minY = last;
       if (last > maxY) maxY = last;
     }
 
-    minY = Math.max(0, minY * 0.9);
-    maxY = maxY * 1.1;
+    if (mode === 'return') {
+      // Returns go negative, so pad both ends instead of anchoring at zero
+      const pad = (maxY - minY || 0.1) * 0.1;
+      minY -= pad;
+      maxY += pad;
+    } else {
+      minY = Math.max(0, minY * 0.9);
+      maxY = maxY * 1.1;
+    }
 
     const sx = (month: number) => PADDING.left + (month / maxMo) * INNER_WIDTH;
-    const sy = (equity: number) => PADDING.top + INNER_HEIGHT - ((equity - minY) / (maxY - minY)) * INNER_HEIGHT;
+    const sy = (value: number) => PADDING.top + INNER_HEIGHT - ((value - minY) / (maxY - minY)) * INNER_HEIGHT;
 
-    const toPath = (states: { equity: number }[]): string => {
-      const step = Math.max(1, Math.floor(states.length / 120));
+    const toPath = (values: number[]): string => {
+      const step = Math.max(1, Math.floor(values.length / 120));
       const pts: string[] = [];
-      for (let i = 0; i < states.length; i += step) {
-        pts.push(`${sx(i / 21).toFixed(1)},${sy(states[i].equity).toFixed(1)}`);
+      for (let i = 0; i < values.length; i += step) {
+        pts.push(`${sx(i / 21).toFixed(1)},${sy(values[i]).toFixed(1)}`);
       }
-      const last = states.length - 1;
-      pts.push(`${sx(last / 21).toFixed(1)},${sy(states[last].equity).toFixed(1)}`);
+      const last = values.length - 1;
+      pts.push(`${sx(last / 21).toFixed(1)},${sy(values[last]).toFixed(1)}`);
       return 'M' + pts.join('L');
     };
 
-    const allPaths = result.trajectories.map((t) => toPath(t.states));
+    const allPaths = series.map(toPath);
 
-    const p10P = p10Traj ? toPath(p10Traj.states) : '';
-    const p50P = p50Traj ? toPath(p50Traj.states) : '';
-    const p90P = p90Traj ? toPath(p90Traj.states) : '';
+    const p10P = series[p10Idx] ? toPath(series[p10Idx]) : '';
+    const p50P = series[p50Idx] ? toPath(series[p50Idx]) : '';
+    const p90P = series[p90Idx] ? toPath(series[p90Idx]) : '';
 
-    // Area fill under P50 line
+    // Area fill between the P50 line and the baseline (0% for returns, chart floor for equity)
     let p50Area = '';
-    if (p50Traj) {
-      const baseline = sy(minY).toFixed(1);
-      const lastMonth = (p50Traj.states.length - 1) / 21;
+    if (series[p50Idx]) {
+      const baselineValue = mode === 'return' ? Math.min(Math.max(0, minY), maxY) : minY;
+      const baseline = sy(baselineValue).toFixed(1);
+      const lastMonth = (series[p50Idx].length - 1) / 21;
       p50Area = p50P + `L${sx(lastMonth).toFixed(1)},${baseline}L${sx(0).toFixed(1)},${baseline}Z`;
     }
 
     // Y ticks — nice round numbers
     const range = maxY - minY;
-    const rawStep = range / 5;
+    const rawStep = range / (mode === 'return' ? 8 : 5);
     const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-    const niceStep = [1, 2, 5, 10].map(m => m * mag).find(s => s >= rawStep) || rawStep;
+    // 2.5 keeps percentage grids dense enough; dollar labels are rounded to $1K, so they skip it
+    const multiples = mode === 'return' ? [1, 2, 2.5, 5, 10] : [1, 2, 5, 10];
+    const niceStep = multiples.map(m => m * mag).find(s => s >= rawStep) || rawStep;
     const ticks: number[] = [];
     let tick = Math.ceil(minY / niceStep) * niceStep;
     while (tick <= maxY) {
@@ -99,18 +134,17 @@ export default function TrajectoryChart({ result }: Props) {
       paths: allPaths, p10Path: p10P, p50Path: p50P, p90Path: p90P,
       p50AreaPath: p50Area, yMin: minY, yMax: maxY, maxMonths: maxMo, yTicks: ticks,
     };
-  }, [result, p10Traj, p50Traj, p90Traj]);
+  }, [series, mode, p10Idx, p50Idx, p90Idx]);
 
   const scaleX = useCallback((month: number) => PADDING.left + (month / maxMonths) * INNER_WIDTH, [maxMonths]);
-  const scaleY = useCallback((equity: number) => PADDING.top + INNER_HEIGHT - ((equity - yMin) / (yMax - yMin)) * INNER_HEIGHT, [yMin, yMax]);
+  const scaleY = useCallback((value: number) => PADDING.top + INNER_HEIGHT - ((value - yMin) / (yMax - yMin)) * INNER_HEIGHT, [yMin, yMax]);
 
-  const getEquityAtMonth = useCallback((traj: typeof p50Traj, month: number) => {
-    if (!traj) return 0;
-    const dayIdx = Math.min(Math.round(month * 21), traj.states.length - 1);
-    return traj.states[dayIdx].equity;
+  // month = Infinity reads the final value
+  const valueAtMonth = useCallback((values: number[] | undefined, month: number) => {
+    if (!values || values.length === 0) return 0;
+    const dayIdx = Math.min(Math.round(month * 21), values.length - 1);
+    return values[dayIdx];
   }, []);
-
-  const initialCapital = result.config.initialCapital;
 
   const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
@@ -121,36 +155,49 @@ export default function TrajectoryChart({ result }: Props) {
 
     if (month < 0 || month > maxMonths) { setHover(null); return; }
 
-    const p10Eq = getEquityAtMonth(p10Traj, month);
-    const p50Eq = getEquityAtMonth(p50Traj, month);
-    const p90Eq = getEquityAtMonth(p90Traj, month);
-
     setHover({
       month: Math.round(month),
       svgX,
-      p10Equity: p10Eq, p50Equity: p50Eq, p90Equity: p90Eq,
-      p10Return: (p10Eq - initialCapital) / initialCapital,
-      p50Return: (p50Eq - initialCapital) / initialCapital,
-      p90Return: (p90Eq - initialCapital) / initialCapital,
+      p10Equity: valueAtMonth(equitySeries[p10Idx], month),
+      p50Equity: valueAtMonth(equitySeries[p50Idx], month),
+      p90Equity: valueAtMonth(equitySeries[p90Idx], month),
+      p10Return: valueAtMonth(returnSeries[p10Idx], month),
+      p50Return: valueAtMonth(returnSeries[p50Idx], month),
+      p90Return: valueAtMonth(returnSeries[p90Idx], month),
     });
-  }, [maxMonths, p10Traj, p50Traj, p90Traj, getEquityAtMonth, initialCapital]);
+  }, [maxMonths, equitySeries, returnSeries, p10Idx, p50Idx, p90Idx, valueAtMonth]);
 
   // Info panel values — show final values when not hovering
   const display = hover ?? {
     month: maxMonths,
     svgX: 0,
-    p10Equity: p10Traj ? p10Traj.states[p10Traj.states.length - 1].equity : 0,
-    p50Equity: p50Traj ? p50Traj.states[p50Traj.states.length - 1].equity : 0,
-    p90Equity: p90Traj ? p90Traj.states[p90Traj.states.length - 1].equity : 0,
-    p10Return: p10Traj ? (p10Traj.states[p10Traj.states.length - 1].equity - initialCapital) / initialCapital : 0,
-    p50Return: p50Traj ? (p50Traj.states[p50Traj.states.length - 1].equity - initialCapital) / initialCapital : 0,
-    p90Return: p90Traj ? (p90Traj.states[p90Traj.states.length - 1].equity - initialCapital) / initialCapital : 0,
+    p10Equity: valueAtMonth(equitySeries[p10Idx], Infinity),
+    p50Equity: valueAtMonth(equitySeries[p50Idx], Infinity),
+    p90Equity: valueAtMonth(equitySeries[p90Idx], Infinity),
+    p10Return: valueAtMonth(returnSeries[p10Idx], Infinity),
+    p50Return: valueAtMonth(returnSeries[p50Idx], Infinity),
+    p90Return: valueAtMonth(returnSeries[p90Idx], Infinity),
   };
 
-  const panelItems: { label: string; color: string; equity: number; ret: number }[] = [
+  // The plotted magnitude leads; the other one rides along as context
+  const panelItems = [
     { label: 'P10', color: '#f87171', equity: display.p10Equity, ret: display.p10Return },
     { label: 'P50', color: '#60a5fa', equity: display.p50Equity, ret: display.p50Return },
     { label: 'P90', color: '#34d399', equity: display.p90Equity, ret: display.p90Return },
+  ].map((item) => {
+    const retColor = item.ret >= 0 ? '#34d399' : '#f87171';
+    return mode === 'return'
+      ? { ...item, primary: fmtPct(item.ret), secondary: fmtUsd(item.equity), secondaryColor: 'var(--text-secondary)' }
+      : { ...item, primary: fmtUsd(item.equity), secondary: fmtPct(item.ret), secondaryColor: retColor };
+  });
+
+  const hoverY = hover && (mode === 'return'
+    ? { p10: hover.p10Return, p50: hover.p50Return, p90: hover.p90Return }
+    : { p10: hover.p10Equity, p50: hover.p50Equity, p90: hover.p90Equity });
+
+  const modeOptions: { value: ChartMode; label: string }[] = [
+    { value: 'return', label: 'Retorno acumulado' },
+    { value: 'equity', label: 'Capital' },
   ];
 
   // X-axis: year labels every 12 months
@@ -161,6 +208,38 @@ export default function TrajectoryChart({ result }: Props) {
       background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px',
       padding: '1.5rem', marginBottom: '1.5rem',
     }}>
+      {/* ── Mode toggle ── */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        gap: '0.75rem 1rem', flexWrap: 'wrap', marginBottom: '1rem',
+      }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', flex: '1 1 260px' }}>
+          {mode === 'return'
+            ? 'Retorno acumulado de la cartera (time-weighted). Las aportaciones no cuentan: solo lo que ha generado el mercado.'
+            : 'Capital de la cuenta. Incluye el capital inicial y cada aportación mensual, además del retorno.'}
+        </span>
+        <div style={{
+          display: 'flex', padding: '2px', background: 'var(--hover-bg)',
+          border: '1px solid var(--border)', borderRadius: '6px',
+        }}>
+          {modeOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { setMode(opt.value); setHover(null); }}
+              aria-pressed={mode === opt.value}
+              style={{
+                padding: '0.375rem 0.75rem', border: 'none', borderRadius: '4px', cursor: 'pointer',
+                fontSize: '0.8125rem', fontWeight: '500',
+                background: mode === opt.value ? 'var(--bg-card)' : 'transparent',
+                color: mode === opt.value ? 'var(--text-primary)' : 'var(--text-muted)',
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Info panel ── */}
       <div className="trajectory-info-panel" style={{
         position: 'relative',
@@ -189,8 +268,8 @@ export default function TrajectoryChart({ result }: Props) {
                 {item.label}
               </span>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.9375rem' }}>{fmtUsd(item.equity)}</span>
-                <span style={{ color: item.ret >= 0 ? '#34d399' : '#f87171', fontSize: '0.75rem', fontWeight: '500' }}>{fmtPct(item.ret)}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.9375rem' }}>{item.primary}</span>
+                <span style={{ color: item.secondaryColor, fontSize: '0.75rem', fontWeight: '500' }}>{item.secondary}</span>
               </div>
             </div>
           ))}
@@ -226,8 +305,8 @@ export default function TrajectoryChart({ result }: Props) {
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color, flexShrink: 0 }} />
                   {item.label}
                 </span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.8125rem' }}>{fmtUsd(item.equity)}</span>
-                <span style={{ color: item.ret >= 0 ? '#34d399' : '#f87171', fontSize: '0.6875rem', fontWeight: '500' }}>{fmtPct(item.ret)}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.8125rem' }}>{item.primary}</span>
+                <span style={{ color: item.secondaryColor, fontSize: '0.6875rem', fontWeight: '500' }}>{item.secondary}</span>
               </div>
             ))}
           </div>
@@ -268,7 +347,7 @@ export default function TrajectoryChart({ result }: Props) {
               x={PADDING.left - 10} y={scaleY(tick) + 4}
               fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="monospace"
             >
-              ${formatNumberES(tick / 1000, { maximumFractionDigits: 0 })}K
+              {mode === 'return' ? fmtPctTick(tick) : `$${formatNumberES(tick / 1000, { maximumFractionDigits: 0 })}K`}
             </text>
           </g>
         ))}
@@ -290,6 +369,15 @@ export default function TrajectoryChart({ result }: Props) {
           </g>
         ))}
 
+        {/* 0% baseline: below it the portfolio has lost money regardless of deposits */}
+        {mode === 'return' && yMin < 0 && yMax > 0 && (
+          <line
+            x1={PADDING.left} x2={CHART_WIDTH - PADDING.right}
+            y1={scaleY(0)} y2={scaleY(0)}
+            stroke="var(--text-muted)" strokeWidth="1" strokeDasharray="4 3"
+          />
+        )}
+
         {/* All trajectories */}
         {paths.map((d, i) => (
           <path key={i} d={d} fill="none" stroke="#475569" strokeWidth="0.5" opacity="0.12" />
@@ -304,7 +392,7 @@ export default function TrajectoryChart({ result }: Props) {
         {p50Path && <path d={p50Path} fill="none" stroke="#60a5fa" strokeWidth="2.5" />}
 
         {/* Hover crosshair + dots */}
-        {hover && (
+        {hover && hoverY && (
           <g>
             <line
               x1={hover.svgX} x2={hover.svgX}
@@ -312,9 +400,9 @@ export default function TrajectoryChart({ result }: Props) {
               stroke="var(--border-light)" strokeWidth="1"
             />
             {/* Dots on P10/P50/P90 */}
-            <circle cx={hover.svgX} cy={scaleY(hover.p10Equity)} r="3.5" fill="#f87171" stroke="var(--bg-body)" strokeWidth="1.5" />
-            <circle cx={hover.svgX} cy={scaleY(hover.p90Equity)} r="3.5" fill="#34d399" stroke="var(--bg-body)" strokeWidth="1.5" />
-            <circle cx={hover.svgX} cy={scaleY(hover.p50Equity)} r="4.5" fill="#60a5fa" stroke="var(--bg-body)" strokeWidth="1.5" />
+            <circle cx={hover.svgX} cy={scaleY(hoverY.p10)} r="3.5" fill="#f87171" stroke="var(--bg-body)" strokeWidth="1.5" />
+            <circle cx={hover.svgX} cy={scaleY(hoverY.p90)} r="3.5" fill="#34d399" stroke="var(--bg-body)" strokeWidth="1.5" />
+            <circle cx={hover.svgX} cy={scaleY(hoverY.p50)} r="4.5" fill="#60a5fa" stroke="var(--bg-body)" strokeWidth="1.5" />
           </g>
         )}
 

@@ -420,6 +420,7 @@ export function runBacktest(
     allTrajectories.push({
       states,
       contributions,
+      contributionIndices,
       startDate,
       endDate,
     });

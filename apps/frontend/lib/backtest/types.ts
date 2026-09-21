@@ -74,6 +74,8 @@ export interface RebalanceResult {
 export interface WindowTrajectory {
   states: PortfolioState[];
   contributions: number[];
+  /** State index whose equity already includes contributions[k] */
+  contributionIndices: number[];
   startDate: string;
   endDate: string;
 }

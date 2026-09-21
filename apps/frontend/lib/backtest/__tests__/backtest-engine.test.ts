@@ -1,4 +1,5 @@
 import { generateRollingWindows, alignPrices, runBacktest } from '../engine/backtest-engine';
+import { timeWeightedReturns } from '../engine/metrics';
 import type { BacktestConfig, PriceData } from '../types';
 import priceFixture from './fixtures/prices.json';
 
@@ -97,6 +98,31 @@ describe('backtest-engine', () => {
       const result = runBacktest(config, priceFixture as PriceData);
       expect(result.weightsUsed.SPY).toBeCloseTo(0.5);
       expect(result.weightsUsed.TLT).toBeCloseTo(0.5);
+    });
+
+    it('should expose contribution indices so charts can strip deposits out', () => {
+      // The fixture is too short to reach a contribution: build ~4 months of daily prices
+      const synthetic: PriceData = { SPY: {}, TLT: {} };
+      const day = new Date('2020-01-01T00:00:00Z');
+      for (let i = 0; i < 121; i++) {
+        const date = day.toISOString().slice(0, 10);
+        synthetic.SPY[date] = 300 * (1 + 0.001 * i + 0.01 * Math.sin(i / 3));
+        synthetic.TLT[date] = 140 * (1 + 0.0003 * i + 0.006 * Math.cos(i / 5));
+        day.setUTCDate(day.getUTCDate() + 1);
+      }
+      const result = runBacktest({ ...config, endDate: '2020-04-30', windowMonths: 3 }, synthetic);
+
+      const traj = result.trajectories[result.p50.windowIndex];
+      expect(traj.contributions.length).toBeGreaterThan(0);
+      expect(traj.contributionIndices).toHaveLength(traj.contributions.length);
+
+      // The cumulative-return chart must end where the window's CAGR says it does,
+      // and below the raw equity growth, which the deposits inflate
+      const { index } = timeWeightedReturns(traj.states, traj.contributions, traj.contributionIndices);
+      const growth = index[index.length - 1];
+      const years = traj.states.length / 252;
+      expect(Math.pow(growth, 1 / years) - 1).toBeCloseTo(result.p50.cagr, 10);
+      expect(growth).toBeLessThan(result.p50.finalCapital / config.initialCapital);
     });
 
     it('should throw for insufficient data', () => {
