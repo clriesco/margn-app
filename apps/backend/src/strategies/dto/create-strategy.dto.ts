@@ -15,6 +15,12 @@ class TrajectoryPoint {
 
   @IsNumber()
   equity!: number;
+
+  // Cumulative time-weighted return (0.25 = +25%), contributions stripped out.
+  // Absent on strategies saved before it was tracked.
+  @IsOptional()
+  @IsNumber()
+  cumulativeReturn?: number;
 }
 
 class ScenarioMetrics {

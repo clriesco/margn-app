@@ -17,6 +17,17 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/a
 interface TrajectoryPoint {
   date: string;
   equity: number;
+  /** Cumulative time-weighted return; absent on strategies saved before it was tracked */
+  cumulativeReturn?: number;
+}
+
+/** 'return' strips the contributions out; 'equity' is the account value, deposits included */
+type TrajectoryMode = 'return' | 'equity';
+
+function hasReturnSeries(trajectories: { p10: { points: TrajectoryPoint[] }; p50: { points: TrajectoryPoint[] }; p90: { points: TrajectoryPoint[] } }): boolean {
+  return [trajectories.p10, trajectories.p50, trajectories.p90].every(
+    (t) => t.points.every((p) => typeof p.cumulativeReturn === 'number')
+  );
 }
 
 interface ScenarioMetrics {
@@ -79,9 +90,10 @@ interface StrategyDetail {
 // Each scenario (P10/P50/P90) comes from different rolling windows with different dates
 // We normalize by progress (0-100%) so each trajectory fills the chart width
 // If a trajectory ended early (margin call), it stops at that point
-function TrajectoriesChart({ trajectories, config, height = 300 }: {
+function TrajectoriesChart({ trajectories, config, mode, height = 300 }: {
   trajectories: NonNullable<StrategyDetail['trajectories']>;
   config: StrategyDetail['config'];
+  mode: TrajectoryMode;
   height?: number;
 }) {
   const padding = { top: 20, right: 20, bottom: 40, left: 60 };
@@ -98,8 +110,11 @@ function TrajectoriesChart({ trajectories, config, height = 300 }: {
     return <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No hay datos de trayectoria</div>;
   }
 
+  const isReturn = mode === 'return';
+  const valueOf = (p: TrajectoryPoint) => (isReturn ? p.cumulativeReturn ?? 0 : p.equity);
+
   // Calculate Y bounds
-  const equities = allPoints.map((p) => p.equity);
+  const equities = allPoints.map(valueOf);
   const minEquity = Math.min(...equities);
   const maxEquity = Math.max(...equities);
 
@@ -115,9 +130,9 @@ function TrajectoriesChart({ trajectories, config, height = 300 }: {
   const approxMonths = Math.round(maxPoints / 21);
   const totalInvestedAtEnd = config.initialCapital + (config.monthlyContribution * approxMonths);
 
-  // Extend Y bounds to include total invested line
-  const yMin = Math.min(minEquity, config.initialCapital);
-  const yMax = Math.max(maxEquity, totalInvestedAtEnd);
+  // Extend Y bounds to include the reference line: total invested, or 0% for returns
+  const yMin = Math.min(minEquity, isReturn ? 0 : config.initialCapital);
+  const yMax = Math.max(maxEquity, isReturn ? 0 : totalInvestedAtEnd);
   const equityRange = yMax - yMin || 1;
 
   // Check which trajectories ended early (margin call)
@@ -142,13 +157,16 @@ function TrajectoriesChart({ trajectories, config, height = 300 }: {
     return points
       .map((p, i) => {
         const progress = points.length > 1 ? i / (maxPoints - 1) : 0;
-        return `${i === 0 ? 'M' : 'L'} ${xScale(progress).toFixed(1)} ${yScale(p.equity).toFixed(1)}`;
+        return `${i === 0 ? 'M' : 'L'} ${xScale(progress).toFixed(1)} ${yScale(valueOf(p)).toFixed(1)}`;
       })
       .join(' ');
   };
 
-  // Generate path for total invested (dashed line showing contributions)
+  // Reference line (dashed): total invested as contributions arrive, or flat 0% for returns
   const generateInvestedPath = () => {
+    if (isReturn) {
+      return `M ${xScale(0).toFixed(1)} ${yScale(0).toFixed(1)} L ${xScale(1).toFixed(1)} ${yScale(0).toFixed(1)}`;
+    }
     const points: string[] = [];
     // Create points at each month boundary
     for (let month = 0; month <= approxMonths; month++) {
@@ -161,6 +179,7 @@ function TrajectoriesChart({ trajectories, config, height = 300 }: {
 
   // Format currency for axis
   const formatAxis = (v: number) => {
+    if (isReturn) return `${v > 0 ? '+' : ''}${Number((v * 100).toFixed(1))}%`;
     if (v >= 1000000) return `$${(v / 1000000).toFixed(1)}M`;
     if (v >= 1000) return `$${(v / 1000).toFixed(0)}K`;
     return `$${v.toFixed(0)}`;
@@ -168,7 +187,17 @@ function TrajectoriesChart({ trajectories, config, height = 300 }: {
 
   // Y-axis ticks
   const yTicks = 5;
-  const yTickValues = Array.from({ length: yTicks }, (_, i) => yMin + (equityRange * i) / (yTicks - 1));
+  let yTickValues = Array.from({ length: yTicks }, (_, i) => yMin + (equityRange * i) / (yTicks - 1));
+  if (isReturn) {
+    // Round percentages, so the grid lands on 0% instead of next to it
+    const rawStep = equityRange / yTicks;
+    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((c) => c >= rawStep) || rawStep;
+    yTickValues = [];
+    for (let v = Math.ceil(yMin / step) * step; v <= yMax + step * 1e-9; v += step) {
+      yTickValues.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+    }
+  }
 
   // X-axis labels
   const xLabels = [
@@ -262,7 +291,7 @@ function TrajectoriesChart({ trajectories, config, height = 300 }: {
         {p10MarginCall && (
           <circle
             cx={xScale((trajectories.p10.points.length - 1) / (maxPoints - 1))}
-            cy={yScale(trajectories.p10.points[trajectories.p10.points.length - 1].equity)}
+            cy={yScale(valueOf(trajectories.p10.points[trajectories.p10.points.length - 1]))}
             r="5"
             fill="#f87171"
             stroke="var(--bg-card)"
@@ -272,7 +301,7 @@ function TrajectoriesChart({ trajectories, config, height = 300 }: {
         {p50MarginCall && (
           <circle
             cx={xScale((trajectories.p50.points.length - 1) / (maxPoints - 1))}
-            cy={yScale(trajectories.p50.points[trajectories.p50.points.length - 1].equity)}
+            cy={yScale(valueOf(trajectories.p50.points[trajectories.p50.points.length - 1]))}
             r="5"
             fill="#60a5fa"
             stroke="var(--bg-card)"
@@ -303,7 +332,7 @@ function TrajectoriesChart({ trajectories, config, height = 300 }: {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
           <div style={{ width: '20px', height: '1.5px', background: 'var(--text-secondary)', opacity: 0.6, borderTop: '1.5px dashed var(--text-secondary)' }} />
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.6875rem' }}>Invertido</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.6875rem' }}>{isReturn ? '0%' : 'Invertido'}</span>
         </div>
         {hasMarginCalls && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -334,6 +363,7 @@ export default function StrategyDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [togglingVisibility, setTogglingVisibility] = useState(false);
+  const [trajectoryMode, setTrajectoryMode] = useState<TrajectoryMode>('return');
   const [editingName, setEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -543,6 +573,10 @@ export default function StrategyDetailPage() {
       </div>
     );
   }
+
+  // Strategies saved before the return series was tracked can only show equity
+  const returnSeriesAvailable = !!strategy?.trajectories && hasReturnSeries(strategy.trajectories);
+  const effectiveTrajectoryMode: TrajectoryMode = returnSeriesAvailable ? trajectoryMode : 'equity';
 
   return (
     <>
@@ -781,10 +815,47 @@ export default function StrategyDetailPage() {
                   padding: '1.25rem',
                   marginBottom: '1.5rem',
                 }}>
-                  <h3 style={{ color: 'var(--text-primary)', margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600' }}>
-                    Trayectorias P10 / P50 / P90
-                  </h3>
-                  <TrajectoriesChart trajectories={strategy.trajectories} config={strategy.config} />
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    gap: '0.5rem 1rem', flexWrap: 'wrap', marginBottom: '0.5rem',
+                  }}>
+                    <h3 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '1rem', fontWeight: '600' }}>
+                      Trayectorias P10 / P50 / P90
+                    </h3>
+                    {returnSeriesAvailable && (
+                      <div style={{
+                        display: 'flex', padding: '2px', background: 'var(--hover-bg)',
+                        border: '1px solid var(--border)', borderRadius: '6px',
+                      }}>
+                        {([
+                          { value: 'return', label: 'Retorno acumulado' },
+                          { value: 'equity', label: 'Capital' },
+                        ] as const).map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => setTrajectoryMode(opt.value)}
+                            aria-pressed={effectiveTrajectoryMode === opt.value}
+                            style={{
+                              padding: '0.375rem 0.75rem', border: 'none', borderRadius: '4px', cursor: 'pointer',
+                              fontSize: '0.8125rem', fontWeight: '500',
+                              background: effectiveTrajectoryMode === opt.value ? 'var(--bg-card)' : 'transparent',
+                              color: effectiveTrajectoryMode === opt.value ? 'var(--text-primary)' : 'var(--text-muted)',
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', margin: '0 0 1rem 0' }}>
+                    {effectiveTrajectoryMode === 'return'
+                      ? 'Retorno acumulado de la cartera (time-weighted). Las aportaciones no cuentan: solo lo que ha generado el mercado.'
+                      : returnSeriesAvailable
+                        ? 'Capital de la cuenta. Incluye el capital inicial y cada aportación mensual, además del retorno.'
+                        : 'Capital de la cuenta, aportaciones incluidas. Esta estrategia se guardó antes de registrar el retorno acumulado; vuelve a ejecutar y guardar el backtest para verlo.'}
+                  </p>
+                  <TrajectoriesChart trajectories={strategy.trajectories} config={strategy.config} mode={effectiveTrajectoryMode} />
                 </div>
                 )}
 

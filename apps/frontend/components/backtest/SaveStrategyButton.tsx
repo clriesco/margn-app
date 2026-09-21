@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@clerk/nextjs';
+import { timeWeightedReturns } from '../../lib/backtest/engine/metrics';
 import { computeBacktestScore } from '../../lib/backtest/scoring';
 import type { BacktestResult, WindowTrajectory } from '../../lib/backtest/types';
 
@@ -10,12 +11,19 @@ interface Props {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
 
-// Extract daily equity from trajectory
-function extractDailyEquity(trajectory: WindowTrajectory): { date: string; equity: number }[] {
+// Extract daily equity from trajectory, plus the cumulative time-weighted return so the
+// saved strategy can be charted without the contributions lifting the line
+function extractDailyEquity(
+  trajectory: WindowTrajectory
+): { date: string; equity: number; cumulativeReturn: number }[] {
   if (!trajectory?.states) return [];
-  return trajectory.states.map((s) => ({
+  const { index } = timeWeightedReturns(
+    trajectory.states, trajectory.contributions, trajectory.contributionIndices
+  );
+  return trajectory.states.map((s, i) => ({
     date: s.date,
     equity: s.equity,
+    cumulativeReturn: Number((index[i] - 1).toFixed(6)),
   }));
 }
 
