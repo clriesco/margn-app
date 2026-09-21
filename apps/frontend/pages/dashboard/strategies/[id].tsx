@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -6,6 +6,7 @@ import { Pencil } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import DashboardSidebar from '../../../components/DashboardSidebar';
 import CreatePortfolioModal from '../../../components/strategies/CreatePortfolioModal';
+import { cumulativeReturnsFromEquity } from '../../../lib/backtest/engine/metrics';
 import { scoreColor } from '../../../lib/backtest/scoring';
 import { renderMarkdown } from '../../../lib/render-markdown';
 import { formatNumberES } from '../../../lib/number-format';
@@ -17,7 +18,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/a
 interface TrajectoryPoint {
   date: string;
   equity: number;
-  /** Cumulative time-weighted return; absent on strategies saved before it was tracked */
+  /** Cumulative time-weighted return; rebuilt from equity on strategies saved before it was tracked */
   cumulativeReturn?: number;
 }
 
@@ -364,6 +365,20 @@ export default function StrategyDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [togglingVisibility, setTogglingVisibility] = useState(false);
   const [trajectoryMode, setTrajectoryMode] = useState<TrajectoryMode>('return');
+
+  // Strategies saved before the return series was tracked get it rebuilt from their daily
+  // equity, which is exact because the engine's contribution schedule is fixed
+  const trajectories = useMemo(() => {
+    const saved = strategy?.trajectories;
+    const monthlyContribution = strategy?.config?.monthlyContribution;
+    if (!saved || hasReturnSeries(saved) || typeof monthlyContribution !== 'number') return saved ?? null;
+
+    const withReturns = (t: { points: TrajectoryPoint[] }) => {
+      const rebuilt = cumulativeReturnsFromEquity(t.points.map((p) => p.equity), monthlyContribution);
+      return { points: t.points.map((p, i) => ({ ...p, cumulativeReturn: rebuilt[i] })) };
+    };
+    return { p10: withReturns(saved.p10), p50: withReturns(saved.p50), p90: withReturns(saved.p90) };
+  }, [strategy]);
   const [editingName, setEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -574,8 +589,7 @@ export default function StrategyDetailPage() {
     );
   }
 
-  // Strategies saved before the return series was tracked can only show equity
-  const returnSeriesAvailable = !!strategy?.trajectories && hasReturnSeries(strategy.trajectories);
+  const returnSeriesAvailable = !!trajectories && hasReturnSeries(trajectories);
   const effectiveTrajectoryMode: TrajectoryMode = returnSeriesAvailable ? trajectoryMode : 'equity';
 
   return (
@@ -807,7 +821,7 @@ export default function StrategyDetailPage() {
                 </div>
 
                 {/* Trajectories Chart */}
-                {strategy.trajectories && (
+                {trajectories && (
                 <div style={{
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border)',
@@ -853,9 +867,9 @@ export default function StrategyDetailPage() {
                       ? 'Retorno acumulado de la cartera (time-weighted). Las aportaciones no cuentan: solo lo que ha generado el mercado.'
                       : returnSeriesAvailable
                         ? 'Capital de la cuenta. Incluye el capital inicial y cada aportación mensual, además del retorno.'
-                        : 'Capital de la cuenta, aportaciones incluidas. Esta estrategia se guardó antes de registrar el retorno acumulado; vuelve a ejecutar y guardar el backtest para verlo.'}
+                        : 'Capital de la cuenta. Incluye el capital inicial y cada aportación mensual, además del retorno.'}
                   </p>
-                  <TrajectoriesChart trajectories={strategy.trajectories} config={strategy.config} mode={effectiveTrajectoryMode} />
+                  <TrajectoriesChart trajectories={trajectories} config={strategy.config} mode={effectiveTrajectoryMode} />
                 </div>
                 )}
 

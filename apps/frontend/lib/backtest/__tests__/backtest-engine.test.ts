@@ -1,5 +1,5 @@
 import { generateRollingWindows, alignPrices, runBacktest } from '../engine/backtest-engine';
-import { timeWeightedReturns } from '../engine/metrics';
+import { timeWeightedReturns, cumulativeReturnsFromEquity } from '../engine/metrics';
 import type { BacktestConfig, PriceData } from '../types';
 import priceFixture from './fixtures/prices.json';
 
@@ -123,6 +123,13 @@ describe('backtest-engine', () => {
       const years = traj.states.length / 252;
       expect(Math.pow(growth, 1 / years) - 1).toBeCloseTo(result.p50.cagr, 10);
       expect(growth).toBeLessThan(result.p50.finalCapital / config.initialCapital);
+
+      // Strategies saved with equity only must get the very same series back
+      const rebuilt = cumulativeReturnsFromEquity(
+        traj.states.map((s) => s.equity), config.monthlyContribution
+      );
+      expect(rebuilt).toHaveLength(index.length);
+      rebuilt.forEach((r, i) => expect(r).toBeCloseTo(index[i] - 1, 12));
     });
 
     it('should throw for insufficient data', () => {

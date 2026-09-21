@@ -11,6 +11,9 @@
 
 import type { PortfolioState, WindowMetrics } from '../types';
 
+/** Trading days between monthly rebalances; each one brings a contribution */
+export const REBALANCE_INTERVAL_DAYS = 21;
+
 /**
  * Calculate all metrics for a single backtest window
  * @param contributionIndices - Array of state indices where each contribution was deployed
@@ -164,7 +167,7 @@ export function calculateWindowMetrics(
  * compound into, which starts at 1 and has one entry per state.
  */
 export function timeWeightedReturns(
-  states: PortfolioState[],
+  states: { equity: number }[],
   contributions: number[] = [],
   contributionIndices: number[] = []
 ): { dailyReturns: number[]; index: number[] } {
@@ -183,6 +186,26 @@ export function timeWeightedReturns(
     index.push(index[i - 1] * (1 + r));
   }
   return { dailyReturns, index };
+}
+
+/**
+ * Cumulative time-weighted return (0.25 = +25%) from a daily equity series alone, for
+ * trajectories saved without it. Exact, not an estimate: the engine adds the full monthly
+ * contribution to equity every REBALANCE_INTERVAL_DAYS, so the deposits can be placed from
+ * the config. Needs the unsampled daily series, first point being the window's first day.
+ */
+export function cumulativeReturnsFromEquity(
+  equities: number[],
+  monthlyContribution: number
+): number[] {
+  const contributions: number[] = [];
+  const contributionIndices: number[] = [];
+  for (let at = REBALANCE_INTERVAL_DAYS; at < equities.length; at += REBALANCE_INTERVAL_DAYS) {
+    contributions.push(monthlyContribution);
+    contributionIndices.push(at);
+  }
+  const states = equities.map((equity) => ({ equity }));
+  return timeWeightedReturns(states, contributions, contributionIndices).index.map((v) => v - 1);
 }
 
 /**

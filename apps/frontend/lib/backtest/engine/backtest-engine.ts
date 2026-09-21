@@ -11,7 +11,7 @@ import type {
 import { calculateReturnsAndCovariance, optimizeSharpeNelderMead } from './optimizer';
 import { createInitialState, simulateDay } from './portfolio-sim';
 import { rebalancePortfolio, type RebalanceParams } from './rebalancer';
-import { calculateWindowMetrics, selectPercentileWindow } from './metrics';
+import { calculateWindowMetrics, selectPercentileWindow, REBALANCE_INTERVAL_DAYS } from './metrics';
 
 /**
  * Add months to a date (calendar months)
@@ -345,7 +345,7 @@ export function runBacktest(
       tradingDayInMonth++;
 
       // Monthly rebalance (~21 trading days)
-      if (tradingDayInMonth >= 21) {
+      if (tradingDayInMonth >= REBALANCE_INTERVAL_DAYS) {
         tradingDayInMonth = 0;
         const currentPrices: Record<string, number> = {};
         for (const s of symbols) currentPrices[s] = prices[s][idx];
