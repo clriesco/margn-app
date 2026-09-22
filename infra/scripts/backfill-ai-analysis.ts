@@ -8,6 +8,8 @@
  *   DATABASE_URL       — Postgres connection string (falls back to apps/backend/.env)
  *   ANTHROPIC_API_KEY  — Required for AI generation
  *   DRY_RUN            — "true" to list strategies without generating (default: false)
+ *   REGENERATE         — "user", "platform" or "all": also rewrite EXISTING analyses of
+ *                        that kind, e.g. after the metrics they quote were recomputed
  *
  * Usage: npx ts-node backfill-ai-analysis.ts
  */
@@ -208,6 +210,12 @@ function delay(ms: number): Promise<void> {
 
 async function backfillAIAnalysis() {
   const dryRun = process.env.DRY_RUN === "true";
+  const regenerate = process.env.REGENERATE ?? "";
+  const regenerateWhere =
+    regenerate === "all" ? {}
+    : regenerate === "user" ? { isPlatform: false }
+    : regenerate === "platform" ? { isPlatform: true }
+    : null;
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey && !dryRun) {
@@ -217,11 +225,11 @@ async function backfillAIAnalysis() {
 
   const client = apiKey ? new Anthropic({ apiKey }) : null;
 
-  // Find strategies with metrics but no AI analysis
+  // Strategies with metrics but no AI analysis, plus the ones REGENERATE asks to rewrite
   const strategies = await prisma.savedStrategy.findMany({
     where: {
-      aiAnalysis: null,
       metricsJson: { not: null },
+      OR: [{ aiAnalysis: null }, ...(regenerateWhere ? [regenerateWhere] : [])],
     },
     orderBy: { createdAt: "asc" },
     select: {
@@ -234,7 +242,11 @@ async function backfillAIAnalysis() {
   });
 
   console.log(`=== Backfill AI Analysis ===\n`);
-  console.log(`Found ${strategies.length} strategies without AI analysis\n`);
+  console.log(
+    `Found ${strategies.length} strategies without AI analysis` +
+      (regenerateWhere ? ` or with one to regenerate (REGENERATE=${regenerate})` : "") +
+      "\n"
+  );
 
   if (strategies.length === 0) {
     console.log("Nothing to do.");

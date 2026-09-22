@@ -12,6 +12,16 @@ on:
           - staging
           - production
           - both
+      regenerate:
+        description: "Also rewrite existing analyses of this kind"
+        required: true
+        default: "none"
+        type: choice
+        options:
+          - none
+          - user
+          - platform
+          - all
       dry_run:
         description: "List strategies without generating?"
         required: true
@@ -70,3 +80,4 @@ jobs:
           DATABASE_URL: ${{ secrets[matrix.database_url_secret] }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
+          REGENERATE: ${{ github.event.inputs.regenerate }}
