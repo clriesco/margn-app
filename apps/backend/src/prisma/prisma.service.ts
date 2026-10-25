@@ -14,8 +14,10 @@ export class PrismaService
    * Connect to database on module initialization
    */
   async onModuleInit() {
-    const dbUrl = process.env.DATABASE_URL || "NOT SET";
-    console.log("[Prisma] Attempting connection to:", dbUrl);
+    // Log only host:port — the full URL carries the database password
+    const dbHost =
+      process.env.DATABASE_URL?.split("@").pop()?.split("/")[0] || "NOT SET";
+    console.log("[Prisma] Attempting connection to:", dbHost);
 
     const maxAttempts = 5;
     const retryDelayMs = 1500;

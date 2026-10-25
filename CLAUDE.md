@@ -25,7 +25,7 @@ margn/
 │   │   │   ├── contributions/  # Tracking de contribuciones DCA
 │   │   │   ├── positions/      # Gestión de posiciones
 │   │   │   ├── rebalance/      # Motor de rebalanceo (~1,200 líneas)
-│   │   │   ├── cron/           # Endpoints para jobs programados
+│   │   │   ├── cron/           # Endpoints, scheduler in-process (CRON_ENABLED) y jobs/ (lógica de los jobs diarios)
 │   │   │   └── prisma/         # Módulo de base de datos (PrismaService extends PrismaClient)
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma   # Esquema completo de datos
@@ -272,6 +272,8 @@ Los arrays de IDs evitan el doble procesamiento. Al buscar IDs ya procesados, se
 ---
 
 ## Pipeline de jobs diarios
+
+La lógica vive en `apps/backend/src/cron/jobs/*.job.ts` (reciben el `PrismaClient` por parámetro). En producción los ejecuta el `CronScheduler` del backend cada 6h (si `CRON_ENABLED=true`) con el `PrismaService` compartido: no cargar ts-node ni crear `PrismaClient` extra en runtime (cuesta ~60 MB de RAM en Railway). Los ficheros de `infra/scripts/` son wrappers CLI con su propio cliente, usados por GitHub Actions para ejecuciones manuales; solo el wrapper de `daily-check.ts` envía emails.
 
 Ejecutados por `run-daily-jobs.ts` en orden secuencial estricto. Si el paso 1 falla, se aborta. Si pasos 2-3 fallan, se continúa con warning.
 

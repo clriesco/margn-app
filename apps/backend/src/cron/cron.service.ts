@@ -2,47 +2,20 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { PrismaService } from "../prisma/prisma.service";
 
+import { runDailyCheck } from "./jobs/daily-check.job";
+import { refreshMetrics } from "./jobs/metrics-refresh.job";
+import { ingestPrices } from "./jobs/price-ingestion.job";
+
 /**
- * Service that executes cron job scripts
- * Uses ts-node to execute TypeScript files from infra/scripts at runtime
+ * Service that executes the cron jobs
+ * Jobs are compiled with the backend and share its PrismaService connection,
+ * so running them loads neither ts-node nor additional Prisma engines.
  */
 @Injectable()
 export class CronService {
   private readonly logger = new Logger(CronService.name);
-  private tsNodeRegistered = false;
 
   constructor(private readonly prismaService: PrismaService) {}
-
-  /**
-   * Register ts-node to enable TypeScript execution at runtime
-   * This allows us to require .ts files directly without compilation
-   */
-  private registerTsNode(): void {
-    if (this.tsNodeRegistered) {
-      return;
-    }
-
-    try {
-      // Register ts-node with transpileOnly to skip type checking
-      // (infra scripts live outside the backend's strict tsconfig)
-      require("ts-node").register({
-        transpileOnly: true,
-        compilerOptions: {
-          module: "commonjs",
-          moduleResolution: "node",
-          target: "ES2020",
-          esModuleInterop: true,
-        },
-      });
-      this.tsNodeRegistered = true;
-      this.logger.debug("ts-node registered for runtime TypeScript execution");
-    } catch (error) {
-      this.logger.warn(
-        "ts-node not available, falling back to compiled JS files",
-        error
-      );
-    }
-  }
 
   /**
    * Execute price ingestion job
@@ -52,15 +25,7 @@ export class CronService {
     this.logger.log("🔄 Starting price ingestion...");
 
     try {
-      this.registerTsNode();
-
-      // Import the ingestion logic dynamically
-      // Using require() with ts-node allows TypeScript files to be executed at runtime
-      const priceIngestionModule = require("../../../../infra/scripts/price-ingestion");
-
-      // The script creates its own PrismaClient, but we can still use it
-      // The script will handle its own connection/disconnection
-      await priceIngestionModule.ingestPrices();
+      await ingestPrices(this.prismaService);
 
       this.logger.log("✅ Price ingestion completed successfully");
       return {
@@ -81,12 +46,7 @@ export class CronService {
     this.logger.log("🔄 Starting metrics refresh...");
 
     try {
-      this.registerTsNode();
-
-      // Import the refresh logic dynamically
-      const metricsRefreshModule = require("../../../../infra/scripts/metrics-refresh");
-
-      await metricsRefreshModule.refreshMetrics();
+      await refreshMetrics(this.prismaService);
 
       this.logger.log("✅ Metrics refresh completed successfully");
       return {
@@ -107,12 +67,7 @@ export class CronService {
     this.logger.log("🔍 Starting daily check...");
 
     try {
-      this.registerTsNode();
-
-      // Import the daily check logic dynamically
-      const dailyCheckModule = require("../../../../infra/scripts/daily-check");
-
-      const result = await dailyCheckModule.runDailyCheck();
+      const result = await runDailyCheck(this.prismaService);
 
       this.logger.log(
         `✅ Daily check completed: ${result.portfoliosChecked} portfolios, ${result.notificationsGenerated} notifications`

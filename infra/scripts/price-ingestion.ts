@@ -1,113 +1,29 @@
 #!/usr/bin/env ts-node
 
 /**
- * Daily price ingestion job
- * Fetches latest prices from Yahoo Finance and stores in database
+ * Daily price ingestion job (CLI wrapper)
+ * The job logic lives in apps/backend/src/cron/jobs so the backend scheduler
+ * runs it compiled; this wrapper runs it standalone with its own Prisma client.
  */
 
 import { PrismaClient } from "@prisma/client";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
+import { ingestPrices as ingestPricesJob } from "../../apps/backend/src/cron/jobs/price-ingestion.job";
+
 // Load .env from backend directory (only in development)
 if (!process.env.DATABASE_URL) {
   dotenv.config({ path: path.join(process.cwd(), "apps/backend/.env") });
-}
-
-const prisma = new PrismaClient();
-
-interface YahooQuote {
-  symbol: string;
-  regularMarketPrice: number;
-  regularMarketTime: number;
-}
-
-/**
- * Fetch current price from Yahoo Finance
- * @param symbol - Ticker symbol
- */
-async function fetchPrice(symbol: string): Promise<number | null> {
-  try {
-    const response = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
-    );
-    const data = (await response.json()) as any;
-
-    if (data.chart?.result?.[0]?.meta?.regularMarketPrice) {
-      return data.chart.result[0].meta.regularMarketPrice;
-    }
-
-    return null;
-  } catch (error) {
-    console.error(`Error fetching price for ${symbol}:`, error);
-    return null;
-  }
 }
 
 /**
  * Main ingestion function
  */
 async function ingestPrices() {
-  console.log("🔄 Starting price ingestion...");
-
+  const prisma = new PrismaClient();
   try {
-    // Get all assets from database
-    const assets = await prisma.asset.findMany();
-
-    if (assets.length === 0) {
-      console.log("⚠️  No assets found in database. Skipping ingestion.");
-      return;
-    }
-
-    // Get today's date in UTC to avoid timezone issues
-    const now = new Date();
-    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const asset of assets) {
-      console.log(`Fetching price for ${asset.symbol}...`);
-      const price = await fetchPrice(asset.symbol);
-
-      if (price !== null) {
-        await prisma.assetPrice.upsert({
-          where: {
-            assetId_date: {
-              assetId: asset.id,
-              date: today,
-            },
-          },
-          create: {
-            assetId: asset.id,
-            date: today,
-            close: price,
-            adjClose: price,
-            source: "yahoo_finance",
-          },
-          update: {
-            close: price,
-            adjClose: price,
-          },
-        });
-        console.log(`✅ ${asset.symbol}: $${price.toFixed(2)}`);
-        successCount++;
-      } else {
-        console.log(`❌ ${asset.symbol}: Failed to fetch price`);
-        failCount++;
-      }
-
-      // Rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-
-    console.log("\n📊 Ingestion Summary:");
-    console.log(`   Success: ${successCount}`);
-    console.log(`   Failed: ${failCount}`);
-    console.log(`   Total: ${assets.length}`);
-  } catch (error) {
-    console.error("❌ Fatal error during ingestion:", error);
-    throw error;
+    await ingestPricesJob(prisma);
   } finally {
     await prisma.$disconnect();
   }
